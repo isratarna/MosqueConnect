@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, directionsUrl, IMPACT_STATS } from "../data/mosques";
@@ -135,12 +135,36 @@ function NearbySection({ origin, nearby, nearest }) {
 }
 
 function SupportSection() {
+  const [customAmount, setCustomAmount] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
   const items = [
     { icon: "bi-cash-coin", title: "Money Donation", desc: "Support a mosque or a specific cause securely." },
     { icon: "bi-droplet-half", title: "Blood Donation", desc: "Respond to live blood requests or register as a donor." },
     { icon: "bi-hand-thumbs-up", title: "Volunteer", desc: "Join events, charity drives and mosque services." },
     { icon: "bi-box-seam", title: "Goods Donation", desc: "Donate essential goods mosques currently need." },
   ];
+
+  const handleSupportNow = (e) => {
+    e.preventDefault();
+    const amount = Number(customAmount);
+
+    if (!customAmount || Number.isNaN(amount) || amount <= 0) {
+      setError("Please enter an amount greater than 0.");
+      setSuccess(false);
+      return;
+    }
+
+    setError("");
+    setSuccess(true);
+    setCustomAmount("");
+
+    window.setTimeout(() => {
+      setSuccess(false);
+    }, 3000);
+  };
+
   return (
     <section id="support" className="py-5 bg-light">
       <div className="container">
@@ -159,6 +183,30 @@ function SupportSection() {
               </div>
             </div>
           ))}
+          <div className="col-md-6 col-lg-3">
+            <div className="card mc-card p-3 h-100">
+              <div className="mc-feature-icon mx-auto mb-3"><i className="bi bi-heart-fill" /></div>
+              <h6 className="fw-bold text-center">Custom Support</h6>
+              <form onSubmit={handleSupportNow} className="mt-2">
+                <label className="form-label small text-muted" htmlFor="custom-support-amount">Enter amount</label>
+                <input
+                  id="custom-support-amount"
+                  type="number"
+                  min="1"
+                  className="form-control form-control-sm"
+                  value={customAmount}
+                  onChange={(e) => {
+                    setCustomAmount(e.target.value);
+                    if (error) setError("");
+                  }}
+                  placeholder="Amount"
+                />
+                {error ? <div className="text-danger small mt-2">{error}</div> : null}
+                <button type="submit" className="btn btn-mc btn-sm w-100 mt-3">Support Now</button>
+                {success ? <div className="alert alert-success py-2 px-3 mt-3 mb-0 small">Thank you for supporting the community!</div> : null}
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </section>
