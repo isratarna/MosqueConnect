@@ -75,18 +75,20 @@ function NearbySection({ origin, nearby, nearest }) {
           <h2 className="fw-bold">Mosques around your location</h2>
           <p className="text-muted mb-0">Allow location access to see the mosques closest to you.</p>
         </div>
-        <div className="row g-4">
+        <div className="row g-4 align-items-start">
           <div className="col-lg-8">
-            <MapView
-              center={origin}
-              zoom={13}
-              mosques={nearby}
-              userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
-            />
+            <div className="h-100">
+              <MapView
+                center={origin}
+                zoom={13}
+                mosques={nearby}
+                userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
+              />
+            </div>
           </div>
-          <div className="col-lg-4">
+          <div className="col-lg-4 d-flex flex-column">
             {nearest && (
-              <div className="card mc-card mc-highlight">
+              <div className="card mc-card mc-highlight mb-3">
                 <div className="card-body">
                   <div className="section-label mb-1">Nearest to you</div>
                   <h5 className="fw-bold mb-1">{nearest.name}</h5>
@@ -112,7 +114,7 @@ function NearbySection({ origin, nearby, nearest }) {
                 </div>
               </div>
             )}
-            <div className="mt-3">
+            <div className="mt-1">
               {nearby.slice(0, 4).map((m) => (
                 <Link to={`/mosque/${m.id}`} className="text-decoration-none" key={m.id}>
                   <div className="card mc-card mb-2">
