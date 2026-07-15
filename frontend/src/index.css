@@ -25,6 +25,73 @@ body {
 .mc-brand-accent { color: var(--mc-gold); }
 .mc-notif-menu { width: 300px; }
 
+@media (max-width: 991.98px) {
+  .mc-navbar .navbar-brand {
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+    margin-right: 0.5rem;
+  }
+
+  .mc-navbar .navbar-toggler {
+    padding: 0.25rem 0.45rem;
+    margin-left: 0.25rem;
+  }
+
+  /*.mc-navbar .navbar-collapse {
+    margin-top: 0.25rem;
+    padding-bottom: 0.2rem;
+  }*/
+
+  .mc-navbar .navbar-collapse {
+    margin-top: 0.15rem;
+    padding-bottom: 0;
+}
+
+  /*.mc-navbar .navbar-nav {
+    gap: 0 !important;
+    padding-top: 0.1rem;
+    padding-bottom: 0.1rem;
+  }*/
+  .mc-navbar .navbar-nav {
+    gap: 0 !important;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+  .mc-navbar .navbar-nav .nav-item {
+    width: 100%;
+  }
+  
+
+  /*.mc-navbar .navbar-nav .nav-link {
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+    display: inline-block;
+  }
+*/
+/*.mc-navbar .navbar-nav .nav-link {
+    padding: 0.45rem 0;
+    display: inline-block;
+}*/
+.mc-navbar .navbar-nav .nav-link {
+    padding: 0.3rem 0;
+    display: inline-block;
+}
+
+  .mc-navbar .navbar-nav .nav-link.active {
+    padding-bottom: 0.2rem;
+    margin-bottom: 0;
+  }
+
+  .mc-navbar .navbar-nav .nav-item + .nav-item .btn {
+    margin-top: 0.2rem;
+  }
+
+  .mc-navbar .navbar-nav .nav-item.ms-lg-2 {
+    margin-left: 0 !important;
+  }
+}
+
 /* ---------- buttons / accents ---------- */
 .btn-mc { background: var(--mc-green); border-color: var(--mc-green); color: #fff; }
 .btn-mc:hover { background: var(--mc-green-dark); border-color: var(--mc-green-dark); color: #fff; }

@@ -19,13 +19,13 @@ export default function Navbar() {
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark mc-navbar sticky-top">
-      <div className="container">
-        <Link className="navbar-brand fw-bold" to="/" onClick={close}>
+      <div className="container px-3 px-lg-0">
+        <Link className="navbar-brand fw-bold me-2 me-lg-0" to="/" onClick={close}>
           <i className="bi bi-geo-alt-fill me-1" />
           Mosque<span className="mc-brand-accent">Connect</span>
         </Link>
         <button
-          className="navbar-toggler"
+          className="navbar-toggler ms-2 ms-lg-0"
           type="button"
           aria-label="Toggle navigation"
           aria-expanded={open}
@@ -34,8 +34,8 @@ export default function Navbar() {
           <span className="navbar-toggler-icon" />
         </button>
 
-        <div className={"collapse navbar-collapse" + (open ? " show" : "")}>
-          <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <div className={"collapse navbar-collapse mt-1 mt-lg-0" + (open ? " show" : "")}>
+          <ul className="navbar-nav ms-auto align-items-start align-items-lg-center gap-1 gap-lg-1 py-1 py-lg-0">
             <li className="nav-item">
               <NavLink end className={navLinkClass} to="/" onClick={close}>Home</NavLink>
             </li>
@@ -51,11 +51,11 @@ export default function Navbar() {
 
             {!user ? (
               <>
-                <li className="nav-item ms-lg-2">
-                  <Link className="btn btn-outline-light btn-sm" to="/login" onClick={close}>Login</Link>
+                <li className="nav-item ms-lg-2 mt-1 mt-lg-0">
+                  <Link className="btn btn-outline-light btn-sm w-100 w-lg-auto" to="/login" onClick={close}>Login</Link>
                 </li>
-                <li className="nav-item">
-                  <Link className="btn btn-warning btn-sm text-dark fw-semibold" to="/register" onClick={close}>
+                <li className="nav-item mt-1 mt-lg-0">
+                  <Link className="btn btn-warning btn-sm text-dark fw-semibold w-100 w-lg-auto" to="/register" onClick={close}>
                     Register
                   </Link>
                 </li>
