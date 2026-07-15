@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -6,12 +6,26 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false); // mobile collapse
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   const close = () => setOpen(false);
+  const closeDropdowns = () => setActiveDropdown(null);
+
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === "Escape" && activeDropdown) {
+        closeDropdowns();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [activeDropdown]);
 
   const handleLogout = () => {
     logout();
     close();
+    closeDropdowns();
     navigate("/");
   };
 
@@ -62,8 +76,18 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <NotificationBell />
-                <ProfileMenu user={user} onLogout={handleLogout} />
+                <NotificationBell
+                  isOpen={activeDropdown === "notifications"}
+                  onToggle={() => setActiveDropdown((current) => (current === "notifications" ? null : "notifications"))}
+                  onClose={closeDropdowns}
+                />
+                <ProfileMenu
+                  user={user}
+                  onLogout={handleLogout}
+                  isOpen={activeDropdown === "profile"}
+                  onToggle={() => setActiveDropdown((current) => (current === "profile" ? null : "profile"))}
+                  onClose={closeDropdowns}
+                />
               </>
             )}
           </ul>
@@ -73,20 +97,41 @@ export default function Navbar() {
   );
 }
 
-function NotificationBell() {
-  const [show, setShow] = useState(false);
+function NotificationBell({ isOpen, onToggle, onClose }) {
+  const wrapperRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
   return (
-    <li className="nav-item dropdown ms-lg-2">
+    <li className="nav-item dropdown ms-lg-2" ref={wrapperRef}>
       <a
         className="nav-link position-relative"
         href="#"
         role="button"
         title="Notifications"
-        onClick={(e) => { e.preventDefault(); setShow((v) => !v); }}
+        onClick={(e) => { e.preventDefault(); onToggle(); }}
       >
         <i className="bi bi-bell fs-5" />
       </a>
-      <div className={"dropdown-menu dropdown-menu-end shadow mc-notif-menu p-0" + (show ? " show" : "")}>
+      <div
+        ref={dropdownRef}
+        className={"dropdown-menu dropdown-menu-end shadow mc-notif-menu p-0" + (isOpen ? " show" : "")}
+      >
         <div className="px-3 py-2 border-bottom">
           <strong className="small">Notifications</strong>
         </div>
@@ -99,23 +144,52 @@ function NotificationBell() {
   );
 }
 
-function ProfileMenu({ user, onLogout }) {
-  const [show, setShow] = useState(false);
+function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
+  const wrapperRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
   return (
-    <li className="nav-item dropdown">
+    <li className="nav-item dropdown" ref={wrapperRef}>
       <a
         className="nav-link dropdown-toggle d-flex align-items-center"
         href="#"
         role="button"
-        aria-expanded={show}
-        onClick={(e) => { e.preventDefault(); setShow((v) => !v); }}
+        aria-expanded={isOpen}
+        onClick={(e) => { e.preventDefault(); onToggle(); }}
       >
         <i className="bi bi-person-circle fs-5 me-1" />
         <span>{user.name}</span>
       </a>
-      <ul className={"dropdown-menu dropdown-menu-end" + (show ? " show" : "")}>
-        <li><a className="dropdown-item" href="#" onClick={(e) => e.preventDefault()}><i className="bi bi-person me-2" />My Profile</a></li>
-        <li><a className="dropdown-item" href="#" onClick={(e) => e.preventDefault()}><i className="bi bi-star me-2" />Followed Mosques</a></li>
+      <ul
+        ref={dropdownRef}
+        className={"dropdown-menu dropdown-menu-end" + (isOpen ? " show" : "")}
+      >
+        <li>
+          <a className="dropdown-item" href="#" onClick={(e) => { e.preventDefault(); onClose(); }}>
+            <i className="bi bi-person me-2" />My Profile
+          </a>
+        </li>
+        <li>
+          <a className="dropdown-item" href="#" onClick={(e) => { e.preventDefault(); onClose(); }}>
+            <i className="bi bi-star me-2" />Followed Mosques
+          </a>
+        </li>
         <li><hr className="dropdown-divider" /></li>
         <li>
           <a className="dropdown-item text-danger" href="#" onClick={(e) => { e.preventDefault(); onLogout(); }}>
