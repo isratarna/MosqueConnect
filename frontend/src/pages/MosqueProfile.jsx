@@ -4,12 +4,17 @@ import { getMosque, directionsUrl, urgencyClass } from "../data/mosques";
 import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
 
-const PRAYER_ORDER = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah"];
+const DAILY_PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
 export default function MosqueProfile() {
   const { id } = useParams();
   const mosque = getMosque(id);
   const [following, setFollowing] = useState(false);
+  const jummahSessions = [
+    { label: "First Jummah", time: mosque.prayer.Jummah || "—" },
+    { label: "Second Jummah", time: "—" },
+    { label: "Third Jummah", time: "—" },
+  ];
 
   if (!mosque) {
     return (
@@ -62,12 +67,28 @@ export default function MosqueProfile() {
           <div className="card mc-card mb-4">
             <div className="card-body">
               <h5 className="fw-bold mb-3"><i className="bi bi-clock-history text-mc me-2" />Prayer &amp; Jamat Times</h5>
-              <div className="row row-cols-3 row-cols-md-6 g-2">
-                {PRAYER_ORDER.map((p) => (
+              <div className="row row-cols-2 row-cols-md-5 g-2">
+                {DAILY_PRAYERS.map((p) => (
                   <div className="col" key={p}>
                     <div className="mc-prayer-cell bg-light rounded-3">
                       <small className="text-muted d-block">{p}</small>
                       <span className="h5">{mosque.prayer[p]}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="card mc-card mb-4">
+            <div className="card-body">
+              <h5 className="fw-bold mb-3"><i className="bi bi-sun text-mc me-2" />Jummah Prayer</h5>
+              <div className="row row-cols-1 row-cols-md-2 g-2">
+                {jummahSessions.map((session) => (
+                  <div className="col" key={session.label}>
+                    <div className="mc-prayer-cell bg-light rounded-3">
+                      <small className="text-muted d-block">{session.label}</small>
+                      <span className="h5">{session.time}</span>
                     </div>
                   </div>
                 ))}
