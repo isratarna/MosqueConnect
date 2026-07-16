@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, directionsUrl, IMPACT_STATS } from "../data/mosques";
@@ -75,10 +75,11 @@ function NearbySection({ origin, nearby, nearest }) {
           <h2 className="fw-bold">Mosques around your location</h2>
           <p className="text-muted mb-0">Allow location access to see the mosques closest to you.</p>
         </div>
-        <div className="row g-4 align-items-start">
-          <div className="col-lg-8">
-            <div className="h-100">
+        <div className="row g-4 align-items-stretch">
+          <div className="col-lg-8 d-flex">
+            <div className="w-100 h-100">
               <MapView
+                className="mc-map h-100"
                 center={origin}
                 zoom={13}
                 mosques={nearby}
@@ -86,48 +87,50 @@ function NearbySection({ origin, nearby, nearest }) {
               />
             </div>
           </div>
-          <div className="col-lg-4 d-flex flex-column">
-            {nearest && (
-              <div className="card mc-card mc-highlight mb-3">
-                <div className="card-body">
-                  <div className="section-label mb-1">Nearest to you</div>
-                  <h5 className="fw-bold mb-1">{nearest.name}</h5>
-                  <div className="text-muted small mb-2">
-                    <i className="bi bi-geo-alt me-1" />{nearest.address}
-                  </div>
-                  <div className="d-flex align-items-center gap-3 mb-2">
-                    <span className="badge bg-success">
-                      <i className="bi bi-signpost-2 me-1" />{nearest.distance} km away
-                    </span>
-                    <span className="small text-muted">
-                      <i className="bi bi-star-fill text-warning me-1" />{nearest.rating}
-                    </span>
-                  </div>
-                  <div className="small mb-3">
-                    Next Jamat — <strong>Dhuhr {nearest.prayer.Dhuhr} PM</strong>
-                  </div>
-                  <div className="d-flex gap-2">
-                    <Link to={`/mosque/${nearest.id}`} className="btn btn-mc btn-sm flex-fill">View profile</Link>
-                    <a href={directionsUrl(nearest)} target="_blank" rel="noopener noreferrer"
-                       className="btn btn-outline-mc btn-sm"><i className="bi bi-compass" /></a>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="mt-1">
-              {nearby.slice(0, 4).map((m) => (
-                <Link to={`/mosque/${m.id}`} className="text-decoration-none" key={m.id}>
-                  <div className="card mc-card mb-2">
-                    <div className="card-body py-2 d-flex justify-content-between align-items-center">
-                      <div>
-                        <div className="fw-semibold text-dark">{m.name}</div>
-                        <small className="text-muted">{m.address}</small>
-                      </div>
-                      <span className="badge mc-badge">{m.distance} km</span>
+          <div className="col-lg-4 d-flex">
+            <div className="w-100 d-flex flex-column gap-3">
+              {nearest && (
+                <div className="card mc-card mc-highlight mb-0 h-100">
+                  <div className="card-body">
+                    <div className="section-label mb-1">Nearest to you</div>
+                    <h5 className="fw-bold mb-1">{nearest.name}</h5>
+                    <div className="text-muted small mb-2">
+                      <i className="bi bi-geo-alt me-1" />{nearest.address}
+                    </div>
+                    <div className="d-flex align-items-center gap-3 mb-2">
+                      <span className="badge bg-success">
+                        <i className="bi bi-signpost-2 me-1" />{nearest.distance} km away
+                      </span>
+                      <span className="small text-muted">
+                        <i className="bi bi-star-fill text-warning me-1" />{nearest.rating}
+                      </span>
+                    </div>
+                    <div className="small mb-3">
+                      Next Jamat — <strong>Dhuhr {nearest.prayer.Dhuhr} PM</strong>
+                    </div>
+                    <div className="d-flex gap-2">
+                      <Link to={`/mosque/${nearest.id}`} className="btn btn-mc btn-sm flex-fill">View profile</Link>
+                      <a href={directionsUrl(nearest)} target="_blank" rel="noopener noreferrer"
+                         className="btn btn-outline-mc btn-sm"><i className="bi bi-compass" /></a>
                     </div>
                   </div>
-                </Link>
-              ))}
+                </div>
+              )}
+              <div className="d-flex flex-column gap-2">
+                {nearby.slice(0, 4).map((m) => (
+                  <Link to={`/mosque/${m.id}`} className="text-decoration-none" key={m.id}>
+                    <div className="card mc-card mb-0">
+                      <div className="card-body py-2 d-flex justify-content-between align-items-center">
+                        <div>
+                          <div className="fw-semibold text-dark">{m.name}</div>
+                          <small className="text-muted">{m.address}</small>
+                        </div>
+                        <span className="badge mc-badge">{m.distance} km</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -137,35 +140,12 @@ function NearbySection({ origin, nearby, nearest }) {
 }
 
 function SupportSection() {
-  const [customAmount, setCustomAmount] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-
   const items = [
     { icon: "bi-cash-coin", title: "Money Donation", desc: "Support a mosque or a specific cause securely." },
     { icon: "bi-droplet-half", title: "Blood Donation", desc: "Respond to live blood requests or register as a donor." },
     { icon: "bi-hand-thumbs-up", title: "Volunteer", desc: "Join events, charity drives and mosque services." },
     { icon: "bi-box-seam", title: "Goods Donation", desc: "Donate essential goods mosques currently need." },
   ];
-
-  const handleSupportNow = (e) => {
-    e.preventDefault();
-    const amount = Number(customAmount);
-
-    if (!customAmount || Number.isNaN(amount) || amount <= 0) {
-      setError("Please enter an amount greater than 0.");
-      setSuccess(false);
-      return;
-    }
-
-    setError("");
-    setSuccess(true);
-    setCustomAmount("");
-
-    window.setTimeout(() => {
-      setSuccess(false);
-    }, 3000);
-  };
 
   return (
     <section id="support" className="py-5 bg-light">
@@ -185,29 +165,28 @@ function SupportSection() {
               </div>
             </div>
           ))}
-          <div className="col-md-6 col-lg-3">
-            <div className="card mc-card p-3 h-100">
-              <div className="mc-feature-icon mx-auto mb-3"><i className="bi bi-heart-fill" /></div>
-              <h6 className="fw-bold text-center">Custom Support</h6>
-              <form onSubmit={handleSupportNow} className="mt-2">
-                <label className="form-label small text-muted" htmlFor="custom-support-amount">Enter amount</label>
-                <input
-                  id="custom-support-amount"
-                  type="number"
-                  min="1"
-                  className="form-control form-control-sm"
-                  value={customAmount}
-                  onChange={(e) => {
-                    setCustomAmount(e.target.value);
-                    if (error) setError("");
-                  }}
-                  placeholder="Amount"
-                />
-                {error ? <div className="text-danger small mt-2">{error}</div> : null}
-                <button type="submit" className="btn btn-mc btn-sm w-100 mt-3">Support Now</button>
-                {success ? <div className="alert alert-success py-2 px-3 mt-3 mb-0 small">Thank you for supporting the community!</div> : null}
-              </form>
+        </div>
+        <div className="row mt-4">
+          <div className="col-12">
+            <div className="d-flex align-items-center justify-content-center gap-2 mb-3 text-muted">
+              <div className="border-top flex-grow-1" />
+              <i className="bi bi-heart-fill text-mc" />
+              <div className="border-top flex-grow-1" />
             </div>
+            <Link to="/support/custom" className="text-decoration-none">
+              <div className="card mc-card bg-white p-4 p-md-5 h-auto">
+                <div className="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 text-center text-md-start">
+                  <div className="d-flex align-items-center gap-3">
+                    <div className="mc-feature-icon flex-shrink-0"><i className="bi bi-heart-fill" /></div>
+                    <div>
+                      <h6 className="fw-bold mb-1">Have another way to help?</h6>
+                      <p className="text-muted small mb-0">Choose your own contribution amount and support the community in your own way.</p>
+                    </div>
+                  </div>
+                  <button type="button" className="btn btn-outline-mc btn-sm px-4">Custom Support →</button>
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
       </div>
