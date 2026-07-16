@@ -43,7 +43,10 @@ export function AuthProvider({ children }) {
     return { ok: true };
   }
 
-  function logout() { setUser(null); }
+  function logout() {
+    setUser(null);
+    localStorage.removeItem(AUTH_KEY);
+  }
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout }}>

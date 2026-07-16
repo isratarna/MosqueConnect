@@ -192,9 +192,18 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
         </li>
         <li><hr className="dropdown-divider" /></li>
         <li>
-          <a className="dropdown-item text-danger" href="#" onClick={(e) => { e.preventDefault(); onLogout(); }}>
+          <button
+            type="button"
+            className="dropdown-item text-danger"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onLogout();
+            }}
+          >
             <i className="bi bi-box-arrow-right me-2" />Logout
-          </a>
+          </button>
         </li>
       </ul>
     </li>
