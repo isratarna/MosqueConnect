@@ -15,6 +15,7 @@ import { useState } from "react";
 import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from "@react-google-maps/api";
 import { Link } from "react-router-dom";
 import { GOOGLE_MAPS_API_KEY, DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
+import VerifiedBadge from "./VerifiedBadge";
 
 export default function MapView({
   center = DEFAULT_CENTER,
@@ -112,8 +113,10 @@ function MapInner({ center, zoom, mosques, userPos, className }) {
             onCloseClick={() => setActive(null)}
           >
             <div style={{ maxWidth: 220 }}>
-              <strong>{active.name}</strong>
-              <br />
+              <div className="d-flex align-items-center gap-2 mb-1">
+                <strong>{active.name}</strong>
+                {active.verified && <VerifiedBadge />}
+              </div>
               <span style={{ color: "#666", fontSize: 12 }}>{active.address}</span>
               <br />
               <span style={{ fontSize: 12 }}>Next Jamat (Dhuhr): {active.prayer.Dhuhr} PM</span>

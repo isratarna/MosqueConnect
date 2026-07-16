@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getMosque, directionsUrl, urgencyClass } from "../data/mosques";
 import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
+import VerifiedBadge from "../components/VerifiedBadge";
 
 const DAILY_PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
@@ -46,6 +47,7 @@ export default function MosqueProfile() {
 
       <div className="d-flex flex-wrap gap-2 align-items-center mb-4">
         <span className="badge bg-success"><i className="bi bi-star-fill me-1" />{mosque.rating}</span>
+        {mosque.verified && <VerifiedBadge />}
         <span className="text-muted small"><i className="bi bi-telephone me-1" />{mosque.phone}</span>
         <div className="ms-auto d-flex gap-2">
           <a href={directionsUrl(mosque)} target="_blank" rel="noopener noreferrer" className="btn btn-mc btn-sm">

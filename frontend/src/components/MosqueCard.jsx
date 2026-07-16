@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { directionsUrl } from "../data/mosques";
 import FacilityBadge from "./FacilityBadge";
+import VerifiedBadge from "./VerifiedBadge";
 
 // A mosque result card used on the Browse page.
 export default function MosqueCard({ mosque }) {
@@ -11,8 +12,11 @@ export default function MosqueCard({ mosque }) {
     <div className="card mc-card h-100">
       <img src={mosque.photo} className="mc-card-img" alt={mosque.name} loading="lazy" />
       <div className="card-body d-flex flex-column">
-        <div className="d-flex justify-content-between align-items-start">
-          <h6 className="fw-bold mb-1">{mosque.name}</h6>
+        <div className="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <h6 className="fw-bold mb-1">{mosque.name}</h6>
+            {mosque.verified && <VerifiedBadge className="ms-0" />}
+          </div>
           <span className="badge mc-badge ms-2 text-nowrap">{mosque.distance} km</span>
         </div>
         <div className="text-muted small mb-2">

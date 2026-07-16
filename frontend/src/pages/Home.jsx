@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, directionsUrl, IMPACT_STATS } from "../data/mosques";
 import MapView from "../components/MapView";
+import VerifiedBadge from "../components/VerifiedBadge";
 
 export default function Home() {
   const origin = useGeolocation();
@@ -93,7 +94,10 @@ function NearbySection({ origin, nearby, nearest }) {
                 <div className="card mc-card mc-highlight mb-0 h-100">
                   <div className="card-body">
                     <div className="section-label mb-1">Nearest to you</div>
-                    <h5 className="fw-bold mb-1">{nearest.name}</h5>
+                    <div className="d-flex align-items-center gap-2 mb-1">
+                      <h5 className="fw-bold mb-0">{nearest.name}</h5>
+                      {nearest.verified && <VerifiedBadge />}
+                    </div>
                     <div className="text-muted small mb-2">
                       <i className="bi bi-geo-alt me-1" />{nearest.address}
                     </div>
@@ -123,7 +127,10 @@ function NearbySection({ origin, nearby, nearest }) {
                       <div className="card-body py-2 d-flex justify-content-between align-items-center">
                         <div>
                           <div className="fw-semibold text-dark">{m.name}</div>
-                          <small className="text-muted">{m.address}</small>
+                          <div className="d-flex align-items-center gap-2 mt-1">
+                            <small className="text-muted">{m.address}</small>
+                            {m.verified && <VerifiedBadge />}
+                          </div>
                         </div>
                         <span className="badge mc-badge">{m.distance} km</span>
                       </div>
