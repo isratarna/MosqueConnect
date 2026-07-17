@@ -2,9 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
-// Bootstrap CSS + icons (styling only; interactive widgets are React-driven).
+// Bootstrap CSS supplies layout and form primitives; interactive widgets are React-driven.
 import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
 import "./index.css";
 
 import App from "./App";

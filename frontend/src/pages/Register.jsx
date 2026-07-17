@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { LockKeyhole, Mail, UserPlus, UserRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
@@ -31,7 +32,7 @@ export default function Register() {
           <div className="col-md-8 col-lg-6">
             <div className="card mc-auth-card p-4 p-sm-5">
               <div className="text-center mb-4">
-                <div className="mc-feature-icon mx-auto mb-3"><i className="bi bi-person-plus" /></div>
+                <div className="mc-feature-icon mx-auto mb-3"><UserPlus size={25} aria-hidden="true" /></div>
                 <h3 className="fw-bold mb-1">Create your account</h3>
                 <p className="text-muted mb-0">Join the community and stay connected to your mosques.</p>
               </div>
@@ -40,7 +41,7 @@ export default function Register() {
                 <div className="mb-3">
                   <label className="form-label">Full name</label>
                   <div className="input-group">
-                    <span className="input-group-text"><i className="bi bi-person" /></span>
+                    <span className="input-group-text"><UserRound size={16} aria-hidden="true" /></span>
                     <input type="text" className="form-control" placeholder="Your name"
                            value={form.name} onChange={set("name")} required />
                     <div className="invalid-feedback">Please enter your name.</div>
@@ -50,7 +51,7 @@ export default function Register() {
                 <div className="mb-3">
                   <label className="form-label">Email address</label>
                   <div className="input-group">
-                    <span className="input-group-text"><i className="bi bi-envelope" /></span>
+                    <span className="input-group-text"><Mail size={16} aria-hidden="true" /></span>
                     <input type="email" className="form-control" placeholder="you@example.com"
                            value={form.email} onChange={set("email")} required />
                     <div className="invalid-feedback">Please enter a valid email.</div>
@@ -61,7 +62,7 @@ export default function Register() {
                   <div className="col-sm-6 mb-3">
                     <label className="form-label">Password</label>
                     <div className="input-group">
-                      <span className="input-group-text"><i className="bi bi-lock" /></span>
+                      <span className="input-group-text"><LockKeyhole size={16} aria-hidden="true" /></span>
                       <input type="password" className="form-control" placeholder="Min 6 chars"
                              minLength={6} value={form.password} onChange={set("password")} required />
                       <div className="invalid-feedback">At least 6 characters.</div>
@@ -70,7 +71,7 @@ export default function Register() {
                   <div className="col-sm-6 mb-3">
                     <label className="form-label">Confirm password</label>
                     <div className="input-group">
-                      <span className="input-group-text"><i className="bi bi-lock-fill" /></span>
+                      <span className="input-group-text"><LockKeyhole size={16} aria-hidden="true" /></span>
                       <input
                         type="password"
                         className={"form-control" + (validated && !passwordsMatch ? " is-invalid" : "")}

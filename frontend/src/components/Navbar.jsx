@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Bell, BellOff, Heart, Landmark, LogOut, Menu, UserRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
@@ -34,8 +35,8 @@ export default function Navbar() {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark mc-navbar sticky-top">
       <div className="container px-3 px-lg-0">
-        <Link className="navbar-brand fw-bold me-2 me-lg-0" to="/" onClick={close}>
-          <i className="bi bi-geo-alt-fill me-1" />
+        <Link className="navbar-brand mc-brand me-2 me-lg-0" to="/" onClick={close}>
+          <span className="mc-brand-mark"><Landmark size={22} strokeWidth={1.7} aria-hidden="true" /></span>
           Mosque<span className="mc-brand-accent">Connect</span>
         </Link>
         <button
@@ -45,7 +46,7 @@ export default function Navbar() {
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="navbar-toggler-icon" />
+          <Menu size={20} aria-hidden="true" />
         </button>
 
         <div className={"collapse navbar-collapse mt-1 mt-lg-0" + (open ? " show" : "")}>
@@ -66,7 +67,7 @@ export default function Navbar() {
             {!user ? (
               <>
                 <li className="nav-item ms-lg-2 mt-1 mt-lg-0">
-                  <Link className="btn btn-outline-light btn-sm w-100 w-lg-auto" to="/login" onClick={close}>Login</Link>
+                  <Link className="btn btn-outline-mc btn-sm w-100 w-lg-auto" to="/login" onClick={close}>Login</Link>
                 </li>
                 <li className="nav-item mt-1 mt-lg-0">
                   <Link className="btn btn-warning btn-sm text-dark fw-semibold w-100 w-lg-auto" to="/register" onClick={close}>
@@ -126,7 +127,7 @@ function NotificationBell({ isOpen, onToggle, onClose }) {
         title="Notifications"
         onClick={(e) => { e.preventDefault(); onToggle(); }}
       >
-        <i className="bi bi-bell fs-5" />
+        <Bell size={18} aria-hidden="true" />
       </a>
       <div
         ref={dropdownRef}
@@ -136,7 +137,7 @@ function NotificationBell({ isOpen, onToggle, onClose }) {
           <strong className="small">Notifications</strong>
         </div>
         <div className="text-center text-muted py-4 px-3">
-          <i className="bi bi-bell-slash fs-4 d-block mb-2 opacity-50" />
+          <BellOff size={24} className="d-block mx-auto mb-2 opacity-50" aria-hidden="true" />
           <span className="small">No notifications yet.</span>
         </div>
       </div>
@@ -173,7 +174,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
         aria-expanded={isOpen}
         onClick={(e) => { e.preventDefault(); onToggle(); }}
       >
-        <i className="bi bi-person-circle fs-5 me-1" />
+        <UserRound size={18} className="me-1" aria-hidden="true" />
         <span>{user.name}</span>
       </a>
       <ul
@@ -182,18 +183,18 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
       >
         <li>
           <a className="dropdown-item" href="#" onClick={(e) => { e.preventDefault(); onClose(); }}>
-            <i className="bi bi-person me-2" />My Profile
+            <UserRound size={15} className="me-2" aria-hidden="true" />My Profile
           </a>
         </li>
         <li>
           <a className="dropdown-item" href="#" onClick={(e) => { e.preventDefault(); onClose(); }}>
-            <i className="bi bi-star me-2" />Followed Mosques
+            <Heart size={15} className="me-2" aria-hidden="true" />Followed Mosques
           </a>
         </li>
         <li><hr className="dropdown-divider" /></li>
         <li>
           <a className="dropdown-item text-danger" href="#" onClick={(e) => { e.preventDefault(); onLogout(); }}>
-            <i className="bi bi-box-arrow-right me-2" />Logout
+            <LogOut size={15} className="me-2" aria-hidden="true" />Logout
           </a>
         </li>
       </ul>
