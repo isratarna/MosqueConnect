@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { Compass } from "lucide-react";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Browse from "./pages/Browse";
@@ -24,7 +25,7 @@ export default function App() {
 function NotFound() {
   return (
     <div className="container py-5 text-center">
-      <i className="bi bi-compass fs-1 text-mc" />
+      <Compass size={42} className="text-mc" aria-hidden="true" />
       <h3 className="mt-3">Page not found</h3>
       <a href="/" className="btn btn-mc mt-2">Back home</a>
     </div>

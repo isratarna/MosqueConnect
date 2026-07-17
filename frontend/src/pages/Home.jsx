@@ -1,5 +1,21 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  HandHeart,
+  Heart,
+  Landmark,
+  LocateFixed,
+  MapPin,
+  Navigation,
+  ShieldCheck,
+  SlidersHorizontal,
+  Search,
+  UsersRound,
+} from "lucide-react";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, directionsUrl, IMPACT_STATS } from "../data/mosques";
 import MapView from "../components/MapView";
@@ -21,45 +37,37 @@ export default function Home() {
 }
 
 function Hero() {
-  const features = [
-    { icon: "bi-clock-history", title: "Live Jamat times", sub: "Updated by verified admins" },
-    { icon: "bi-gender-female", title: "Women's area", sub: "Family-friendly filter" },
-    { icon: "bi-megaphone", title: "Announcements", sub: "Never miss a notice" },
-    { icon: "bi-people", title: "Community hub", sub: "Volunteer & donate" },
-  ];
   return (
-    <header className="mc-hero py-5">
-      <div className="container py-lg-4">
-        <div className="row align-items-center g-4">
-          <div className="col-lg-6">
-            <span className="badge bg-warning text-dark mb-3">Geolocation-based mosque finder</span>
-            <h1 className="display-5 fw-bold mb-3">Every nearby mosque, one Jamat time away.</h1>
-            <p className="lead mb-4">
-              MosqueConnect brings accurate Jamat times, announcements, events and
-              community support into one place — so you always know where and when to pray.
-            </p>
-            <div className="d-flex flex-wrap gap-2">
-              <Link to="/browse" className="btn btn-warning btn-lg text-dark fw-semibold">
-                <i className="bi bi-search me-1" />Browse Mosques
-              </Link>
-              <a href="#map" className="btn btn-outline-light btn-lg">
-                <i className="bi bi-geo-alt me-1" />Find Nearby
-              </a>
-            </div>
+    <header className="mc-hero">
+      <div className="container mc-hero__inner">
+        <div className="mc-hero__content">
+          <h1>Find. Connect. Pray.</h1>
+          <p className="mc-hero__copy">
+            Discover mosques near you and stay connected to your faith and community.
+          </p>
+          <div className="mc-hero__search">
+            <Link to="/browse" className="mc-hero__search-input" aria-label="Browse mosques">
+              <Search size={17} aria-hidden="true" />
+              <span>Search by mosque name, area, or city</span>
+              <SlidersHorizontal size={17} aria-hidden="true" />
+            </Link>
+            <a href="#map" className="mc-hero__nearby" title="Find nearby" aria-label="Find nearby">
+              <LocateFixed size={17} aria-hidden="true" />
+            </a>
           </div>
-          <div className="col-lg-6">
-            <div className="row g-3">
-              {features.map((f) => (
-                <div className="col-6" key={f.title}>
-                  <div className="bg-white text-dark rounded-4 p-3 shadow-sm">
-                    <i className={`bi ${f.icon} text-mc fs-3`} />
-                    <div className="fw-bold mt-2">{f.title}</div>
-                    <small className="text-muted">{f.sub}</small>
-                  </div>
-                </div>
-              ))}
-            </div>
+        </div>
+        <div className="mc-location-card">
+          <div className="mc-location-card__icon"><MapPin size={22} aria-hidden="true" /></div>
+          <div>
+            <h2>Enable your location</h2>
+            <p>Find mosques, prayer times, and nearby Islamic facilities around you.</p>
           </div>
+          <a href="#map" className="btn btn-mc w-100">
+            <LocateFixed size={16} aria-hidden="true" /> Use my location
+          </a>
+          <Link to="/browse" className="btn btn-light mc-location-card__secondary w-100">
+            Enter location manually
+          </Link>
         </div>
       </div>
     </header>
@@ -68,12 +76,17 @@ function Hero() {
 
 function NearbySection({ origin, nearby, nearest }) {
   return (
-    <section id="map" className="py-5">
+    <section id="map" className="mc-explore-section">
       <div className="container">
-        <div className="text-center mb-4">
-          <div className="section-label">Nearby</div>
-          <h2 className="fw-bold">Mosques around your location</h2>
-          <p className="text-muted mb-0">Allow location access to see the mosques closest to you.</p>
+        <div className="mc-section-heading">
+          <div>
+            <p className="mc-kicker">Explore</p>
+            <h2>Explore mosques near you</h2>
+            <p>Browse by location, distance, and facilities that matter to you.</p>
+          </div>
+          <Link to="/browse" className="btn btn-outline-mc btn-sm">
+            Browse all <ChevronRight size={15} aria-hidden="true" />
+          </Link>
         </div>
         <div className="row g-4 align-items-stretch">
           <div className="col-lg-8 d-flex">
@@ -91,27 +104,29 @@ function NearbySection({ origin, nearby, nearest }) {
             <div className="w-100 d-flex flex-column gap-3">
               {nearest && (
                 <div className="card mc-card mc-highlight mb-0 h-100">
+                  <img src={nearest.photo} className="mc-nearest-image" alt="" />
                   <div className="card-body">
-                    <div className="section-label mb-1">Nearest to you</div>
-                    <h5 className="fw-bold mb-1">{nearest.name}</h5>
+                    <div className="mc-card-eyebrow">Nearest to you</div>
+                    <h3>{nearest.name}</h3>
                     <div className="text-muted small mb-2">
-                      <i className="bi bi-geo-alt me-1" />{nearest.address}
+                      <MapPin size={14} aria-hidden="true" />{nearest.address}
                     </div>
                     <div className="d-flex align-items-center gap-3 mb-2">
-                      <span className="badge bg-success">
-                        <i className="bi bi-signpost-2 me-1" />{nearest.distance} km away
+                      <span className="mc-distance">
+                        <Navigation size={13} aria-hidden="true" />{nearest.distance} km away
                       </span>
-                      <span className="small text-muted">
-                        <i className="bi bi-star-fill text-warning me-1" />{nearest.rating}
-                      </span>
+                      <span className="small text-muted">{nearest.rating} rating</span>
                     </div>
-                    <div className="small mb-3">
-                      Next Jamat — <strong>Dhuhr {nearest.prayer.Dhuhr} PM</strong>
+                    <div className="mc-next-prayer">
+                      <span>Next Jamat</span>
+                      <strong>Dhuhr {nearest.prayer.Dhuhr} PM</strong>
                     </div>
                     <div className="d-flex gap-2">
                       <Link to={`/mosque/${nearest.id}`} className="btn btn-mc btn-sm flex-fill">View profile</Link>
                       <a href={directionsUrl(nearest)} target="_blank" rel="noopener noreferrer"
-                         className="btn btn-outline-mc btn-sm"><i className="bi bi-compass" /></a>
+                         className="btn btn-outline-mc btn-sm mc-icon-button" title="Get directions" aria-label="Get directions">
+                        <Navigation size={16} aria-hidden="true" />
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -122,7 +137,7 @@ function NearbySection({ origin, nearby, nearest }) {
                     <div className="card mc-card mb-0">
                       <div className="card-body py-2 d-flex justify-content-between align-items-center">
                         <div>
-                          <div className="fw-semibold text-dark">{m.name}</div>
+                          <div className="mc-listing-title">{m.name}</div>
                           <small className="text-muted">{m.address}</small>
                         </div>
                         <span className="badge mc-badge">{m.distance} km</span>
@@ -141,53 +156,41 @@ function NearbySection({ origin, nearby, nearest }) {
 
 function SupportSection() {
   const items = [
-    { icon: "bi-cash-coin", title: "Money Donation", desc: "Support a mosque or a specific cause securely." },
-    { icon: "bi-droplet-half", title: "Blood Donation", desc: "Respond to live blood requests or register as a donor." },
-    { icon: "bi-hand-thumbs-up", title: "Volunteer", desc: "Join events, charity drives and mosque services." },
-    { icon: "bi-box-seam", title: "Goods Donation", desc: "Donate essential goods mosques currently need." },
+    { icon: HandHeart, title: "Money Donation", desc: "Support a mosque or a specific cause securely." },
+    { icon: Heart, title: "Blood Donation", desc: "Respond to live blood requests or register as a donor." },
+    { icon: UsersRound, title: "Volunteer", desc: "Join events, charity drives and mosque services." },
+    { icon: Landmark, title: "Goods Donation", desc: "Donate essential goods mosques currently need." },
   ];
 
   return (
-    <section id="support" className="py-5 bg-light">
+    <section id="support" className="mc-support-section">
       <div className="container">
-        <div className="text-center mb-5">
-          <div className="section-label">Support</div>
-          <h2 className="fw-bold">Support the community</h2>
-          <p className="text-muted">Contribute in the way that suits you best.</p>
+        <div className="mc-support-intro">
+          <p className="mc-kicker">Support</p>
+          <h2>Support the community</h2>
+          <p>Contribute in the way that suits you best.</p>
         </div>
         <div className="row g-4">
           {items.map((it) => (
             <div className="col-md-6 col-lg-3" key={it.title}>
-              <div className="card mc-card text-center p-3 h-100">
-                <div className="mc-feature-icon mx-auto mb-3"><i className={`bi ${it.icon}`} /></div>
-                <h6 className="fw-bold">{it.title}</h6>
+              <div className="mc-support-tile h-100">
+                <div className="mc-feature-icon"><it.icon size={25} strokeWidth={1.6} aria-hidden="true" /></div>
+                <h3>{it.title}</h3>
                 <p className="text-muted small mb-0">{it.desc}</p>
               </div>
             </div>
           ))}
         </div>
-        <div className="row mt-4">
-          <div className="col-12">
-            <div className="d-flex align-items-center justify-content-center gap-2 mb-3 text-muted">
-              <div className="border-top flex-grow-1" />
-              <i className="bi bi-heart-fill text-mc" />
-              <div className="border-top flex-grow-1" />
-            </div>
-            <Link to="/support/custom" className="text-decoration-none">
-              <div className="card mc-card bg-white p-4 p-md-5 h-auto">
-                <div className="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 text-center text-md-start">
-                  <div className="d-flex align-items-center gap-3">
-                    <div className="mc-feature-icon flex-shrink-0"><i className="bi bi-heart-fill" /></div>
-                    <div>
-                      <h6 className="fw-bold mb-1">Have another way to help?</h6>
-                      <p className="text-muted small mb-0">Choose your own contribution amount and support the community in your own way.</p>
-                    </div>
-                  </div>
-                  <button type="button" className="btn btn-outline-mc btn-sm px-4">Custom Support →</button>
-                </div>
-              </div>
-            </Link>
+        <div className="mc-support-divider" aria-hidden="true"><Heart size={15} fill="currentColor" /></div>
+        <div className="mc-custom-support">
+          <div className="mc-custom-support__icon"><Heart size={24} fill="currentColor" aria-hidden="true" /></div>
+          <div className="mc-custom-support__copy">
+            <h3>Have another way to help?</h3>
+            <p>Choose your own contribution amount and support the community in your own way.</p>
           </div>
+          <Link to="/register" className="btn btn-outline-mc mc-custom-support__action">
+            Custom Support <ChevronRight size={16} aria-hidden="true" />
+          </Link>
         </div>
       </div>
     </section>
@@ -195,17 +198,25 @@ function SupportSection() {
 }
 
 function ImpactSection() {
+  const impactIcons = [Landmark, UsersRound, Heart, HandHeart];
   return (
-    <section id="impact" className="mc-impact py-5">
+    <section id="impact" className="mc-impact">
       <div className="container">
-        <div className="row text-center g-4">
-          {IMPACT_STATS.map((s) => (
-            <div className="col-6 col-lg-3" key={s.label}>
-              <i className={`bi ${s.icon}`} />
-              <div className="mc-stat-value mt-2">{s.value}</div>
-              <div className="text-white-50">{s.label}</div>
-            </div>
-          ))}
+        <div className="mc-impact__headline">
+          <h2>Stronger together, for a better community</h2>
+          <p>Your connection helps build stronger, more vibrant communities.</p>
+        </div>
+        <div className="row text-center g-0 mc-impact__stats">
+          {IMPACT_STATS.map((s, index) => {
+            const Icon = impactIcons[index];
+            return (
+              <div className="col-6 col-lg-3" key={s.label}>
+                <Icon size={22} strokeWidth={1.5} aria-hidden="true" />
+                <div className="mc-stat-value">{s.value}</div>
+                <div>{s.label}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -223,23 +234,23 @@ function AboutSection() {
       <div className="container">
         <div className="row g-5 align-items-center">
           <div className="col-lg-6">
-            <div className="section-label">About us</div>
-            <h2 className="fw-bold mb-3">Bringing scattered mosque information together</h2>
-            <p className="text-muted">
+            <p className="mc-kicker">About MosqueConnect</p>
+            <h2>Bringing scattered mosque information together</h2>
+            <p className="mc-about-copy">
               Jamat times, Jummah announcements, events and donation campaigns are usually
-              shared by word of mouth, posters, or group chats — often incomplete or outdated.
+              shared by word of mouth, posters, or group chats, often incomplete or outdated.
               MosqueConnect gives every mosque a verified profile that only approved
               administrators can edit, so the community always has one accurate source of truth.
             </p>
-            <ul className="list-unstyled">
-              <li className="mb-2"><i className="bi bi-check-circle-fill text-mc me-2" />Verified, trustworthy mosque profiles</li>
-              <li className="mb-2"><i className="bi bi-check-circle-fill text-mc me-2" />Family-friendly facility filters</li>
-              <li className="mb-2"><i className="bi bi-check-circle-fill text-mc me-2" />Notifications for the mosques you follow</li>
+            <ul className="mc-trust-list">
+              <li><ShieldCheck size={20} aria-hidden="true" />Verified, trustworthy mosque profiles</li>
+              <li><UsersRound size={20} aria-hidden="true" />Family-friendly facility filters</li>
+              <li><Clock3 size={20} aria-hidden="true" />Notifications for the mosques you follow</li>
             </ul>
           </div>
           <div className="col-lg-6">
             <div className="card mc-card p-4">
-              <h5 className="fw-bold mb-3"><i className="bi bi-envelope me-2 text-mc" />Get in touch</h5>
+              <h3 className="mc-form-title">Get in touch</h3>
               <form onSubmit={onSubmit}>
                 <div className="mb-3"><input className="form-control" placeholder="Your name" required /></div>
                 <div className="mb-3"><input type="email" className="form-control" placeholder="Your email" required /></div>

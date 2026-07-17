@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { List as ListIcon, Map as MapIcon, Search, SlidersHorizontal } from "lucide-react";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, FACILITY_META } from "../data/mosques";
+import FacilityIcon from "../components/FacilityIcon";
 import MosqueCard from "../components/MosqueCard";
 import MapView from "../components/MapView";
 
@@ -10,7 +12,7 @@ export default function Browse() {
 
   const [search, setSearch] = useState("");
   const [facilities, setFacilities] = useState(() => new Set());
-  const [maxDistance, setMaxDistance] = useState(20);
+  const [maxDistance, setMaxDistance] = useState(null);
   const [sort, setSort] = useState("distance");
   const [view, setView] = useState("list");
 
@@ -25,7 +27,7 @@ export default function Browse() {
   const clearFilters = () => {
     setSearch("");
     setFacilities(new Set());
-    setMaxDistance(20);
+    setMaxDistance(null);
     setSort("distance");
   };
 
@@ -36,7 +38,7 @@ export default function Browse() {
         const matchesSearch =
           !q || m.name.toLowerCase().includes(q) || m.address.toLowerCase().includes(q);
         const matchesFacilities = [...facilities].every((f) => m.facilities.includes(f));
-        const matchesDistance = m.distance <= maxDistance;
+        const matchesDistance = maxDistance === null || m.distance <= maxDistance;
         return matchesSearch && matchesFacilities && matchesDistance;
       })
       .sort((a, b) => {
@@ -53,7 +55,7 @@ export default function Browse() {
           <h1 className="h3 fw-bold mb-1">Browse Mosques</h1>
           <p className="mb-3 text-white-50">Find mosques that match your preferences.</p>
           <div className="input-group input-group-lg shadow-sm">
-            <span className="input-group-text bg-white border-0"><i className="bi bi-search text-mc" /></span>
+            <span className="input-group-text bg-white border-0"><Search size={18} className="text-mc" aria-hidden="true" /></span>
             <input
               type="text"
               className="form-control border-0"
@@ -73,7 +75,7 @@ export default function Browse() {
               <div className="card mc-card">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h6 className="fw-bold mb-0"><i className="bi bi-funnel me-1" />Filters</h6>
+                    <h6 className="fw-bold mb-0"><SlidersHorizontal size={16} className="me-1" aria-hidden="true" />Filters</h6>
                     <button className="btn btn-link btn-sm text-decoration-none p-0" onClick={clearFilters}>
                       Clear
                     </button>
@@ -91,7 +93,7 @@ export default function Browse() {
                           onChange={() => toggleFacility(key)}
                         />
                         <label className="form-check-label small" htmlFor={`f_${key}`}>
-                          <i className={`bi ${meta.icon} me-1 text-mc`} />
+                          <FacilityIcon facilityKey={key} size={14} className="me-1 text-mc" />
                           {meta.label}
                         </label>
                       </div>
@@ -104,10 +106,12 @@ export default function Browse() {
                     className="form-range"
                     min="1"
                     max="20"
-                    value={maxDistance}
+                    value={maxDistance ?? 20}
                     onChange={(e) => setMaxDistance(+e.target.value)}
                   />
-                  <div className="small text-muted mb-3">Within {maxDistance} km</div>
+                  <div className="small text-muted mb-3">
+                    {maxDistance === null ? "All distances" : `Within ${maxDistance} km`}
+                  </div>
 
                   <label className="form-label small fw-semibold text-uppercase text-muted">Sort by</label>
                   <select className="form-select form-select-sm" value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -128,13 +132,13 @@ export default function Browse() {
                     className={"btn btn-sm " + (view === "list" ? "btn-mc" : "btn-outline-mc")}
                     onClick={() => setView("list")}
                   >
-                    <i className="bi bi-list-ul me-1" />List
+                    <ListIcon size={15} className="me-1" aria-hidden="true" />List
                   </button>
                   <button
                     className={"btn btn-sm " + (view === "map" ? "btn-mc" : "btn-outline-mc")}
                     onClick={() => setView("map")}
                   >
-                    <i className="bi bi-map me-1" />Map
+                    <MapIcon size={15} className="me-1" aria-hidden="true" />Map
                   </button>
                 </div>
               </div>
@@ -150,7 +154,7 @@ export default function Browse() {
                   </div>
                 ) : (
                   <div className="text-center text-muted py-5">
-                    <i className="bi bi-search fs-1 d-block mb-2 opacity-50" />
+                    <Search size={42} className="d-block mx-auto mb-2 opacity-50" aria-hidden="true" />
                     No mosques match your filters. Try clearing some.
                   </div>
                 )

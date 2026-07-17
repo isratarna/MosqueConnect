@@ -1,5 +1,21 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Building2,
+  CalendarCheck,
+  CalendarDays,
+  Clock3,
+  Heart,
+  Map as MapIcon,
+  MapPin,
+  Megaphone,
+  Navigation,
+  Phone,
+  Star,
+  Sun,
+  TriangleAlert,
+} from "lucide-react";
 import { getMosque, directionsUrl, urgencyClass } from "../data/mosques";
 import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
@@ -19,10 +35,10 @@ export default function MosqueProfile() {
   if (!mosque) {
     return (
       <div className="container py-5 text-center">
-        <i className="bi bi-exclamation-triangle fs-1 text-warning" />
+        <TriangleAlert size={42} className="text-warning" aria-hidden="true" />
         <h4 className="mt-3">Mosque not found</h4>
         <p className="text-muted">This mosque doesn't exist in our demo data.</p>
-        <Link to="/browse" className="btn btn-mc"><i className="bi bi-arrow-left me-1" />Back to Browse</Link>
+        <Link to="/browse" className="btn btn-mc"><ArrowLeft size={16} aria-hidden="true" />Back to Browse</Link>
       </div>
     );
   }
@@ -40,22 +56,22 @@ export default function MosqueProfile() {
       <div className="mc-profile-hero mb-4" style={{ backgroundImage: `url('${mosque.photo}')` }}>
         <div className="mc-profile-title">
           <h1 className="h3 fw-bold mb-1">{mosque.name}</h1>
-          <div><i className="bi bi-geo-alt me-1" />{mosque.address}</div>
+          <div><MapPin size={15} className="me-1" aria-hidden="true" />{mosque.address}</div>
         </div>
       </div>
 
       <div className="d-flex flex-wrap gap-2 align-items-center mb-4">
-        <span className="badge bg-success"><i className="bi bi-star-fill me-1" />{mosque.rating}</span>
-        <span className="text-muted small"><i className="bi bi-telephone me-1" />{mosque.phone}</span>
+        <span className="badge bg-success"><Star size={13} className="me-1" fill="currentColor" aria-hidden="true" />{mosque.rating}</span>
+        <span className="text-muted small"><Phone size={14} className="me-1" aria-hidden="true" />{mosque.phone}</span>
         <div className="ms-auto d-flex gap-2">
           <a href={directionsUrl(mosque)} target="_blank" rel="noopener noreferrer" className="btn btn-mc btn-sm">
-            <i className="bi bi-compass me-1" />Get Directions
+            <Navigation size={16} aria-hidden="true" />Get Directions
           </a>
           <button
             className={"btn btn-sm " + (following ? "btn-danger" : "btn-outline-mc")}
             onClick={() => setFollowing((v) => !v)}
           >
-            <i className={"bi me-1 " + (following ? "bi-heart-fill" : "bi-heart")} />
+            <Heart size={16} fill={following ? "currentColor" : "none"} aria-hidden="true" />
             {following ? "Following" : "Follow"}
           </button>
         </div>
@@ -66,7 +82,7 @@ export default function MosqueProfile() {
           {/* prayer times */}
           <div className="card mc-card mb-4">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><i className="bi bi-clock-history text-mc me-2" />Prayer &amp; Jamat Times</h5>
+              <h5 className="fw-bold mb-3"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />Prayer &amp; Jamat Times</h5>
               <div className="row row-cols-2 row-cols-md-5 g-2">
                 {DAILY_PRAYERS.map((p) => (
                   <div className="col" key={p}>
@@ -82,7 +98,7 @@ export default function MosqueProfile() {
 
           <div className="card mc-card mb-4">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><i className="bi bi-sun text-mc me-2" />Jummah Prayer</h5>
+              <h5 className="fw-bold mb-3"><Sun size={18} className="text-mc me-2" aria-hidden="true" />Jummah Prayer</h5>
               <div className="row row-cols-1 row-cols-md-2 g-2">
                 {jummahSessions.map((session) => (
                   <div className="col" key={session.label}>
@@ -99,7 +115,7 @@ export default function MosqueProfile() {
           {/* announcements */}
           <div className="card mc-card mb-4">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><i className="bi bi-megaphone text-mc me-2" />Announcements</h5>
+              <h5 className="fw-bold mb-3"><Megaphone size={18} className="text-mc me-2" aria-hidden="true" />Announcements</h5>
               {mosque.announcements.length ? (
                 mosque.announcements.map((a, i) => (
                   <div className={`border-start border-4 border-${urgencyClass(a.urgency)} ps-3 mb-3`} key={i}>
@@ -108,7 +124,7 @@ export default function MosqueProfile() {
                       <span className={`badge bg-${urgencyClass(a.urgency)} text-uppercase`}>{a.urgency}</span>
                     </div>
                     <p className="mb-1 small text-muted">{a.body}</p>
-                    <small className="text-muted"><i className="bi bi-calendar3 me-1" />{a.date}</small>
+                    <small className="text-muted"><CalendarDays size={14} className="me-1" aria-hidden="true" />{a.date}</small>
                   </div>
                 ))
               ) : (
@@ -120,11 +136,11 @@ export default function MosqueProfile() {
           {/* events */}
           <div className="card mc-card">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><i className="bi bi-calendar-event text-mc me-2" />Events</h5>
+              <h5 className="fw-bold mb-3"><CalendarDays size={18} className="text-mc me-2" aria-hidden="true" />Events</h5>
               {mosque.events.length ? (
                 mosque.events.map((e, i) => (
                   <div className="d-flex mb-3" key={i}>
-                    <div className="mc-feature-icon me-3"><i className="bi bi-calendar-check" /></div>
+                    <div className="mc-feature-icon me-3"><CalendarCheck size={22} aria-hidden="true" /></div>
                     <div>
                       <strong>{e.title}</strong>
                       <div className="small text-mc">{e.when}</div>
@@ -142,13 +158,13 @@ export default function MosqueProfile() {
         <div className="col-lg-4">
           <div className="card mc-card mb-4">
             <div className="card-body">
-              <h6 className="fw-bold mb-3"><i className="bi bi-building-check text-mc me-2" />Facilities</h6>
+              <h6 className="fw-bold mb-3"><Building2 size={18} className="text-mc me-2" aria-hidden="true" />Facilities</h6>
               <div>{mosque.facilities.map((f) => <FacilityBadge key={f} facilityKey={f} />)}</div>
             </div>
           </div>
           <div className="card mc-card">
             <div className="card-body">
-              <h6 className="fw-bold mb-3"><i className="bi bi-map text-mc me-2" />Location</h6>
+              <h6 className="fw-bold mb-3"><MapIcon size={18} className="text-mc me-2" aria-hidden="true" />Location</h6>
               <MapView
                 center={{ lat: mosque.lat, lng: mosque.lng }}
                 zoom={15}

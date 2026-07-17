@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Camera, Globe2, Landmark, Mail, MapPin, Phone, Play, Send } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -7,7 +8,7 @@ export default function Footer() {
         <div className="row g-4">
           <div className="col-lg-4">
             <h5 className="fw-bold mb-3">
-              <i className="bi bi-geo-alt-fill me-1" />
+              <Landmark size={20} className="me-1" aria-hidden="true" />
               Mosque<span className="mc-brand-accent">Connect</span>
             </h5>
             <p className="text-white-50 mb-3">
@@ -15,10 +16,10 @@ export default function Footer() {
               announcements, events, and a hub for community life.
             </p>
             <div className="d-flex gap-2">
-              <a href="#" className="mc-social" aria-label="Facebook"><i className="bi bi-facebook" /></a>
-              <a href="#" className="mc-social" aria-label="Twitter"><i className="bi bi-twitter-x" /></a>
-              <a href="#" className="mc-social" aria-label="Instagram"><i className="bi bi-instagram" /></a>
-              <a href="#" className="mc-social" aria-label="YouTube"><i className="bi bi-youtube" /></a>
+              <a href="#" className="mc-social" aria-label="Facebook"><Globe2 size={17} aria-hidden="true" /></a>
+              <a href="#" className="mc-social" aria-label="Twitter"><Send size={17} aria-hidden="true" /></a>
+              <a href="#" className="mc-social" aria-label="Instagram"><Camera size={17} aria-hidden="true" /></a>
+              <a href="#" className="mc-social" aria-label="YouTube"><Play size={17} aria-hidden="true" /></a>
             </div>
           </div>
           <div className="col-6 col-lg-2">
@@ -42,9 +43,9 @@ export default function Footer() {
           <div className="col-lg-4">
             <h6 className="fw-semibold mb-3">Contact</h6>
             <ul className="list-unstyled text-white-50 mc-foot-contact">
-              <li><i className="bi bi-envelope me-2" />hello@mosqueconnect.example</li>
-              <li><i className="bi bi-telephone me-2" />+880 1700 000000</li>
-              <li><i className="bi bi-geo-alt me-2" />Dhaka, Bangladesh</li>
+              <li><Mail size={15} className="me-2" aria-hidden="true" />hello@mosqueconnect.example</li>
+              <li><Phone size={15} className="me-2" aria-hidden="true" />+880 1700 000000</li>
+              <li><MapPin size={15} className="me-2" aria-hidden="true" />Dhaka, Bangladesh</li>
             </ul>
           </div>
         </div>

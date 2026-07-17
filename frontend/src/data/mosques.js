@@ -7,15 +7,28 @@
  */
 
 export const FACILITY_META = {
-  women_area:  { label: "Women's Prayer Area", icon: "bi-gender-female" },
-  child_care:  { label: "Child Care",          icon: "bi-emoji-smile" },
-  wudu:        { label: "Wudu Facility",       icon: "bi-droplet" },
-  parking:     { label: "Parking",             icon: "bi-p-square" },
-  ac:          { label: "Air Conditioned",     icon: "bi-snow" },
-  wheelchair:  { label: "Wheelchair Access",   icon: "bi-universal-access" },
-  quran_class: { label: "Quran Classes",       icon: "bi-book" },
-  library:     { label: "Library",             icon: "bi-journals" },
+  women_area:  { label: "Women's Prayer Area" },
+  child_care:  { label: "Child Care" },
+  wudu:        { label: "Wudu Facility" },
+  parking:     { label: "Parking" },
+  ac:          { label: "Air Conditioned" },
+  wheelchair:  { label: "Wheelchair Access" },
+  quran_class: { label: "Quran Classes" },
+  library:     { label: "Library" },
 };
+
+const MOSQUE_IMAGES = [
+  "https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1564121211835-e88c852648ab?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1590075865003-e48277faa558?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?auto=format&fit=crop&crop=top&w=900&q=80",
+  "https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?auto=format&fit=crop&crop=top&w=900&q=80",
+];
 
 export const MOSQUES = [
   {
@@ -23,7 +36,7 @@ export const MOSQUES = [
     name: "Baitul Mukarram National Mosque",
     address: "Baitul Mukarram, Purana Paltan, Dhaka",
     lat: 23.7301, lng: 90.4125,
-    photo: "https://picsum.photos/seed/mosque1/640/400",
+    photo: MOSQUE_IMAGES[0],
     rating: 4.9,
     phone: "+880 2 9556666",
     facilities: ["women_area", "wudu", "parking", "ac", "wheelchair", "library"],
@@ -41,7 +54,7 @@ export const MOSQUES = [
     name: "Gulshan Central Mosque",
     address: "Gulshan Avenue, Gulshan 1, Dhaka",
     lat: 23.7808, lng: 90.4177,
-    photo: "https://picsum.photos/seed/mosque2/640/400",
+    photo: MOSQUE_IMAGES[1],
     rating: 4.7,
     phone: "+880 1711 000002",
     facilities: ["women_area", "child_care", "wudu", "parking", "ac", "quran_class"],
@@ -58,7 +71,7 @@ export const MOSQUES = [
     name: "Dhanmondi Jame Masjid",
     address: "Road 8, Dhanmondi, Dhaka",
     lat: 23.7461, lng: 90.3742,
-    photo: "https://picsum.photos/seed/mosque3/640/400",
+    photo: MOSQUE_IMAGES[2],
     rating: 4.6,
     phone: "+880 1711 000003",
     facilities: ["wudu", "parking", "ac", "library"],
@@ -73,7 +86,7 @@ export const MOSQUES = [
     name: "Uttara Sector 7 Mosque",
     address: "Sector 7, Uttara, Dhaka",
     lat: 23.8697, lng: 90.3990,
-    photo: "https://picsum.photos/seed/mosque4/640/400",
+    photo: MOSQUE_IMAGES[3],
     rating: 4.5,
     phone: "+880 1711 000004",
     facilities: ["women_area", "child_care", "wudu", "parking", "wheelchair"],
@@ -88,7 +101,7 @@ export const MOSQUES = [
     name: "Mirpur DOHS Jame Masjid",
     address: "Mirpur DOHS, Dhaka",
     lat: 23.8223, lng: 90.3654,
-    photo: "https://picsum.photos/seed/mosque5/640/400",
+    photo: MOSQUE_IMAGES[4],
     rating: 4.4,
     phone: "+880 1711 000005",
     facilities: ["women_area", "wudu", "parking", "ac", "quran_class", "library"],
@@ -103,7 +116,7 @@ export const MOSQUES = [
     name: "Banani Bidyaniketan Mosque",
     address: "Road 11, Banani, Dhaka",
     lat: 23.7936, lng: 90.4066,
-    photo: "https://picsum.photos/seed/mosque6/640/400",
+    photo: MOSQUE_IMAGES[5],
     rating: 4.3,
     phone: "+880 1711 000006",
     facilities: ["wudu", "ac", "wheelchair"],
@@ -116,7 +129,7 @@ export const MOSQUES = [
     name: "Mohammadpur Bihari Camp Mosque",
     address: "Mohammadpur, Dhaka",
     lat: 23.7583, lng: 90.3597,
-    photo: "https://picsum.photos/seed/mosque7/640/400",
+    photo: MOSQUE_IMAGES[6],
     rating: 4.2,
     phone: "+880 1711 000007",
     facilities: ["women_area", "child_care", "wudu"],
@@ -133,7 +146,7 @@ export const MOSQUES = [
     name: "Bashundhara Riverview Mosque",
     address: "Bashundhara R/A, Dhaka",
     lat: 23.8103, lng: 90.4370,
-    photo: "https://picsum.photos/seed/mosque8/640/400",
+    photo: MOSQUE_IMAGES[7],
     rating: 4.8,
     phone: "+880 1711 000008",
     facilities: ["women_area", "child_care", "wudu", "parking", "ac", "wheelchair", "quran_class", "library"],
@@ -148,7 +161,7 @@ export const MOSQUES = [
     name: "Motijheel Ideal Mosque",
     address: "Motijheel C/A, Dhaka",
     lat: 23.7270, lng: 90.4180,
-    photo: "https://picsum.photos/seed/mosque9/640/400",
+    photo: MOSQUE_IMAGES[8],
     rating: 4.1,
     phone: "+880 1711 000009",
     facilities: ["wudu", "parking"],
@@ -161,7 +174,7 @@ export const MOSQUES = [
     name: "Old Dhaka Chawkbazar Shahi Mosque",
     address: "Chawkbazar, Old Dhaka",
     lat: 23.7139, lng: 90.3960,
-    photo: "https://picsum.photos/seed/mosque10/640/400",
+    photo: MOSQUE_IMAGES[9],
     rating: 4.6,
     phone: "+880 1711 000010",
     facilities: ["wudu", "library", "quran_class"],
@@ -176,10 +189,10 @@ export const MOSQUES = [
 ];
 
 export const IMPACT_STATS = [
-  { icon: "bi-geo-alt-fill",   value: "120+",  label: "Mosques Connected" },
-  { icon: "bi-people-fill",    value: "8,400", label: "Community Members" },
-  { icon: "bi-heart-fill",     value: "৳2.1M", label: "Donations Facilitated" },
-  { icon: "bi-hand-thumbs-up", value: "560",   label: "Active Volunteers" },
+  { value: "120+",  label: "Mosques Connected" },
+  { value: "8,400", label: "Community Members" },
+  { value: "৳2.1M", label: "Donations Facilitated" },
+  { value: "560",   label: "Active Volunteers" },
 ];
 
 /* ---------- helpers ---------- */
