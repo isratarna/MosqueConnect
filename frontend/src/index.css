@@ -373,11 +373,30 @@ main { min-height: 70vh; }
 .mc-icon-button { aspect-ratio: 1; padding: 0.3rem; width: 34px; }
 .mc-listing-title { color: var(--mc-ink); font-size: 0.76rem; font-weight: 700; }
 
-.mc-support-section { background: rgba(245, 239, 232, 0.65); border-bottom: 1px solid rgba(124, 102, 83, 0.12); border-top: 1px solid rgba(124, 102, 83, 0.12); padding: 3.8rem 0; }
-.mc-support-intro { margin-bottom: 1.35rem; max-width: 310px; }
-.mc-support-tile { background: rgba(255, 254, 252, 0.58); border: 1px solid var(--mc-line); border-radius: 8px; padding: 1.25rem; }
-.mc-support-tile .mc-feature-icon { height: 46px; margin-bottom: 1rem; width: 46px; }
-.mc-support-tile h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.55rem; }
+.mc-support-section { background: rgba(245, 239, 232, 0.65); border-bottom: 1px solid rgba(124, 102, 83, 0.12); border-top: 1px solid rgba(124, 102, 83, 0.12); padding: 4.2rem 0 3.6rem; }
+.mc-support-intro { margin: 0 auto 2.6rem; max-width: 430px; text-align: center; }
+.mc-support-intro .mc-kicker { margin-bottom: 0.45rem; }
+.mc-support-intro h2 { font-family: "Manrope", sans-serif; font-size: clamp(1.8rem, 3vw, 2.45rem); font-weight: 700; margin-bottom: 0.45rem; }
+.mc-support-intro p { font-size: 0.82rem; }
+.mc-support-tile { align-items: center; background: rgba(255, 254, 252, 0.82); border: 1px solid rgba(124, 102, 83, 0.1); border-radius: 8px; box-shadow: 0 7px 18px rgba(53, 39, 29, 0.06); display: flex; flex-direction: column; justify-content: center; min-height: 174px; padding: 1.45rem 1.2rem; text-align: center; transition: box-shadow 180ms ease, transform 180ms ease; }
+.mc-support-tile:hover { box-shadow: 0 16px 30px rgba(53, 39, 29, 0.14); transform: scale(1.045); }
+.mc-support-tile .mc-feature-icon { height: 52px; margin-bottom: 0.95rem; width: 52px; }
+.mc-support-tile h3 { font-family: "Manrope", sans-serif; font-size: 0.94rem; font-weight: 700; margin-bottom: 0.45rem; }
+.mc-support-tile p { color: var(--mc-muted) !important; font-size: 0.72rem !important; line-height: 1.6; max-width: 210px; }
+.mc-support-divider { align-items: center; color: var(--mc-rust); display: flex; gap: 0.8rem; margin: 2rem 0 1.6rem; }
+.mc-support-divider::before, .mc-support-divider::after { background: var(--mc-line); content: ""; flex: 1; height: 1px; }
+.mc-support-divider svg { flex: 0 0 auto; }
+.mc-custom-support { align-items: center; background: rgba(255, 254, 252, 0.84); border: 1px solid rgba(124, 102, 83, 0.1); border-radius: 8px; box-shadow: 0 9px 24px rgba(53, 39, 29, 0.08); display: flex; gap: 1rem; min-height: 118px; padding: 1.25rem 1.55rem; }
+.mc-custom-support__icon { align-items: center; background: #fbebe3; border-radius: 50%; color: var(--mc-rust); display: flex; flex: 0 0 auto; height: 52px; justify-content: center; width: 52px; }
+.mc-custom-support__copy { flex: 1; }
+.mc-custom-support h3 { font-family: "Manrope", sans-serif; font-size: 0.92rem; font-weight: 700; margin: 0 0 0.3rem; }
+.mc-custom-support p { color: var(--mc-muted); font-size: 0.72rem; margin: 0; }
+.mc-custom-support__action { flex: 0 0 auto; min-width: 166px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-support-tile { transition: none; }
+  .mc-support-tile:hover { transform: none; }
+}
 
 .mc-impact { background: transparent; color: var(--mc-ink); padding: 3.5rem 0; }
 .mc-impact .container { align-items: center; background: rgba(255, 254, 252, 0.55); border: 1px solid var(--mc-line); border-radius: 9px; display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1.25fr) minmax(0, 2fr); padding: 1.4rem 1.7rem; }
@@ -414,6 +433,10 @@ main { min-height: 70vh; }
   .mc-hero__search { max-width: none; }
   .mc-section-heading { align-items: flex-start; flex-direction: column; gap: 0.9rem; }
   .mc-explore-section, .mc-support-section { padding: 2.8rem 0; }
+  .mc-support-intro { margin-bottom: 1.8rem; }
+  .mc-support-tile { min-height: 158px; }
+  .mc-custom-support { align-items: flex-start; flex-wrap: wrap; padding: 1.15rem; }
+  .mc-custom-support__action { margin-left: 68px; width: calc(100% - 68px); }
   .mc-impact { padding: 2.8rem 0; }
   .mc-impact .container { padding: 1.2rem; }
   .mc-impact__stats > div:nth-child(3) { border-left: 0; }

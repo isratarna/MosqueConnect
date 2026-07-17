@@ -156,19 +156,19 @@ function NearbySection({ origin, nearby, nearest }) {
 
 function SupportSection() {
   const items = [
-    { icon: HandHeart, title: "Prayer Times", desc: "Accurate prayer times for your location." },
-    { icon: BookOpen, title: "Quran & Duas", desc: "Read, listen, and reflect with authentic content." },
-    { icon: CalendarDays, title: "Events & Programs", desc: "Stay updated with local events and activities." },
-    { icon: Heart, title: "Give & Support", desc: "Contribute and support your local community." },
+    { icon: HandHeart, title: "Money Donation", desc: "Support a mosque or a specific cause securely." },
+    { icon: Heart, title: "Blood Donation", desc: "Respond to live blood requests or register as a donor." },
+    { icon: UsersRound, title: "Volunteer", desc: "Join events, charity drives and mosque services." },
+    { icon: Landmark, title: "Goods Donation", desc: "Donate essential goods mosques currently need." },
   ];
 
   return (
     <section id="support" className="mc-support-section">
       <div className="container">
         <div className="mc-support-intro">
-          <p className="mc-kicker">Stay connected</p>
-          <h2>We&apos;re here to support your journey</h2>
-          <p>Everything you need to grow spiritually and stay connected.</p>
+          <p className="mc-kicker">Support</p>
+          <h2>Support the community</h2>
+          <p>Contribute in the way that suits you best.</p>
         </div>
         <div className="row g-4">
           {items.map((it) => (
@@ -180,6 +180,17 @@ function SupportSection() {
               </div>
             </div>
           ))}
+        </div>
+        <div className="mc-support-divider" aria-hidden="true"><Heart size={15} fill="currentColor" /></div>
+        <div className="mc-custom-support">
+          <div className="mc-custom-support__icon"><Heart size={24} fill="currentColor" aria-hidden="true" /></div>
+          <div className="mc-custom-support__copy">
+            <h3>Have another way to help?</h3>
+            <p>Choose your own contribution amount and support the community in your own way.</p>
+          </div>
+          <Link to="/register" className="btn btn-outline-mc mc-custom-support__action">
+            Custom Support <ChevronRight size={16} aria-hidden="true" />
+          </Link>
         </div>
       </div>
     </section>
