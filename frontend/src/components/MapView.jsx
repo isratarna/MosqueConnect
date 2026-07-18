@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from "@react-google-maps/api";
 import { Link } from "react-router-dom";
+import { LoaderCircle, Map, TriangleAlert } from "lucide-react";
 import { GOOGLE_MAPS_API_KEY, DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
 import VerifiedBadge from "./VerifiedBadge";
 
@@ -29,7 +30,7 @@ export default function MapView({
     return (
       <div className={className}>
         <div className="mc-map-placeholder">
-          <i className="bi bi-map" />
+          <Map size={46} aria-hidden="true" />
           <p className="fw-semibold mb-1 mt-2">Interactive map ready</p>
           <p className="mb-0 small">
             Add your Google Maps API key to <code>.env</code> to enable it.
@@ -60,7 +61,7 @@ function MapInner({ center, zoom, mosques, userPos, className }) {
     return (
       <div className={className}>
         <div className="mc-map-placeholder">
-          <i className="bi bi-exclamation-triangle" />
+          <TriangleAlert size={42} aria-hidden="true" />
           <p className="mb-0 small mt-2">Could not load Google Maps. Check your API key.</p>
         </div>
       </div>
@@ -70,7 +71,7 @@ function MapInner({ center, zoom, mosques, userPos, className }) {
     return (
       <div className={className}>
         <div className="mc-map-placeholder">
-          <div className="spinner-border text-mc" role="status" />
+          <LoaderCircle className="text-mc spin" size={32} aria-label="Loading map" />
           <p className="mb-0 small mt-2">Loading map…</p>
         </div>
       </div>
