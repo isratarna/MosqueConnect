@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { List as ListIcon, Map as MapIcon, MapPin, Search, SlidersHorizontal } from "lucide-react";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, FACILITY_META } from "../data/mosques";
 import FacilityIcon from "../components/FacilityIcon";
 import MosqueCard from "../components/MosqueCard";
 import MapView from "../components/MapView";
+import Pagination from "../components/Pagination";
 
 export default function Browse() {
   const origin = useGeolocation();
@@ -17,6 +18,8 @@ export default function Browse() {
   const [view, setView] = useState("list");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedArea, setSelectedArea] = useState("");
+  const [pageSize, setPageSize] = useState(9);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Derive unique districts and areas from the mosque data.
   const locationOptions = useMemo(() => {
@@ -85,6 +88,29 @@ export default function Browse() {
         return a.distance - b.distance;
       });
   }, [all, search, facilities, maxDistance, sort, selectedDistrict, selectedArea]);
+
+  // Reset currentPage to 1 when filters or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, facilities, maxDistance, sort, selectedDistrict, selectedArea, pageSize]);
+
+  const totalResults = results.length;
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(totalResults / pageSize));
+  }, [totalResults, pageSize]);
+
+  const paginatedResults = useMemo(() => {
+    return results.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [results, currentPage, pageSize]);
+
+  const startIndex = useMemo(() => {
+    return totalResults === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  }, [currentPage, pageSize, totalResults]);
+
+  const endIndex = useMemo(() => {
+    return Math.min(currentPage * pageSize, totalResults);
+  }, [currentPage, pageSize, totalResults]);
 
   return (
     <>
@@ -206,28 +232,49 @@ export default function Browse() {
 
             {/* Results */}
             <div className="col-lg-9">
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="text-muted">{results.length} mosques found</div>
-                <div className="btn-group" role="group" aria-label="View toggle">
-                  <button
-                    className={"btn btn-sm " + (view === "list" ? "btn-mc" : "btn-outline-mc")}
-                    onClick={() => setView("list")}
-                  >
-                    <ListIcon size={15} className="me-1" aria-hidden="true" />List
-                  </button>
-                  <button
-                    className={"btn btn-sm " + (view === "map" ? "btn-mc" : "btn-outline-mc")}
-                    onClick={() => setView("map")}
-                  >
-                    <MapIcon size={15} className="me-1" aria-hidden="true" />Map
-                  </button>
+              <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+                <div className="text-muted">
+                  {totalResults === 0
+                    ? "Showing 0 of 0 mosques"
+                    : `Showing ${startIndex}–${endIndex} of ${totalResults} mosques`}
+                </div>
+                <div className="d-flex flex-wrap align-items-center gap-2">
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="text-muted small text-nowrap">Results per page:</span>
+                    <select
+                      className="form-select form-select-sm"
+                      style={{ width: "auto" }}
+                      value={pageSize}
+                      onChange={(e) => setPageSize(Number(e.target.value))}
+                      aria-label="Results per page"
+                    >
+                      <option value={6}>6 results</option>
+                      <option value={9}>9 results</option>
+                      <option value={12}>12 results</option>
+                      <option value={18}>18 results</option>
+                    </select>
+                  </div>
+                  <div className="btn-group" role="group" aria-label="View toggle">
+                    <button
+                      className={"btn btn-sm " + (view === "list" ? "btn-mc" : "btn-outline-mc")}
+                      onClick={() => setView("list")}
+                    >
+                      <ListIcon size={15} className="me-1" aria-hidden="true" />List
+                    </button>
+                    <button
+                      className={"btn btn-sm " + (view === "map" ? "btn-mc" : "btn-outline-mc")}
+                      onClick={() => setView("map")}
+                    >
+                      <MapIcon size={15} className="me-1" aria-hidden="true" />Map
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {view === "list" ? (
                 results.length ? (
                   <div className="row g-3">
-                    {results.map((m) => (
+                    {paginatedResults.map((m) => (
                       <div className="col-md-6" key={m.id}>
                         <MosqueCard mosque={m} />
                       </div>
@@ -243,8 +290,16 @@ export default function Browse() {
                 <MapView
                   center={origin}
                   zoom={12}
-                  mosques={results}
+                  mosques={paginatedResults}
                   userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
+                />
+              )}
+
+              {results.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
                 />
               )}
             </div>
