@@ -165,6 +165,9 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  const isAdminApproved = user.role === "mosque_admin" && user.status === "approved";
+  const isAdminPending = user.role === "mosque_admin" && user.status === "pending";
+
   return (
     <li className="nav-item dropdown" ref={wrapperRef}>
       <a
@@ -175,25 +178,69 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
         onClick={(e) => { e.preventDefault(); onToggle(); }}
       >
         <UserRound size={18} className="me-1" aria-hidden="true" />
-        <span>{user.name}</span>
+        <span>
+          {user.name}
+          {isAdminApproved && (
+            <span className="badge bg-success-subtle text-success border border-success-subtle ms-1" style={{ fontSize: "10px" }}>
+              Admin
+            </span>
+          )}
+          {isAdminPending && (
+            <span className="badge bg-warning-subtle text-warning border border-warning-subtle text-dark ms-1" style={{ fontSize: "10px" }}>
+              Pending
+            </span>
+          )}
+        </span>
       </a>
       <ul
         ref={dropdownRef}
         className={"dropdown-menu dropdown-menu-end" + (isOpen ? " show" : "")}
       >
+        {/* User identity header */}
+        <li className="px-3 py-2 border-bottom">
+          <div className="fw-bold small">{user.fullName || user.name}</div>
+          <div className="text-muted" style={{ fontSize: "11px" }}>
+            {user.role === "mosque_admin" ? (
+              <div className="mt-0.5">
+                <div>Admin: <strong>{user.mosqueName}</strong></div>
+                <div className="mt-1">
+                  Status:{" "}
+                  <span className={`badge py-0.5 px-1 bg-${user.status === "approved" ? "success" : user.status === "rejected" ? "danger" : "warning text-dark"}`}>
+                    {user.status}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <span>Community Member</span>
+            )}
+          </div>
+        </li>
+
         <li>
-          <a className="dropdown-item" href="#" onClick={(e) => { e.preventDefault(); onClose(); }}>
+          <Link className="dropdown-item d-flex align-items-center" to="/profile" onClick={onClose}>
             <UserRound size={15} className="me-2" aria-hidden="true" />My Profile
-          </a>
+          </Link>
         </li>
         <li>
-          <a className="dropdown-item" href="#" onClick={(e) => { e.preventDefault(); onClose(); }}>
+          <Link className="dropdown-item d-flex align-items-center" to="/profile" onClick={onClose}>
             <Heart size={15} className="me-2" aria-hidden="true" />Followed Mosques
-          </a>
+          </Link>
         </li>
+
+        {isAdminApproved && (
+          <>
+            <li><hr className="dropdown-divider" /></li>
+            <li>
+              <Link className="dropdown-item d-flex align-items-center text-success fw-bold" to="/admin/dashboard" onClick={onClose}>
+                <Landmark size={15} className="me-2" aria-hidden="true" />Mosque Dashboard
+              </Link>
+            </li>
+          </>
+        )}
+
         <li><hr className="dropdown-divider" /></li>
         <li>
-          <a className="dropdown-item text-danger" href="#" onClick={(e) => { e.preventDefault(); onLogout(); }}>
+          <a className="dropdown-item d-flex align-items-center text-danger" href="#" onClick={(e) => { e.preventDefault(); onLogout(); }}>
             <LogOut size={15} className="me-2" aria-hidden="true" />Logout
           </a>
         </li>

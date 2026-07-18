@@ -30,7 +30,7 @@ const MOSQUE_IMAGES = [
   "https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?auto=format&fit=crop&crop=top&w=900&q=80",
 ];
 
-export const MOSQUES = [
+const DEFAULT_MOSQUES = [
   {
     id: 1,
     name: "Baitul Mukarram National Mosque",
@@ -207,6 +207,52 @@ export const MOSQUES = [
     ],
   },
 ];
+
+export function getMergedMosques() {
+  try {
+    const custom = localStorage.getItem("mc_custom_mosques");
+    if (!custom) return DEFAULT_MOSQUES;
+    const parsed = JSON.parse(custom);
+    const merged = [...DEFAULT_MOSQUES];
+    parsed.forEach((item) => {
+      const idx = merged.findIndex((m) => m.id === item.id);
+      if (idx !== -1) {
+        merged[idx] = { ...merged[idx], ...item };
+      } else {
+        merged.push(item);
+      }
+    });
+    return merged;
+  } catch (e) {
+    return DEFAULT_MOSQUES;
+  }
+}
+
+export const MOSQUES = [];
+MOSQUES.push(...getMergedMosques());
+
+export function saveMosqueToLocal(updatedMosque) {
+  try {
+    const custom = JSON.parse(localStorage.getItem("mc_custom_mosques") || "[]");
+    const idx = custom.findIndex((m) => m.id === updatedMosque.id);
+    if (idx !== -1) {
+      custom[idx] = updatedMosque;
+    } else {
+      custom.push(updatedMosque);
+    }
+    localStorage.setItem("mc_custom_mosques", JSON.stringify(custom));
+
+    // Update in-memory MOSQUES array in place
+    const inMemIdx = MOSQUES.findIndex((m) => m.id === updatedMosque.id);
+    if (inMemIdx !== -1) {
+      MOSQUES[inMemIdx] = updatedMosque;
+    } else {
+      MOSQUES.push(updatedMosque);
+    }
+  } catch (e) {
+    console.error("Failed to save mosque changes", e);
+  }
+}
 
 export const IMPACT_STATS = [
   { value: "120+",  label: "Mosques Connected" },
