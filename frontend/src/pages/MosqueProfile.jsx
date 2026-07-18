@@ -19,6 +19,7 @@ import {
 import { getMosque, directionsUrl, urgencyClass } from "../data/mosques";
 import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
+import VerifiedBadge from "../components/VerifiedBadge";
 
 const DAILY_PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
@@ -62,6 +63,7 @@ export default function MosqueProfile() {
 
       <div className="d-flex flex-wrap gap-2 align-items-center mb-4">
         <span className="badge bg-success"><Star size={13} className="me-1" fill="currentColor" aria-hidden="true" />{mosque.rating}</span>
+        {mosque.verified && <VerifiedBadge />}
         <span className="text-muted small"><Phone size={14} className="me-1" aria-hidden="true" />{mosque.phone}</span>
         <div className="ms-auto d-flex gap-2">
           <a href={directionsUrl(mosque)} target="_blank" rel="noopener noreferrer" className="btn btn-mc btn-sm">

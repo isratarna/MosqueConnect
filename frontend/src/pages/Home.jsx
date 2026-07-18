@@ -19,6 +19,7 @@ import {
 import { useGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, directionsUrl, IMPACT_STATS } from "../data/mosques";
 import MapView from "../components/MapView";
+import VerifiedBadge from "../components/VerifiedBadge";
 
 export default function Home() {
   const origin = useGeolocation();
@@ -106,8 +107,11 @@ function NearbySection({ origin, nearby, nearest }) {
                 <div className="card mc-card mc-highlight mb-0 h-100">
                   <img src={nearest.photo} className="mc-nearest-image" alt="" />
                   <div className="card-body">
-                    <div className="mc-card-eyebrow">Nearest to you</div>
-                    <h3>{nearest.name}</h3>
+                    <div className="section-label mb-1">Nearest to you</div>
+                    <div className="d-flex align-items-center gap-2 mb-1">
+                      <h5 className="fw-bold mb-0">{nearest.name}</h5>
+                      {nearest.verified && <VerifiedBadge />}
+                    </div>
                     <div className="text-muted small mb-2">
                       <MapPin size={14} aria-hidden="true" />{nearest.address}
                     </div>
@@ -138,7 +142,10 @@ function NearbySection({ origin, nearby, nearest }) {
                       <div className="card-body py-2 d-flex justify-content-between align-items-center">
                         <div>
                           <div className="mc-listing-title">{m.name}</div>
-                          <small className="text-muted">{m.address}</small>
+                          <div className="d-flex align-items-center gap-2 mt-1">
+                            <small className="text-muted">{m.address}</small>
+                            {m.verified && <VerifiedBadge />}
+                          </div>
                         </div>
                         <span className="badge mc-badge">{m.distance} km</span>
                       </div>
