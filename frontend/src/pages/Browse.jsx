@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { List as ListIcon, Map as MapIcon, Search, SlidersHorizontal } from "lucide-react";
+import { List as ListIcon, Map as MapIcon, MapPin, Search, SlidersHorizontal } from "lucide-react";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, FACILITY_META } from "../data/mosques";
 import FacilityIcon from "../components/FacilityIcon";
@@ -15,6 +15,33 @@ export default function Browse() {
   const [maxDistance, setMaxDistance] = useState(null);
   const [sort, setSort] = useState("distance");
   const [view, setView] = useState("list");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedArea, setSelectedArea] = useState("");
+
+  // Derive unique districts and areas from the mosque data.
+  const locationOptions = useMemo(() => {
+    const districtSet = new Set(all.map((m) => m.district));
+    const districts = [...districtSet].sort();
+
+    const areasByDistrict = {};
+    for (const m of all) {
+      if (!areasByDistrict[m.district]) areasByDistrict[m.district] = new Set();
+      areasByDistrict[m.district].add(m.area);
+    }
+    const areas = {};
+    for (const [d, s] of Object.entries(areasByDistrict)) {
+      areas[d] = [...s].sort();
+    }
+
+    return { districts, areas };
+  }, [all]);
+
+  // Reset area when district changes.
+  const handleDistrictChange = (e) => {
+    const newDistrict = e.target.value;
+    setSelectedDistrict(newDistrict);
+    setSelectedArea("");
+  };
 
   const toggleFacility = (key) => {
     setFacilities((prev) => {
@@ -29,6 +56,13 @@ export default function Browse() {
     setFacilities(new Set());
     setMaxDistance(null);
     setSort("distance");
+    setSelectedDistrict("");
+    setSelectedArea("");
+  };
+
+  const clearLocation = () => {
+    setSelectedDistrict("");
+    setSelectedArea("");
   };
 
   const results = useMemo(() => {
@@ -39,14 +73,18 @@ export default function Browse() {
           !q || m.name.toLowerCase().includes(q) || m.address.toLowerCase().includes(q);
         const matchesFacilities = [...facilities].every((f) => m.facilities.includes(f));
         const matchesDistance = maxDistance === null || m.distance <= maxDistance;
-        return matchesSearch && matchesFacilities && matchesDistance;
+        const matchesDistrict =
+          !selectedDistrict || m.district === selectedDistrict;
+        const matchesArea =
+          !selectedArea || m.area === selectedArea;
+        return matchesSearch && matchesFacilities && matchesDistance && matchesDistrict && matchesArea;
       })
       .sort((a, b) => {
         if (sort === "rating") return b.rating - a.rating;
         if (sort === "name") return a.name.localeCompare(b.name);
         return a.distance - b.distance;
       });
-  }, [all, search, facilities, maxDistance, sort]);
+  }, [all, search, facilities, maxDistance, sort, selectedDistrict, selectedArea]);
 
   return (
     <>
@@ -80,6 +118,49 @@ export default function Browse() {
                       Clear
                     </button>
                   </div>
+
+                  {/* Location filter */}
+                  <label className="form-label small fw-semibold text-uppercase text-muted mb-2">
+                    <MapPin size={13} className="me-1" aria-hidden="true" />Location
+                  </label>
+                  <div className="mb-3">
+                    <select
+                      className="form-select form-select-sm mb-2"
+                      value={selectedDistrict}
+                      onChange={handleDistrictChange}
+                      aria-label="Select district"
+                    >
+                      <option value="">All districts</option>
+                      {locationOptions.districts.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+
+                    <select
+                      className="form-select form-select-sm"
+                      value={selectedArea}
+                      onChange={(e) => setSelectedArea(e.target.value)}
+                      disabled={!selectedDistrict}
+                      aria-label="Select area"
+                    >
+                      <option value="">All areas</option>
+                      {selectedDistrict &&
+                        locationOptions.areas[selectedDistrict]?.map((a) => (
+                          <option key={a} value={a}>{a}</option>
+                        ))}
+                    </select>
+
+                    {(selectedDistrict || selectedArea) && (
+                      <button
+                        className="btn btn-link btn-sm text-decoration-none p-0 mt-1"
+                        onClick={clearLocation}
+                      >
+                        Clear Location
+                      </button>
+                    )}
+                  </div>
+
+                  <hr className="my-3" />
 
                   <label className="form-label small fw-semibold text-uppercase text-muted">Facilities</label>
                   <div className="mb-3">
