@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { CircleAlert, Eye, EyeOff, Info, LockKeyhole, LogIn, Mail } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
@@ -33,7 +34,7 @@ export default function Login() {
           <div className="col-md-8 col-lg-5">
             <div className="card mc-auth-card p-4 p-sm-5">
               <div className="text-center mb-4">
-                <div className="mc-feature-icon mx-auto mb-3"><i className="bi bi-box-arrow-in-right" /></div>
+                <div className="mc-feature-icon mx-auto mb-3"><LogIn size={25} aria-hidden="true" /></div>
                 <h3 className="fw-bold mb-1">Welcome back</h3>
                 <p className="text-muted mb-0">Log in to follow mosques and get updates.</p>
               </div>
@@ -41,14 +42,14 @@ export default function Login() {
               <form className={validated ? "was-validated" : ""} noValidate onSubmit={onSubmit}>
                 {error && (
                   <div className="alert alert-danger py-2 small">
-                    <i className="bi bi-exclamation-triangle me-1" />{error}
+                    <CircleAlert size={15} className="me-1" aria-hidden="true" />{error}
                   </div>
                 )}
 
                 <div className="mb-3">
                   <label className="form-label">Email address</label>
                   <div className="input-group">
-                    <span className="input-group-text"><i className="bi bi-envelope" /></span>
+                    <span className="input-group-text"><Mail size={16} aria-hidden="true" /></span>
                     <input
                       type="email"
                       className="form-control"
@@ -64,7 +65,7 @@ export default function Login() {
                 <div className="mb-3">
                   <label className="form-label">Password</label>
                   <div className="input-group">
-                    <span className="input-group-text"><i className="bi bi-lock" /></span>
+                    <span className="input-group-text"><LockKeyhole size={16} aria-hidden="true" /></span>
                     <input
                       type={showPw ? "text" : "password"}
                       className="form-control"
@@ -75,7 +76,7 @@ export default function Login() {
                       required
                     />
                     <button className="btn btn-outline-secondary" type="button" onClick={() => setShowPw((v) => !v)}>
-                      <i className={"bi " + (showPw ? "bi-eye-slash" : "bi-eye")} />
+                      {showPw ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
                     </button>
                     <div className="invalid-feedback">Password must be at least 6 characters.</div>
                   </div>
@@ -92,7 +93,7 @@ export default function Login() {
                 </div>
 
                 <div className="alert alert-light border small mb-3">
-                  <i className="bi bi-info-circle text-mc me-1" />
+                  <Info size={15} className="text-mc me-1" aria-hidden="true" />
                   <strong>Demo account:</strong> hello123@gmail.com / hello1234
                 </div>
 
