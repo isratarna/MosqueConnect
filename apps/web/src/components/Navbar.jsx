@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, BellOff, Heart, Landmark, LogOut, Menu, UserRound } from "lucide-react";
+import { Bell, BellOff, Heart, LogOut, Menu, UserRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import logo from "../assets/Logo.png";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -36,8 +37,10 @@ export default function Navbar() {
     <nav className="navbar navbar-expand-lg navbar-dark mc-navbar sticky-top">
       <div className="container px-3 px-lg-0">
         <Link className="navbar-brand mc-brand me-2 me-lg-0" to="/" onClick={close}>
-          <span className="mc-brand-mark"><Landmark size={22} strokeWidth={1.7} aria-hidden="true" /></span>
-          Mosque<span className="mc-brand-accent">Connect</span>
+          <img src={logo} alt="MosqueConnect logo" className="mc-brand-logo me-2" />
+          <span className="mc-brand-title">
+            Mosque<span className="mc-brand-accent">Connect</span>
+          </span>
         </Link>
         <button
           className="navbar-toggler ms-2 ms-lg-0"
