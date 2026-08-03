@@ -299,7 +299,9 @@ main { min-height: 70vh; }
 .mc-navbar .navbar-toggler-icon { filter: invert(18%); }
 .mc-brand { align-items: center; color: var(--mc-ink); display: inline-flex; font-family: "Playfair Display", Georgia, serif; font-size: 1.08rem; gap: 0.45rem; letter-spacing: 0; }
 .mc-brand:hover { color: var(--mc-ink); }
-.mc-brand-mark { color: var(--mc-rust); display: inline-flex; }
+.mc-brand-logo,
+.mc-footer-logo { max-height: 34px; width: auto; display: inline-block; }
+.mc-brand-title { display: inline-flex; align-items: center; gap: 0.15rem; }
 .mc-brand-accent { color: var(--mc-rust); }
 .mc-notif-menu { border-color: var(--mc-line); border-radius: 8px; box-shadow: 0 12px 28px rgba(41, 31, 22, 0.14); }
 

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Camera, Globe2, Landmark, Mail, MapPin, Phone, Play, Send } from "lucide-react";
+import { Camera, Globe2, Mail, MapPin, Phone, Play, Send } from "lucide-react";
+import logo from "../assets/Logo.png";
 
 export default function Footer() {
   return (
@@ -7,8 +8,8 @@ export default function Footer() {
       <div className="container">
         <div className="row g-4">
           <div className="col-lg-4">
-            <h5 className="fw-bold mb-3">
-              <Landmark size={20} className="me-1" aria-hidden="true" />
+            <h5 className="fw-bold mb-3 d-flex align-items-center gap-2">
+              <img src={logo} alt="MosqueConnect logo" className="mc-footer-logo" />
               Mosque<span className="mc-brand-accent">Connect</span>
             </h5>
             <p className="text-white-50 mb-3">
