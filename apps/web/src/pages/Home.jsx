@@ -163,10 +163,10 @@ function NearbySection({ origin, nearby, nearest }) {
 
 function SupportSection() {
   const items = [
-    { icon: HandHeart, title: "Money Donation", desc: "Support a mosque or a specific cause securely." },
-    { icon: Heart, title: "Blood Donation", desc: "Respond to live blood requests or register as a donor." },
-    { icon: UsersRound, title: "Volunteer", desc: "Join events, charity drives and mosque services." },
-    { icon: Landmark, title: "Goods Donation", desc: "Donate essential goods mosques currently need." },
+    { icon: HandHeart, title: "Money Donation", type: "money", desc: "Support a mosque or a specific cause securely." },
+    { icon: Heart, title: "Blood Donation", type: "blood", desc: "Respond to live blood requests or register as a donor." },
+    { icon: UsersRound, title: "Volunteer", type: "volunteer", desc: "Join events, charity drives and mosque services." },
+    { icon: Landmark, title: "Goods Donation", type: "goods", desc: "Donate essential goods mosques currently need." },
   ];
 
   return (
@@ -180,11 +180,11 @@ function SupportSection() {
         <div className="row g-4">
           {items.map((it) => (
             <div className="col-md-6 col-lg-3" key={it.title}>
-              <div className="mc-support-tile h-100">
+              <Link to={`/support?type=${it.type}#${it.type}`} className="mc-support-tile h-100">
                 <div className="mc-feature-icon"><it.icon size={25} strokeWidth={1.6} aria-hidden="true" /></div>
                 <h3>{it.title}</h3>
                 <p className="text-muted small mb-0">{it.desc}</p>
-              </div>
+              </Link>
             </div>
           ))}
         </div>
@@ -195,7 +195,7 @@ function SupportSection() {
             <h3>Have another way to help?</h3>
             <p>Choose your own contribution amount and support the community in your own way.</p>
           </div>
-          <Link to="/register" className="btn btn-outline-mc mc-custom-support__action">
+          <Link to="/support?type=custom#custom" className="btn btn-outline-mc mc-custom-support__action">
             Custom Support <ChevronRight size={16} aria-hidden="true" />
           </Link>
         </div>
