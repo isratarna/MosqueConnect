@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Building,
@@ -21,6 +21,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { MOSQUES, saveMosqueToLocal, FACILITY_META } from "../data/mosques";
+import {
+  createAnnouncementId,
+  getAnnouncementDetailsPath,
+  getMosqueAnnouncementId,
+} from "../data/announcements";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -420,6 +425,7 @@ export default function AdminDashboard() {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const newAnnounce = {
+                      id: createAnnouncementId(),
                       title: formData.get("title"),
                       body: formData.get("body"),
                       urgency: formData.get("urgency"),
@@ -460,31 +466,35 @@ export default function AdminDashboard() {
                   <p className="text-muted small">No announcements posted yet.</p>
                 ) : (
                   <div className="d-flex flex-column gap-3">
-                    {mosque.announcements.map((announce, idx) => (
-                      <div className="card p-3 shadow-sm border-start border-4 border-mc" key={idx}>
-                        <div className="d-flex justify-content-between align-items-start gap-2">
-                          <div>
-                            <span className={`badge bg-${announce.urgency === "high" ? "danger" : announce.urgency === "medium" ? "warning text-dark" : "success"} mb-2 small`}>
-                              {announce.urgency} urgency
-                            </span>
-                            <h6 className="fw-bold mb-1">{announce.title}</h6>
-                            <p className="mb-1 text-secondary small">{announce.body}</p>
-                            <span className="text-muted small" style={{ fontSize: "11px" }}>Posted: {announce.date}</span>
+                    {mosque.announcements.map((announce, idx) => {
+                      const announcementId = getMosqueAnnouncementId(mosque.id, announce, idx);
+
+                      return (
+                        <div className="card p-3 shadow-sm border-start border-4 border-mc" key={announcementId}>
+                          <div className="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                              <span className={`badge bg-${announce.urgency === "high" ? "danger" : announce.urgency === "medium" ? "warning text-dark" : "success"} mb-2 small`}>
+                                {announce.urgency} urgency
+                              </span>
+                              <h6 className="fw-bold mb-1"><Link to={getAnnouncementDetailsPath(announcementId)} className="text-dark text-decoration-none">{announce.title}</Link></h6>
+                              <p className="mb-1 text-secondary small">{announce.body}</p>
+                              <span className="text-muted small" style={{ fontSize: "11px" }}>Posted: {announce.date}</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const list = [...mosque.announcements];
+                                list.splice(idx, 1);
+                                handleSave({ ...mosque, announcements: list });
+                              }}
+                              className="btn btn-sm btn-outline-danger"
+                              title="Delete Announcement"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => {
-                              const list = [...mosque.announcements];
-                              list.splice(idx, 1);
-                              handleSave({ ...mosque, announcements: list });
-                            }}
-                            className="btn btn-sm btn-outline-danger"
-                            title="Delete Announcement"
-                          >
-                            <Trash2 size={14} />
-                          </button>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

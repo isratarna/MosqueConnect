@@ -17,6 +17,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { getMosque, directionsUrl, urgencyClass } from "../data/mosques";
+import { getAnnouncementDetailsPath, getMosqueAnnouncementId } from "../data/announcements";
 import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
@@ -119,16 +120,23 @@ export default function MosqueProfile() {
             <div className="card-body">
               <h5 className="fw-bold mb-3"><Megaphone size={18} className="text-mc me-2" aria-hidden="true" />Announcements</h5>
               {mosque.announcements.length ? (
-                mosque.announcements.map((a, i) => (
-                  <div className={`border-start border-4 border-${urgencyClass(a.urgency)} ps-3 mb-3`} key={i}>
-                    <div className="d-flex justify-content-between">
-                      <strong>{a.title}</strong>
-                      <span className={`badge bg-${urgencyClass(a.urgency)} text-uppercase`}>{a.urgency}</span>
+                mosque.announcements.map((a, i) => {
+                  const announcementId = getMosqueAnnouncementId(mosque.id, a, i);
+
+                  return (
+                    <div className={`border-start border-4 border-${urgencyClass(a.urgency)} ps-3 mb-3`} key={announcementId}>
+                      <div className="d-flex justify-content-between">
+                        <strong><Link to={getAnnouncementDetailsPath(announcementId)} className="text-dark text-decoration-none">{a.title}</Link></strong>
+                        <span className={`badge bg-${urgencyClass(a.urgency)} text-uppercase`}>{a.urgency}</span>
+                      </div>
+                      <p className="mb-1 small text-muted">{a.body}</p>
+                      <div className="d-flex align-items-center gap-3">
+                        <small className="text-muted"><CalendarDays size={14} className="me-1" aria-hidden="true" />{a.date}</small>
+                        <Link to={getAnnouncementDetailsPath(announcementId)} className="small text-mc text-decoration-none">Read details</Link>
+                      </div>
                     </div>
-                    <p className="mb-1 small text-muted">{a.body}</p>
-                    <small className="text-muted"><CalendarDays size={14} className="me-1" aria-hidden="true" />{a.date}</small>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <p className="text-muted mb-0">No announcements right now.</p>
               )}
