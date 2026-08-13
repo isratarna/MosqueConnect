@@ -35,10 +35,11 @@ export default function Footer() {
           <div className="col-6 col-lg-2">
             <h6 className="fw-semibold mb-3">Community</h6>
             <ul className="list-unstyled mc-foot-links">
-              <li><Link to="/support?type=volunteer#volunteer">Volunteer</Link></li>
-              <li><Link to="/support?type=blood#blood">Blood Requests</Link></li>
-              <li><Link to="/support?type=money#money">Donations</Link></li>
-              <li><a href="#">Events</a></li>
+              <li><Link to="/community">Community Hub</Link></li>
+              <li><Link to="/community?category=announcement">Announcements</Link></li>
+              <li><Link to="/community?category=event">Events</Link></li>
+              <li><Link to="/community?category=blood">Blood Requests</Link></li>
+              <li><Link to="/community?category=volunteer">Volunteer</Link></li>
             </ul>
           </div>
           <div className="col-lg-4">

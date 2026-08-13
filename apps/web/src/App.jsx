@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import Support from "./pages/Support";
 import SupportContinue from "./pages/SupportContinue";
+import Community from "./pages/Community";
 import { useAuth } from "./context/AuthContext";
 
 function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/browse" element={<Browse />} />
         <Route path="/support" element={<Support />} />
         <Route path="/support/continue" element={<SupportContinue />} />
+        <Route path="/community" element={<Community />} />
         <Route path="/mosque/:id" element={<MosqueProfile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
