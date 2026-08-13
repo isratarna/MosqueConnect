@@ -64,7 +64,7 @@ export default function Navbar() {
               <NavLink className={navLinkClass} to="/support" onClick={close}>Support</NavLink>
             </li>
             <li className="nav-item">
-              <a className="nav-link" href="/#about" onClick={close}>Community</a>
+              <NavLink className={navLinkClass} to="/community" onClick={close}>Community</NavLink>
             </li>
 
             {!user ? (
