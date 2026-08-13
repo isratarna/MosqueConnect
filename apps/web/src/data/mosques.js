@@ -45,8 +45,8 @@ const DEFAULT_MOSQUES = [
     facilities: ["women_area", "wudu", "parking", "ac", "wheelchair", "library"],
     prayer: { Fajr: "4:55", Dhuhr: "1:30", Asr: "5:00", Maghrib: "6:52", Isha: "8:15", Jummah: "1:15" },
     announcements: [
-      { title: "Eid-ul-Adha Jamat Schedule", body: "First Jamat at 7:00 AM, second at 8:00 AM.", urgency: "high", date: "2026-07-10" },
-      { title: "Roof renovation this week", body: "Upper floor closed Wed–Thu for maintenance.", urgency: "medium", date: "2026-07-08" },
+      { id: "mosque-1-eid-jamat-schedule", title: "Eid-ul-Adha Jamat Schedule", body: "First Jamat at 7:00 AM, second at 8:00 AM.", urgency: "high", date: "2026-07-10" },
+      { id: "mosque-1-roof-renovation", title: "Roof renovation this week", body: "Upper floor closed Wed–Thu for maintenance.", urgency: "medium", date: "2026-07-08" },
     ],
     events: [
       { title: "Weekly Tafsir Class", when: "Every Friday, 9:30 AM", desc: "Tafsir of Surah Al-Baqarah by the head Imam." },
@@ -66,7 +66,7 @@ const DEFAULT_MOSQUES = [
     facilities: ["women_area", "child_care", "wudu", "parking", "ac", "quran_class"],
     prayer: { Fajr: "4:58", Dhuhr: "1:30", Asr: "5:05", Maghrib: "6:52", Isha: "8:15", Jummah: "1:20" },
     announcements: [
-      { title: "New women's prayer floor open", body: "A dedicated 2nd-floor space is now available.", urgency: "low", date: "2026-07-09" },
+      { id: "mosque-2-womens-prayer-floor", title: "New women's prayer floor open", body: "A dedicated 2nd-floor space is now available.", urgency: "low", date: "2026-07-09" },
     ],
     events: [
       { title: "Kids' Quran Camp", when: "Sat–Sun, 4:00 PM", desc: "Supervised Quran learning for ages 6–12." },
@@ -86,7 +86,7 @@ const DEFAULT_MOSQUES = [
     facilities: ["wudu", "parking", "ac", "library"],
     prayer: { Fajr: "4:56", Dhuhr: "1:30", Asr: "5:02", Maghrib: "6:52", Isha: "8:15", Jummah: "1:15" },
     announcements: [
-      { title: "Janazah after Asr", body: "Janazah prayer for a community member after Asr today.", urgency: "high", date: "2026-07-14" },
+      { id: "mosque-3-janazah-after-asr", title: "Janazah after Asr", body: "Janazah prayer for a community member after Asr today.", urgency: "high", date: "2026-07-14" },
     ],
     events: [],
   },
@@ -122,7 +122,7 @@ const DEFAULT_MOSQUES = [
     facilities: ["women_area", "wudu", "parking", "ac", "quran_class", "library"],
     prayer: { Fajr: "4:59", Dhuhr: "1:31", Asr: "5:03", Maghrib: "6:53", Isha: "8:16", Jummah: "1:20" },
     announcements: [
-      { title: "Donation drive for flood relief", body: "Collecting funds and goods after Jummah.", urgency: "medium", date: "2026-07-11" },
+      { id: "mosque-5-flood-relief-drive", title: "Donation drive for flood relief", body: "Collecting funds and goods after Jummah.", urgency: "medium", date: "2026-07-11" },
     ],
     events: [],
   },
@@ -156,7 +156,7 @@ const DEFAULT_MOSQUES = [
     facilities: ["women_area", "child_care", "wudu"],
     prayer: { Fajr: "4:56", Dhuhr: "1:29", Asr: "5:01", Maghrib: "6:51", Isha: "8:14", Jummah: "1:20" },
     announcements: [
-      { title: "Free Quran class for children", body: "New batch starts Saturday; register at the office.", urgency: "low", date: "2026-07-07" },
+      { id: "mosque-7-quran-class-children", title: "Free Quran class for children", body: "New batch starts Saturday; register at the office.", urgency: "low", date: "2026-07-07" },
     ],
     events: [
       { title: "Blood Donation Camp", when: "Fri, 10:00 AM", desc: "In partnership with a local hospital." },
@@ -176,7 +176,7 @@ const DEFAULT_MOSQUES = [
     facilities: ["women_area", "child_care", "wudu", "parking", "ac", "wheelchair", "quran_class", "library"],
     prayer: { Fajr: "4:58", Dhuhr: "1:31", Asr: "5:03", Maghrib: "6:53", Isha: "8:16", Jummah: "1:30" },
     announcements: [
-      { title: "New AC system installed", body: "Main hall is now fully air conditioned.", urgency: "low", date: "2026-07-05" },
+      { id: "mosque-8-new-ac-system", title: "New AC system installed", body: "Main hall is now fully air conditioned.", urgency: "low", date: "2026-07-05" },
     ],
     events: [],
   },
@@ -210,7 +210,7 @@ const DEFAULT_MOSQUES = [
     facilities: ["wudu", "library", "quran_class"],
     prayer: { Fajr: "4:54", Dhuhr: "1:29", Asr: "5:00", Maghrib: "6:51", Isha: "8:14", Jummah: "1:10" },
     announcements: [
-      { title: "Historic minaret guided tour", body: "Open to visitors after Asr on weekends.", urgency: "low", date: "2026-07-03" },
+      { id: "mosque-10-minaret-guided-tour", title: "Historic minaret guided tour", body: "Open to visitors after Asr on weekends.", urgency: "low", date: "2026-07-03" },
     ],
     events: [
       { title: "Heritage Talk", when: "Sat, 5:30 PM", desc: "History of Mughal-era mosques in Dhaka." },

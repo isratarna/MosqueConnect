@@ -13,6 +13,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { getCommunityCategoryLabel } from "../data/community";
+import { getAnnouncementDetailsPath, isAnnouncementItem } from "../data/announcements";
 import VerifiedBadge from "./VerifiedBadge";
 
 const CATEGORY_ICONS = {
@@ -39,6 +40,9 @@ export function CommunityCategoryIcon({ category, size = 18, ...props }) {
 
 export default function CommunityCard({ item, featured = false }) {
   const urgencyLabel = URGENCY_LABELS[item.urgency];
+  const announcementDetailsPath = isAnnouncementItem(item)
+    ? getAnnouncementDetailsPath(item.id)
+    : null;
 
   return (
     <article className={`mc-community-card mc-card${featured ? " mc-community-card--featured" : ""}${item.urgency === "urgent" ? " is-urgent" : ""}`}>
@@ -50,7 +54,11 @@ export default function CommunityCard({ item, featured = false }) {
         {urgencyLabel && <span className={`mc-community-card__urgency is-${item.urgency}`}>{urgencyLabel}</span>}
       </div>
 
-      <h3>{item.title}</h3>
+      <h3>
+        {announcementDetailsPath ? (
+          <Link to={announcementDetailsPath} className="mc-community-card__title-link">{item.title}</Link>
+        ) : item.title}
+      </h3>
       <p>{item.summary}</p>
 
       <div className="mc-community-card__details">
@@ -67,10 +75,11 @@ export default function CommunityCard({ item, featured = false }) {
       <div className="mc-community-card__source">
         <span>{item.mosqueName}</span>
         {item.mosqueVerified && <VerifiedBadge />}
-        {item.mosqueId && (
-          <Link to={`/mosque/${item.mosqueId}`} className="mc-community-card__link">
-            View mosque
-          </Link>
+        {(announcementDetailsPath || item.mosqueId) && (
+          <span className="mc-community-card__actions">
+            {announcementDetailsPath && <Link to={announcementDetailsPath}>Read details</Link>}
+            {item.mosqueId && <Link to={`/mosque/${item.mosqueId}`}>View mosque</Link>}
+          </span>
         )}
       </div>
     </article>
