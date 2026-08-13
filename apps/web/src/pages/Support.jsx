@@ -55,9 +55,9 @@ export default function Support() {
   };
 
   return (
-    <section className="mc-support-page">
+    <section className="mc-support-page mc-atmospheric-section">
       <div className="container py-5">
-        <div className="mc-support-page__intro">
+        <div className="mc-support-page__intro mc-motion-section">
           <p className="mc-kicker">Community support</p>
           <h1>How would you like to contribute today?</h1>
           <p>
@@ -66,7 +66,7 @@ export default function Support() {
           </p>
         </div>
 
-        <div className="row g-4">
+        <div className="row g-4 mc-motion-stagger">
           {SUPPORT_CATEGORIES.map((option) => {
             const Icon = option.icon;
             const isSelected = activeType === option.key;

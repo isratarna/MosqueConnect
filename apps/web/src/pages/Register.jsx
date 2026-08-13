@@ -178,7 +178,7 @@ export default function Register() {
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-md-9 col-lg-7">
-            <div className="card mc-auth-card p-4 p-sm-5 shadow-sm">
+            <div className="card mc-auth-card p-4 p-sm-5 shadow-sm mc-motion-section">
               <div className="text-center mb-4">
                 <div className="mc-feature-icon mx-auto mb-3">
                   <UserPlus size={25} aria-hidden="true" />

@@ -30,15 +30,15 @@ export default function SupportContinue() {
   const summary = getSupportSummary(category.key, support.formData);
 
   return (
-    <section className="mc-support-action">
+    <section className="mc-support-action mc-atmospheric-section">
       <div className="container py-5">
-        <div className="mc-support-action__intro">
+        <div className="mc-support-action__intro mc-motion-section">
           <p className="mc-kicker">Review your support</p>
           <h1>{category.title}</h1>
           <p>Review the information below before moving to the next placeholder step.</p>
         </div>
 
-        <div className="row justify-content-center">
+        <div className="row justify-content-center mc-motion-stagger">
           <div className="col-lg-8">
             <div className="mc-support-action__card mc-card">
               <div className="mc-support-action__heading">

@@ -131,9 +131,9 @@ export default function Browse() {
         </div>
       </section>
 
-      <section className="py-4">
+      <section className="py-4 mc-motion-section mc-atmospheric-section">
         <div className="container">
-          <div className="row g-4">
+          <div className="row g-4 mc-motion-stagger">
             {/* Filters */}
             <div className="col-lg-3">
               <div className="card mc-card">
@@ -271,29 +271,31 @@ export default function Browse() {
                 </div>
               </div>
 
-              {view === "list" ? (
-                results.length ? (
-                  <div className="row g-3">
-                    {paginatedResults.map((m) => (
-                      <div className="col-md-6" key={m.id}>
-                        <MosqueCard mosque={m} />
-                      </div>
-                    ))}
-                  </div>
+              <div className="mc-view-panel" key={view}>
+                {view === "list" ? (
+                  results.length ? (
+                    <div className="row g-3 mc-motion-stagger">
+                      {paginatedResults.map((m) => (
+                        <div className="col-md-6" key={m.id}>
+                          <MosqueCard mosque={m} />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted py-5">
+                      <Search size={42} className="d-block mx-auto mb-2 opacity-50" aria-hidden="true" />
+                      No mosques match your filters. Try clearing some.
+                    </div>
+                  )
                 ) : (
-                  <div className="text-center text-muted py-5">
-                    <Search size={42} className="d-block mx-auto mb-2 opacity-50" aria-hidden="true" />
-                    No mosques match your filters. Try clearing some.
-                  </div>
-                )
-              ) : (
-                <MapView
-                  center={origin}
-                  zoom={12}
-                  mosques={paginatedResults}
-                  userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
-                />
-              )}
+                  <MapView
+                    center={origin}
+                    zoom={12}
+                    mosques={paginatedResults}
+                    userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
+                  />
+                )}
+              </div>
 
               {results.length > 0 && (
                 <Pagination

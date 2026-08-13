@@ -9,6 +9,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false); // mobile collapse
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const close = () => setOpen(false);
   const closeDropdowns = () => setActiveDropdown(null);
@@ -24,6 +25,13 @@ export default function Navbar() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [activeDropdown]);
 
+  useEffect(() => {
+    const updateScrollState = () => setIsScrolled(window.scrollY > 24);
+    updateScrollState();
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+    return () => window.removeEventListener("scroll", updateScrollState);
+  }, []);
+
   const handleLogout = () => {
     logout();
     close();
@@ -34,7 +42,7 @@ export default function Navbar() {
   const navLinkClass = ({ isActive }) => "nav-link" + (isActive ? " active" : "");
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark mc-navbar sticky-top">
+    <nav className={`navbar navbar-expand-lg navbar-dark mc-navbar sticky-top${isScrolled ? " is-scrolled" : ""}`}>
       <div className="container px-3 px-lg-0">
         <Link className="navbar-brand mc-brand me-2 me-lg-0" to="/" onClick={close}>
           <img src={logo} alt="MosqueConnect logo" className="mc-brand-logo me-2" />
