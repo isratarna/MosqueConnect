@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
+import Support from "./pages/Support";
 import { useAuth } from "./context/AuthContext";
 
 function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
@@ -34,6 +35,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/browse" element={<Browse />} />
+        <Route path="/support" element={<Support />} />
         <Route path="/mosque/:id" element={<MosqueProfile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

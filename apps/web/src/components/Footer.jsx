@@ -28,16 +28,16 @@ export default function Footer() {
             <ul className="list-unstyled mc-foot-links">
               <li><Link to="/">Home</Link></li>
               <li><Link to="/browse">Browse Mosques</Link></li>
-              <li><a href="/#support">Support</a></li>
+              <li><Link to="/support">Support</Link></li>
               <li><a href="/#impact">Our Impact</a></li>
             </ul>
           </div>
           <div className="col-6 col-lg-2">
             <h6 className="fw-semibold mb-3">Community</h6>
             <ul className="list-unstyled mc-foot-links">
-              <li><a href="#">Volunteer</a></li>
-              <li><a href="#">Blood Requests</a></li>
-              <li><a href="#">Donations</a></li>
+              <li><Link to="/support?type=volunteer#volunteer">Volunteer</Link></li>
+              <li><Link to="/support?type=blood#blood">Blood Requests</Link></li>
+              <li><Link to="/support?type=money#money">Donations</Link></li>
               <li><a href="#">Events</a></li>
             </ul>
           </div>
