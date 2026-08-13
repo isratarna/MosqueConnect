@@ -45,7 +45,7 @@ export default function MosqueProfile() {
   }
 
   return (
-    <div className="container py-4">
+    <div className="container py-4 mc-motion-stagger">
       <nav aria-label="breadcrumb" className="mb-3">
         <ol className="breadcrumb small">
           <li className="breadcrumb-item"><Link to="/" className="text-mc text-decoration-none">Home</Link></li>

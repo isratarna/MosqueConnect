@@ -47,7 +47,7 @@ export default function Profile() {
 
   return (
     <div className="container py-5" style={{ minHeight: "80vh" }}>
-      <div className="row g-4">
+      <div className="row g-4 mc-motion-stagger">
         {/* SIDE BAR / USER SUMMARY */}
         <div className="col-lg-4">
           <div className="card shadow-sm border-0 p-4 text-center mb-4">
@@ -290,7 +290,7 @@ export default function Profile() {
               </ul>
             </div>
 
-            <div className="card-body p-4 border-top">
+            <div className="card-body p-4 border-top mc-tab-panel" key={activeTab}>
               {/* FOLLOWED MOSQUES */}
               {activeTab === "followed" && (
                 <div>

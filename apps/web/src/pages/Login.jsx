@@ -32,7 +32,7 @@ export default function Login() {
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-md-8 col-lg-5">
-            <div className="card mc-auth-card p-4 p-sm-5">
+            <div className="card mc-auth-card p-4 p-sm-5 mc-motion-section">
               <div className="text-center mb-4">
                 <div className="mc-feature-icon mx-auto mb-3"><LogIn size={25} aria-hidden="true" /></div>
                 <h3 className="fw-bold mb-1">Welcome back</h3>

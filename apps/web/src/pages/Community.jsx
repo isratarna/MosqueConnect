@@ -84,15 +84,15 @@ export default function Community() {
   const feedItems = filteredUpdates.slice(0, visibleItems);
 
   return (
-    <section className="mc-community-page">
+    <section className="mc-community-page mc-atmospheric-section">
       <div className="container py-5">
-        <header className="mc-community-page__intro">
+        <header className="mc-community-page__intro mc-motion-section">
           <p className="mc-kicker">Community hub</p>
           <h1>Stay connected to your mosque community</h1>
           <p>Find official mosque announcements, prayer updates, events, support requests, and community notices in one place.</p>
         </header>
 
-        <section className="mc-community-filter mc-card" aria-label="Search and filter community updates">
+        <section className="mc-community-filter mc-card mc-motion-section" aria-label="Search and filter community updates">
           <div className="mc-community-filter__search">
             <Search size={18} aria-hidden="true" />
             <input
@@ -161,7 +161,7 @@ export default function Community() {
           </div>
         </section>
 
-        <section className="mc-community-section" aria-labelledby="community-feed-heading">
+        <section className="mc-community-section mc-motion-section" aria-labelledby="community-feed-heading">
           <div className="mc-community-section__heading">
             <div>
               <p className="mc-kicker">Community feed</p>
@@ -171,7 +171,7 @@ export default function Community() {
           </div>
           {feedItems.length ? (
             <>
-              <div className="mc-community-feed-list">
+              <div className="mc-community-feed-list mc-motion-stagger">
                 {feedItems.map((item) => (
                   <CommunityCard item={item} key={item.id} />
                 ))}

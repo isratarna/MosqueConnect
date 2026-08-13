@@ -114,7 +114,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="container-fluid py-4" style={{ minHeight: "85vh" }}>
+    <div className="container-fluid py-4 mc-motion-section" style={{ minHeight: "85vh" }}>
       <div className="row g-4">
         {/* HEADER BRANDING */}
         <div className="col-12 border-bottom pb-3 mb-2 d-flex flex-wrap align-items-center justify-content-between gap-3">
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
 
         {/* MAIN PANEL CONTENT (Right Section) */}
         <div className="col-md-8 col-lg-9">
-          <div className="card shadow-sm border-0 p-4 min-vh-60">
+          <div className="card shadow-sm border-0 p-4 min-vh-60 mc-tab-panel" key={activeTab}>
             {/* OVERVIEW PANEL */}
             {activeTab === "overview" && (
               <div>

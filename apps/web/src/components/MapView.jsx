@@ -69,7 +69,7 @@ function MapInner({ center, zoom, mosques, userPos, className }) {
   }
   if (!isLoaded) {
     return (
-      <div className={className}>
+      <div className={`${className} mc-map--loading`}>
         <div className="mc-map-placeholder">
           <LoaderCircle className="text-mc spin" size={32} aria-label="Loading map" />
           <p className="mb-0 small mt-2">Loading map…</p>

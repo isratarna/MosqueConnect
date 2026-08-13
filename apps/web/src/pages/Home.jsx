@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen,
@@ -25,9 +25,11 @@ export default function Home() {
   const origin = useGeolocation();
   const nearby = useMemo(() => mosquesByDistance(origin), [origin.lat, origin.lng]);
   const nearest = nearby[0];
+  
 
   return (
-    <>
+     <>
+    
       <Hero />
       <NearbySection origin={origin} nearby={nearby} nearest={nearest} />
       <SupportSection />
@@ -39,7 +41,7 @@ export default function Home() {
 
 function Hero() {
   return (
-    <header className="mc-hero">
+    <header className="mc-hero mc-home-hero">
       <div className="container mc-hero__inner">
         <div className="mc-hero__content">
           <h1>Find. Connect. Pray.</h1>
@@ -77,7 +79,7 @@ function Hero() {
 
 function NearbySection({ origin, nearby, nearest }) {
   return (
-    <section id="map" className="mc-explore-section">
+    <section id="map" className="mc-explore-section mc-motion-section mc-atmospheric-section">
       <div className="container">
         <div className="mc-section-heading">
           <div>
@@ -89,7 +91,7 @@ function NearbySection({ origin, nearby, nearest }) {
             Browse all <ChevronRight size={15} aria-hidden="true" />
           </Link>
         </div>
-        <div className="row g-4 align-items-stretch">
+        <div className="row g-4 align-items-stretch mc-motion-stagger">
           <div className="col-lg-8 d-flex">
             <div className="w-100 h-100">
               <MapView
@@ -170,14 +172,14 @@ function SupportSection() {
   ];
 
   return (
-    <section id="support" className="mc-support-section">
+    <section id="support" className="mc-support-section mc-motion-section mc-atmospheric-section">
       <div className="container">
         <div className="mc-support-intro">
           <p className="mc-kicker">Support</p>
           <h2>Support the community</h2>
           <p>Contribute in the way that suits you best.</p>
         </div>
-        <div className="row g-4">
+        <div className="row g-4 mc-motion-stagger">
           {items.map((it) => (
             <div className="col-md-6 col-lg-3" key={it.title}>
               <Link to={`/support?type=${it.type}#${it.type}`} className="mc-support-tile h-100">
@@ -207,7 +209,7 @@ function SupportSection() {
 function ImpactSection() {
   const impactIcons = [Landmark, UsersRound, Heart, HandHeart];
   return (
-    <section id="impact" className="mc-impact">
+    <section id="impact" className="mc-impact mc-motion-section mc-atmospheric-section">
       <div className="container">
         <div className="mc-impact__headline">
           <h2>Stronger together, for a better community</h2>
@@ -219,7 +221,7 @@ function ImpactSection() {
             return (
               <div className="col-6 col-lg-3" key={s.label}>
                 <Icon size={22} strokeWidth={1.5} aria-hidden="true" />
-                <div className="mc-stat-value">{s.value}</div>
+                <div className="mc-stat-value"><AnimatedStat value={s.value} /></div>
                 <div>{s.label}</div>
               </div>
             );
@@ -237,7 +239,7 @@ function AboutSection() {
     alert("Thanks! We will get back to you. (demo)");
   };
   return (
-    <section id="about" className="py-5">
+    <section id="about" className="py-5 mc-motion-section mc-atmospheric-section">
       <div className="container">
         <div className="row g-5 align-items-center">
           <div className="col-lg-6">
@@ -270,4 +272,41 @@ function AboutSection() {
       </div>
     </section>
   );
+}
+
+function AnimatedStat({ value }) {
+  const nodeRef = useRef(null);
+  const [display, setDisplay] = useState(value);
+
+  useEffect(() => {
+    const match = /^(\d[\d,]*)([Kk]?)(\+?)$/.exec(value);
+    if (!match || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+
+    const end = Number(match[1].replace(/,/g, ""));
+    let frame;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) {
+        if (frame) cancelAnimationFrame(frame);
+        return;
+      }
+      if (frame) cancelAnimationFrame(frame);
+      setDisplay(`0${match[2]}${match[3]}`);
+      const start = performance.now();
+      const tick = (now) => {
+        const progress = Math.min((now - start) / 800, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setDisplay(`${Math.round(end * eased).toLocaleString()}${match[2]}${match[3]}`);
+        if (progress < 1) frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
+    }, { threshold: 0.65 });
+
+    if (nodeRef.current) observer.observe(nodeRef.current);
+    return () => {
+      observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [value]);
+
+  return <span ref={nodeRef}>{display}</span>;
 }
