@@ -940,3 +940,100 @@ main { min-height: 70vh; }
   .mc-impact .container { padding: 1.2rem; }
   .mc-impact__stats > div:nth-child(3) { border-left: 0; }
 }
+
+/* ---------- browse mosques ---------- */
+.mc-browse-hero {
+  min-height: 0;
+  padding: 1.35rem 0 1.5rem;
+}
+
+.mc-browse-hero .container {
+  max-width: 1140px;
+  position: relative;
+  z-index: 1;
+}
+
+.mc-browse-hero .input-group { max-width: 760px; }
+
+.mc-browse-section { position: relative; }
+
+.mc-browse-layout { --bs-gutter-x: 2rem; }
+
+.mc-browse-filter-column { align-self: stretch; }
+
+.mc-browse-filter-column.mc-motion-ready,
+.mc-browse-section.mc-motion-ready {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.mc-browse-filters {
+  max-height: calc(100vh - 6.25rem);
+  overflow-y: auto;
+  position: sticky;
+  scrollbar-gutter: stable;
+  top: 5.25rem;
+}
+
+.mc-browse-results-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  min-height: 2rem;
+}
+
+.mc-browse-results-count { line-height: 1.35; }
+
+.mc-browse-results-actions,
+.mc-browse-page-size {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mc-browse-results-actions { justify-content: flex-end; }
+
+.mc-browse-results-grid .mc-card-img { height: 128px; }
+
+.mc-browse-results-grid .card-body { padding: 0.85rem; }
+
+.mc-browse-results-grid .card-body > .mb-3 { margin-bottom: 0.85rem !important; }
+
+.mc-browse-results-grid h6 {
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
+@media (max-width: 991.98px) {
+  .mc-browse-filter-column,
+  .mc-browse-results { align-self: stretch; }
+
+  .mc-browse-filters {
+    max-height: none;
+    overflow: visible;
+    position: static;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .mc-browse-hero {
+    min-height: 0;
+    padding: 1.15rem 0 1.25rem;
+  }
+
+  .mc-browse-layout { --bs-gutter-x: 1.5rem; }
+
+  .mc-browse-results-toolbar,
+  .mc-browse-results-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mc-browse-results-actions { width: 100%; }
+
+  .mc-browse-results-grid .mc-card-img { height: 142px; }
+}

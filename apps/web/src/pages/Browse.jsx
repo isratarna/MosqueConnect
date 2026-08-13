@@ -114,10 +114,10 @@ export default function Browse() {
 
   return (
     <>
-      <section className="mc-hero py-4">
+      <section className="mc-hero mc-browse-hero">
         <div className="container">
           <h1 className="h3 fw-bold mb-1">Browse Mosques</h1>
-          <p className="mb-3 text-white-50">Find mosques that match your preferences.</p>
+          <p className="mb-3 text-body-secondary">Find mosques that match your preferences.</p>
           <div className="input-group input-group-lg shadow-sm">
             <span className="input-group-text bg-white border-0"><Search size={18} className="text-mc" aria-hidden="true" /></span>
             <input
@@ -131,12 +131,12 @@ export default function Browse() {
         </div>
       </section>
 
-      <section className="py-4 mc-motion-section mc-atmospheric-section">
+      <section className="mc-browse-section py-4 mc-motion-section">
         <div className="container">
-          <div className="row g-4 mc-motion-stagger">
+          <div className="row g-4 mc-browse-layout mc-motion-stagger">
             {/* Filters */}
-            <div className="col-lg-3">
-              <div className="card mc-card">
+            <div className="col-lg-3 mc-browse-filter-column">
+              <div className="card mc-card mc-browse-filters">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <h6 className="fw-bold mb-0"><SlidersHorizontal size={16} className="me-1" aria-hidden="true" />Filters</h6>
@@ -231,15 +231,15 @@ export default function Browse() {
             </div>
 
             {/* Results */}
-            <div className="col-lg-9">
-              <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
-                <div className="text-muted">
+            <div className="col-lg-9 mc-browse-results">
+              <div className="mc-browse-results-toolbar">
+                <div className="text-muted mc-browse-results-count">
                   {totalResults === 0
                     ? "Showing 0 of 0 mosques"
                     : `Showing ${startIndex}–${endIndex} of ${totalResults} mosques`}
                 </div>
-                <div className="d-flex flex-wrap align-items-center gap-2">
-                  <div className="d-flex align-items-center gap-2">
+                <div className="mc-browse-results-actions">
+                  <div className="mc-browse-page-size">
                     <span className="text-muted small text-nowrap">Results per page:</span>
                     <select
                       className="form-select form-select-sm"
@@ -274,9 +274,9 @@ export default function Browse() {
               <div className="mc-view-panel" key={view}>
                 {view === "list" ? (
                   results.length ? (
-                    <div className="row g-3 mc-motion-stagger">
+                    <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mc-browse-results-grid mc-motion-stagger">
                       {paginatedResults.map((m) => (
-                        <div className="col-md-6" key={m.id}>
+                        <div className="col" key={m.id}>
                           <MosqueCard mosque={m} />
                         </div>
                       ))}
