@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\Otp\PhoneOtpService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
+
+class PhoneOtpController extends Controller
+{
+    public function sendOtp(Request $request, PhoneOtpService $otps): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'regex:/^\+[1-9]\d{7,14}$/'],
+        ]);
+
+        try {
+            $otps->issue($validated['phone']);
+        } catch (RuntimeException) {
+            return response()->json([
+                'message' => 'SMS provider is not configured.',
+            ], 503);
+        }
+
+        return response()->json([
+            'message' => 'OTP sent successfully.',
+        ]);
+    }
+
+    public function verifyOtp(Request $request, PhoneOtpService $otps): JsonResponse
+    {
+        $otpLength = (int) config('otp.length', 6);
+
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'regex:/^\+[1-9]\d{7,14}$/'],
+            'otp' => ['required', 'string', 'digits:'.$otpLength],
+        ]);
+
+        $user = DB::transaction(function () use ($otps, $validated): User {
+            $otps->consume($validated['phone'], $validated['otp']);
+
+            return User::firstOrCreate(
+                ['phone' => $validated['phone']],
+                [
+                    'name' => $validated['phone'],
+                    'role' => User::ROLE_NORMAL_USER,
+                ],
+            );
+        });
+
+        $token = $user->createToken('phone-otp')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+            'token_type' => 'Bearer',
+        ]);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()?->delete();
+
+        return response()->json([
+            'message' => 'Logged out successfully.',
+        ]);
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        return response()->json([
+            'user' => $request->user(),
+        ]);
+    }
+}

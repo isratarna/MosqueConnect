@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Services\Otp\LogSmsOtpSender;
+use App\Services\Otp\MissingSmsOtpSender;
+use App\Services\Otp\SmsOtpSender;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +17,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(SmsOtpSender::class, fn () => match (config('otp.sms.driver')) {
+            'log' => new LogSmsOtpSender(),
+            default => new MissingSmsOtpSender(),
+        });
     }
 
     /**
@@ -19,6 +28,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        RateLimiter::for('otp-send', function (Request $request) {
+            return Limit::perMinute((int) config('otp.throttle.send_per_minute', 5))
+                ->by($request->input('phone', $request->ip()));
+        });
+
+        RateLimiter::for('otp-verify', function (Request $request) {
+            return Limit::perMinute((int) config('otp.throttle.verify_per_minute', 10))
+                ->by($request->input('phone', $request->ip()));
+        });
     }
 }
