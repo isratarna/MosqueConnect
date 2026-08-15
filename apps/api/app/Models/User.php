@@ -52,6 +52,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the verification requests submitted by the user.
+     */
+    public function verificationRequests(): HasMany
+    {
+        return $this->hasMany(VerificationRequest::class);
+    }
+
+    /**
+     * Get the verification requests reviewed by the user.
+     */
+    public function reviewedVerificationRequests(): HasMany
+    {
+        return $this->hasMany(VerificationRequest::class, 'reviewer_id');
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

@@ -35,6 +35,14 @@ class Mosque extends Model
     }
 
     /**
+     * Get the verification requests for the mosque.
+     */
+    public function verificationRequests(): HasMany
+    {
+        return $this->hasMany(VerificationRequest::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
