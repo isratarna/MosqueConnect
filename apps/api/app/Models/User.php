@@ -59,6 +59,11 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Mosque::class, 'followers')
             ->withTimestamps();
+     * Get the mosques owned by this user for administration.
+     */
+    public function ownedMosques(): HasMany
+    {
+        return $this->hasMany(Mosque::class, 'owner_id');
     }
 
     /**
@@ -75,6 +80,34 @@ class User extends Authenticatable
     public function reviewedVerificationRequests(): HasMany
     {
         return $this->hasMany(VerificationRequest::class, 'reviewer_id');
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    /**
+     * @param  list<string>  $roles
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        return in_array($this->role, $roles, true);
+    }
+
+    public function isNormalUser(): bool
+    {
+        return $this->hasRole(self::ROLE_NORMAL_USER);
+    }
+
+    public function isMosqueAdmin(): bool
+    {
+        return $this->hasRole(self::ROLE_MOSQUE_ADMIN);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole(self::ROLE_SUPER_ADMIN);
     }
 
     /**
