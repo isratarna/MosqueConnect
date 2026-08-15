@@ -205,6 +205,25 @@ body {
 .mc-prayer-cell { text-align: center; padding: 0.75rem 0.25rem; }
 .mc-prayer-cell .h5 { color: var(--mc-green-dark); margin: 0; }
 
+/* Prayer timeline */
+.mc-prayer-timeline { width: 100%; }
+.mc-timeline-row { display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.25rem; -webkit-overflow-scrolling: touch; }
+.mc-timeline-row::-webkit-scrollbar { height: 8px; }
+.mc-prayer-item { min-width: 120px; flex: 0 0 auto; text-align: center; padding: 0.75rem 0.6rem; }
+.mc-prayer-item .h5 { margin: 0; }
+.mc-prayer-item.mc-completed { opacity: 0.6; }
+.mc-prayer-item.mc-next { border: 1px solid var(--mc-rust); background: #fff; box-shadow: 0 6px 18px rgba(53,39,29,0.06); }
+.mc-prayer-item.mc-upcoming { opacity: 0.95; }
+
+@media (min-width: 768px) {
+  .mc-timeline-row { gap: 1rem; }
+  .mc-prayer-item { min-width: 0; flex: 1 1 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-prayer-item, .mc-prayer-timeline, .mc-timeline-row { transition: none !important; }
+}
+
 /* ---------- footer ---------- */
 .mc-footer { background: var(--mc-ink); }
 .mc-foot-links a, .mc-foot-contact { color: rgba(255, 255, 255, 0.7); text-decoration: none; }
