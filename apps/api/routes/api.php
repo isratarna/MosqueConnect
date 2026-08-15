@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\MosqueManagementController;
 use App\Http\Controllers\Admin\SystemAdminController;
 use App\Http\Controllers\Auth\PhoneOtpController;
+use App\Http\Controllers\MosqueController;
+use App\Http\Controllers\MosqueFollowController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -24,6 +26,13 @@ Route::prefix('auth')->group(function () {
     });
 });
 
+Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
+Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/mosques/{mosque}/follow', [MosqueFollowController::class, 'follow']);
+    Route::delete('/mosques/{mosque}/follow', [MosqueFollowController::class, 'unfollow']);
+    Route::get('/me/followed-mosques', [MosqueFollowController::class, 'followed']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('admin')
         ->middleware('role:mosque_admin,super_admin')
