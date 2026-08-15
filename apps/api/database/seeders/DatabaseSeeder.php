@@ -22,5 +22,7 @@ class DatabaseSeeder extends Seeder
             'phone' => '+15555550100',
             'role' => User::ROLE_NORMAL_USER,
         ]);
+
+        $this->call(MosqueSeeder::class);
     }
 }
