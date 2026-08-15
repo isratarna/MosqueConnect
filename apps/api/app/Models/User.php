@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -32,6 +34,22 @@ class User extends Authenticatable
         'phone',
         'role',
     ];
+
+    /**
+     * Get the follower records for the user.
+     */
+    public function followers(): HasMany
+    {
+        return $this->hasMany(Follower::class);
+    }
+
+    /**
+     * Get the mosques followed by the user.
+     */
+    public function mosques(): BelongsToMany
+    {
+        return $this->belongsToMany(Mosque::class, 'followers');
+    }
 
     /**
      * Get the attributes that should be cast.
