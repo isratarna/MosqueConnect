@@ -116,11 +116,13 @@ function MapInner({ center, zoom, mosques, userPos, className }) {
             <div style={{ maxWidth: 220 }}>
               <div className="d-flex align-items-center gap-2 mb-1">
                 <strong>{active.name}</strong>
-                {active.verified && <VerifiedBadge />}
               </div>
               <span style={{ color: "#666", fontSize: 12 }}>{active.address}</span>
               <br />
-              <span style={{ fontSize: 12 }}>Next Jamat (Dhuhr): {active.prayer.Dhuhr} PM</span>
+              <span style={{ fontSize: 12 }}>
+                {active.verified && <VerifiedBadge />}
+                Next Jamat (Dhuhr): {active.prayer.Dhuhr} PM
+              </span>
               <br />
               <Link to={`/mosque/${active.id}`} style={{ fontSize: 13 }}>
                 View profile →

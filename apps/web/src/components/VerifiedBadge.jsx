@@ -1,11 +1,18 @@
 export default function VerifiedBadge({ className = "" }) {
   return (
     <span
-      className={`d-inline-flex align-items-center rounded-pill px-2 py-1 small fw-semibold text-success bg-success bg-opacity-10 border border-success border-opacity-25 ${className}`.trim()}
+      className={className}
       title="Verified by MosqueConnect"
+      aria-label="Verified"
+      style={{ 
+        marginLeft: "0.3rem",
+        display: "inline-flex",
+        alignItems: "center",
+        flexShrink: 0,
+        lineHeight: 1
+      }}
     >
-      <i className="bi bi-patch-check-fill me-1" />
-      Verified
+      ✅
     </span>
   );
 }

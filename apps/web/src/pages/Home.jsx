@@ -78,6 +78,71 @@ function Hero() {
 }
 
 function NearbySection({ origin, nearby, nearest }) {
+  const [activeIndex, setActiveIndex] = useState(() => {
+    if (!nearby.length) return 0;
+    if (!nearest) return 0;
+    const nearestIndex = nearby.findIndex((mosque) => mosque.id === nearest.id);
+    return nearestIndex >= 0 ? nearestIndex : 0;
+  });
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const pointerStartX = useRef(0);
+
+  useEffect(() => {
+    if (!nearby.length) return;
+    if (!nearest) return;
+
+    const nearestIndex = nearby.findIndex((mosque) => mosque.id === nearest.id);
+    if (nearestIndex >= 0) {
+      setActiveIndex(nearestIndex);
+    }
+  }, [nearest, nearby]);
+
+  useEffect(() => {
+    if (!nearby.length || isInteracting) return;
+
+    const timer = window.setTimeout(() => {
+      setActiveIndex((current) => (current + 1) % nearby.length);
+    }, 4500);
+
+    return () => window.clearTimeout(timer);
+  }, [activeIndex, nearby, isInteracting]);
+
+  const goToPrevious = () => {
+    if (!nearby.length) return;
+    setActiveIndex((current) => (current - 1 + nearby.length) % nearby.length);
+  };
+
+  const goToNext = () => {
+    if (!nearby.length) return;
+    setActiveIndex((current) => (current + 1) % nearby.length);
+  };
+
+  const handlePointerDown = (event) => {
+    setIsInteracting(true);
+    pointerStartX.current = event.clientX;
+  };
+
+  const handlePointerMove = (event) => {
+    if (!isInteracting) return;
+    const deltaX = event.clientX - pointerStartX.current;
+    setDragOffset(deltaX);
+  };
+
+  const handlePointerEnd = () => {
+    if (!nearby.length) return;
+
+    const threshold = 70;
+    if (dragOffset > threshold) {
+      goToPrevious();
+    } else if (dragOffset < -threshold) {
+      goToNext();
+    }
+
+    setDragOffset(0);
+    setIsInteracting(false);
+  };
+
   return (
     <section id="map" className="mc-explore-section mc-motion-section mc-atmospheric-section">
       <div className="container">
@@ -91,70 +156,114 @@ function NearbySection({ origin, nearby, nearest }) {
             Browse all <ChevronRight size={15} aria-hidden="true" />
           </Link>
         </div>
-        <div className="row g-4 align-items-stretch mc-motion-stagger">
-          <div className="col-lg-8 d-flex">
-            <div className="w-100 h-100">
-              <MapView
-                className="mc-map h-100"
-                center={origin}
-                zoom={13}
-                mosques={nearby}
-                userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
-              />
-            </div>
+
+        <div className="mc-explore-layout mc-motion-stagger">
+          <div className="mc-map-wrap">
+            <MapView
+              className="mc-map"
+              center={origin}
+              zoom={13}
+              mosques={nearby}
+              userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
+            />
           </div>
-          <div className="col-lg-4 d-flex">
-            <div className="w-100 d-flex flex-column gap-3">
-              {nearest && (
-                <div className="card mc-card mc-highlight mb-0 h-100">
-                  <img src={nearest.photo} className="mc-nearest-image" alt="" />
-                  <div className="card-body">
-                    <div className="section-label mb-1">Nearest to you</div>
-                    <div className="d-flex align-items-center gap-2 mb-1">
-                      <h5 className="fw-bold mb-0">{nearest.name}</h5>
-                      {nearest.verified && <VerifiedBadge />}
-                    </div>
-                    <div className="text-muted small mb-2">
-                      <MapPin size={14} aria-hidden="true" />{nearest.address}
-                    </div>
-                    <div className="d-flex align-items-center gap-3 mb-2">
-                      <span className="mc-distance">
-                        <Navigation size={13} aria-hidden="true" />{nearest.distance} km away
-                      </span>
-                      <span className="small text-muted">{nearest.rating} rating</span>
-                    </div>
-                    <div className="mc-next-prayer">
-                      <span>Next Jamat</span>
-                      <strong>Dhuhr {nearest.prayer.Dhuhr} PM</strong>
-                    </div>
-                    <div className="d-flex gap-2">
-                      <Link to={`/mosque/${nearest.id}`} className="btn btn-mc btn-sm flex-fill">View profile</Link>
-                      <a href={directionsUrl(nearest)} target="_blank" rel="noopener noreferrer"
-                         className="btn btn-outline-mc btn-sm mc-icon-button" title="Get directions" aria-label="Get directions">
-                        <Navigation size={16} aria-hidden="true" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="d-flex flex-column gap-2">
-                {nearby.slice(0, 4).map((m) => (
-                  <Link to={`/mosque/${m.id}`} className="text-decoration-none" key={m.id}>
-                    <div className="card mc-card mb-0">
-                      <div className="card-body py-2 d-flex justify-content-between align-items-center">
-                        <div>
-                          <div className="mc-listing-title">{m.name}</div>
-                          <div className="d-flex align-items-center gap-2 mt-1">
-                            <small className="text-muted">{m.address}</small>
-                            {m.verified && <VerifiedBadge />}
+
+          <div className="mc-nearby-showcase">
+            <div className="mc-nearby-showcase__controls" aria-label="Nearby mosque controls">
+              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToPrevious} aria-label="Previous mosque">
+                <ChevronRight size={14} aria-hidden="true" className="mc-rotate-180" />
+              </button>
+              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToNext} aria-label="Next mosque">
+                <ChevronRight size={14} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div
+              className={`mc-nearby-showcase__viewport ${isInteracting ? "is-dragging" : ""}`}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerEnd}
+              onPointerLeave={handlePointerEnd}
+              onPointerCancel={handlePointerEnd}
+            >
+              {nearby.map((mosque, index) => {
+                const rawOffset = index - activeIndex;
+                const normalizedOffset =
+                  rawOffset > nearby.length / 2
+                    ? rawOffset - nearby.length
+                    : rawOffset < -nearby.length / 2
+                      ? rawOffset + nearby.length
+                      : rawOffset;
+
+                const absOffset = Math.abs(normalizedOffset);
+                const isActive = normalizedOffset === 0;
+                const isVisible = absOffset <= 4;
+
+                if (!isVisible) return null;
+
+                const offsetX = normalizedOffset * 250 + dragOffset * 0.22;
+                const opacity = isActive ? 1 : 0.5;
+                const zIndex = isActive ? 10 : 5 - absOffset;
+
+                return (
+                  <div
+                    key={mosque.id}
+                    className={`mc-nearby-slide ${isActive ? "is-active" : ""}`}
+                    style={{
+                      transform: `translate(calc(-50% + ${offsetX}px), -50%)`,
+                      opacity,
+                      zIndex,
+                      transition: isInteracting ? "none" : "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease",
+                    }}
+                  >
+                    <div className="card mc-card mc-nearby-card">
+                      <img src={mosque.photo} className="mc-nearby-card__image" alt={mosque.name} />
+                      <div className="card-body mc-nearby-card__body">
+                        <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                          <div className="d-flex align-items-center gap-2 min-w-0">
+                            <h5 className="mb-0 mc-nearby-card__title">{mosque.name}</h5>
                           </div>
+                          <span className="badge mc-badge">{mosque.distance} km</span>
                         </div>
-                        <span className="badge mc-badge">{m.distance} km</span>
+
+                        <div className="text-muted small mb-2 mc-nearby-card__meta">
+                          <MapPin size={14} aria-hidden="true" />
+                          <span>{mosque.address}</span>
+                        </div>
+
+                        <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2">
+                          <span className="mc-distance">
+                            <Navigation size={13} aria-hidden="true" />{mosque.distance} km away
+                          </span>
+                          <span className="d-flex align-items-center gap-1">
+                            {mosque.verified && <VerifiedBadge />}
+                            {mosque.rating} rating
+                          </span>
+                        </div>
+
+                        <div className="mc-next-prayer mb-3">
+                          <span>Next Jamat</span>
+                          <strong>Dhuhr {mosque.prayer.Dhuhr} PM</strong>
+                        </div>
+
+                        <div className="d-flex gap-2">
+                          <Link to={`/mosque/${mosque.id}`} className="btn btn-mc btn-sm flex-fill">View profile</Link>
+                          <a
+                            href={directionsUrl(mosque)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-outline-mc btn-sm mc-icon-button"
+                            title="Get directions"
+                            aria-label={`Get directions to ${mosque.name}`}
+                          >
+                            <Navigation size={16} aria-hidden="true" />
+                          </a>
+                        </div>
                       </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
