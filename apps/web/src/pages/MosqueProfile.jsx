@@ -21,6 +21,7 @@ import { getAnnouncementDetailsPath, getMosqueAnnouncementId } from "../data/ann
 import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
+import PrayerTimeline from "../components/PrayerTimeline";
 
 const DAILY_PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
@@ -86,16 +87,7 @@ export default function MosqueProfile() {
           <div className="card mc-card mb-4">
             <div className="card-body">
               <h5 className="fw-bold mb-3"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />Prayer &amp; Jamat Times</h5>
-              <div className="row row-cols-2 row-cols-md-5 g-2">
-                {DAILY_PRAYERS.map((p) => (
-                  <div className="col" key={p}>
-                    <div className="mc-prayer-cell bg-light rounded-3">
-                      <small className="text-muted d-block">{p}</small>
-                      <span className="h5">{mosque.prayer[p]}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <PrayerTimeline prayers={mosque.prayer} />
             </div>
           </div>
 
