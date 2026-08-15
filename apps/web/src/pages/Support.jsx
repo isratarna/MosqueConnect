@@ -66,7 +66,7 @@ export default function Support() {
           </p>
         </div>
 
-        <div className="row g-4 mc-motion-stagger">
+        <div className="row g-4 justify-content-center mc-motion-stagger">
           {SUPPORT_CATEGORIES.map((option) => {
             const Icon = option.icon;
             const isSelected = activeType === option.key;
