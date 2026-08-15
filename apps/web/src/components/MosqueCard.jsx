@@ -26,7 +26,6 @@ export default function MosqueCard({ mosque }) {
         <div className="d-flex justify-content-between align-items-start gap-2">
           <div>
             <h6 className="fw-bold mb-1">{mosque.name}</h6>
-            {mosque.verified && <VerifiedBadge className="ms-0" />}
           </div>
 
           <span className="badge mc-badge ms-2 text-nowrap">
@@ -46,7 +45,10 @@ export default function MosqueCard({ mosque }) {
             fill="currentColor"
             aria-hidden="true"
           />
-          {mosque.rating}
+          <span className="d-inline-flex align-items-center gap-1">
+            {mosque.verified && <VerifiedBadge className="ms-0" />}
+            {mosque.rating}
+          </span>
 
           <span className="text-muted ms-2">
             <Clock3 size={14} className="me-1" aria-hidden="true" />
