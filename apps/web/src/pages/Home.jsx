@@ -16,7 +16,7 @@ import {
   Search,
   UsersRound,
 } from "lucide-react";
-import { useGeolocation } from "../hooks/useGeolocation";
+import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, directionsUrl, IMPACT_STATS } from "../data/mosques";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
@@ -25,12 +25,10 @@ export default function Home() {
   const origin = useGeolocation();
   const nearby = useMemo(() => mosquesByDistance(origin), [origin.lat, origin.lng]);
   const nearest = nearby[0];
-  
 
   return (
-     <>
-    
-      <Hero />
+    <>
+      <Hero origin={origin} nearby={nearby} nearest={nearest} onRequestLocation={() => requestGeolocation()} />
       <NearbySection origin={origin} nearby={nearby} nearest={nearest} />
       <SupportSection />
       <ImpactSection />
@@ -39,7 +37,7 @@ export default function Home() {
   );
 }
 
-function Hero() {
+function Hero({ origin, nearby, nearest, onRequestLocation }) {
   return (
     <header className="mc-hero mc-home-hero">
       <div className="container mc-hero__inner">
@@ -65,15 +63,41 @@ function Hero() {
             <h2>Enable your location</h2>
             <p>Find mosques, prayer times, and nearby Islamic facilities around you.</p>
           </div>
-          <a href="#map" className="btn btn-mc w-100">
-            <LocateFixed size={16} aria-hidden="true" /> Use my location
-          </a>
+          <LocationControls origin={origin} nearby={nearby} nearest={nearest} onRequest={onRequestLocation} />
           <Link to="/browse" className="btn btn-light mc-location-card__secondary w-100">
             Enter location manually
           </Link>
         </div>
       </div>
     </header>
+  );
+}
+
+function LocationControls({ origin, nearby, nearest, onRequest }) {
+  const handleClick = (e) => {
+    e.preventDefault();
+    onRequest();
+  };
+
+  return (
+    <div>
+      <div className="mb-2" aria-live="polite">
+        {origin.status === "idle" && <small className="text-muted">Location not set</small>}
+        {origin.status === "requesting" && <small className="text-muted">Requesting permission…</small>}
+        {origin.status === "locating" && <small className="text-muted">Locating…</small>}
+        {origin.status === "success" && (
+          <div>
+            <div className="fw-semibold">{nearby.length} mosques nearby</div>
+            <div className="small text-muted">Closest: {nearest ? nearest.name : "—"}</div>
+          </div>
+        )}
+        {origin.status === "failure" && <small className="text-danger">Location unavailable — try manual search</small>}
+      </div>
+
+      <button className="btn btn-mc w-100 mb-2" onClick={handleClick} aria-pressed={origin.status === "success"}>
+        <LocateFixed size={16} aria-hidden="true" /> {origin.status === "success" ? "Location set" : "Use my location"}
+      </button>
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { List as ListIcon, Map as MapIcon, MapPin, Search, SlidersHorizontal } from "lucide-react";
-import { useGeolocation } from "../hooks/useGeolocation";
+import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, FACILITY_META } from "../data/mosques";
 import FacilityIcon from "../components/FacilityIcon";
 import MosqueCard from "../components/MosqueCard";
@@ -184,6 +184,16 @@ export default function Browse() {
                         Clear Location
                       </button>
                     )}
+
+                    <div className="mt-2" aria-live="polite">
+                      {origin.status === "idle" && (
+                        <button className="btn btn-sm btn-outline-mc" onClick={() => requestGeolocation()}>Use my location</button>
+                      )}
+                      {origin.status === "requesting" && <div className="small text-muted">Requesting permission…</div>}
+                      {origin.status === "locating" && <div className="small text-muted">Locating…</div>}
+                      {origin.status === "success" && <div className="small text-success">Using your location — {all.length} mosques nearby</div>}
+                      {origin.status === "failure" && <div className="small text-danger">Location unavailable — try manual search</div>}
+                    </div>
                   </div>
 
                   <hr className="my-3" />
