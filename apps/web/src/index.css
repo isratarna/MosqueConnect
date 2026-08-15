@@ -562,11 +562,48 @@ main { min-height: 70vh; }
 .mc-hero__search-input:hover { border-color: var(--mc-rust); color: var(--mc-ink); }
 .mc-hero__nearby { align-items: center; background: rgba(255, 254, 252, 0.94); border: 1px solid rgba(125, 105, 85, 0.22); border-radius: 6px; color: var(--mc-rust); display: inline-flex; justify-content: center; min-width: 46px; }
 .mc-hero__nearby:hover { border-color: var(--mc-rust); color: var(--mc-rust-dark); }
-.mc-location-card { background: rgba(255, 254, 252, 0.96); border: 1px solid rgba(140, 116, 94, 0.24); border-radius: 10px; box-shadow: 0 18px 38px rgba(46, 32, 22, 0.14); display: grid; gap: 0.8rem; grid-template-columns: auto 1fr; max-width: 330px; padding: 1.35rem; }
-.mc-location-card__icon { align-items: center; background: #fbebe3; border-radius: 50%; color: var(--mc-rust); display: flex; grid-row: span 2; height: 42px; justify-content: center; width: 42px; }
-.mc-location-card h2 { font-family: "Manrope", sans-serif; font-size: 0.92rem; font-weight: 700; margin: 0 0 0.25rem; }
-.mc-location-card p { color: var(--mc-muted); font-size: 0.66rem; line-height: 1.65; margin: 0; }
-.mc-location-card .btn { font-size: 0.68rem; grid-column: 1 / -1; }
+.mc-location-card {
+  background: rgba(255, 254, 252, 0.96);
+  border: 1px solid rgba(140, 116, 94, 0.24);
+  border-radius: 10px;
+  box-shadow: 0 14px 30px rgba(46, 32, 22, 0.12);
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  max-width: 320px;
+  padding: 1rem;
+}
+.mc-location-card__icon {
+  align-items: center;
+  background: #fbebe3;
+  border-radius: 50%;
+  color: var(--mc-rust);
+  display: flex;
+  grid-row: auto;
+  align-self: center;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+.mc-location-card h2 {
+  font-family: "Manrope", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 0.15rem;
+}
+.mc-location-card p {
+  color: var(--mc-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  margin: 0;
+}
+.mc-location-card .btn {
+  font-size: 0.78rem;
+  grid-column: 1 / -1;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
 .mc-location-card__secondary { background: transparent; border: 1px solid #e3ddd6; color: var(--mc-ink); }
 
 /* shared content */
