@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -18,6 +19,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Mosque extends Model
 {
+    public const VERIFICATION_UNVERIFIED = 'unverified';
+    public const VERIFICATION_PENDING = 'pending';
+    public const VERIFICATION_VERIFIED = 'verified';
+    public const VERIFICATION_REJECTED = 'rejected';
+
+    public const VERIFICATION_STATUSES = [
+        self::VERIFICATION_UNVERIFIED,
+        self::VERIFICATION_PENDING,
+        self::VERIFICATION_VERIFIED,
+        self::VERIFICATION_REJECTED,
+    ];
+
+    /**
+     * Get the user assigned to administer this mosque.
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
     /**
      * Get the follower records for the mosque.
      */
@@ -40,6 +61,11 @@ class Mosque extends Model
     public function verificationRequests(): HasMany
     {
         return $this->hasMany(VerificationRequest::class);
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->verification_status === self::VERIFICATION_VERIFIED;
     }
 
     /**
