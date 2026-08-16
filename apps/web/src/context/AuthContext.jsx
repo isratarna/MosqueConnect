@@ -3,91 +3,73 @@
  *
  * Provides phone-number-based OTP authentication, token persistence,
  * and user session management connecting to the Laravel REST API.
+ * GET /api/auth/me is the source of truth for the authenticated user.
  */
-import { createContext, useContext, useEffect, useState } from "react";
-
-const AUTH_KEY = "mc_auth_user";
-const AUTH_TOKEN_KEY = "mc_auth_token";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { apiUrl } from "../config";
+import {
+  AUTH_TOKEN_KEY,
+  cacheUser,
+  clearAuthStorage,
+  getAuthHeaders,
+  getStoredToken,
+} from "../utils/authApi";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => {
-    try {
-      return localStorage.getItem(AUTH_TOKEN_KEY);
-    } catch {
-      return null;
-    }
-  });
-
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(AUTH_KEY));
-    } catch {
-      return null;
-    }
-  });
-
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch current user from /api/auth/me on load
-  useEffect(() => {
-    let isMounted = true;
+  const clearSession = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    clearAuthStorage();
+  }, []);
 
-    async function fetchCurrentUser() {
-      const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
-      if (!storedToken) {
-        if (isMounted) {
-          setUser(null);
-          setLoading(false);
+  const restoreSession = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      const res = await fetch(apiUrl("/api/auth/me"), {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const storedToken = getStoredToken();
+        setUser(data.user ?? null);
+        setToken(storedToken);
+        if (data.user) {
+          cacheUser(data.user);
         }
         return;
       }
 
-      try {
-        const res = await fetch("/api/auth/me", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${storedToken}`,
-            Accept: "application/json",
-          },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted) {
-            setUser(data.user);
-            localStorage.setItem(AUTH_KEY, JSON.stringify(data.user));
-          }
-        } else {
-          // Token is invalid/expired
-          if (isMounted) {
-            setUser(null);
-            setToken(null);
-            localStorage.removeItem(AUTH_KEY);
-            localStorage.removeItem(AUTH_TOKEN_KEY);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch current user:", err);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      if (res.status === 401 || res.status === 403) {
+        clearSession();
+        return;
       }
+
+      clearSession();
+    } catch (err) {
+      console.error("Failed to fetch current user:", err);
+      clearSession();
+    } finally {
+      setLoading(false);
     }
+  }, [clearSession]);
 
-    fetchCurrentUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
 
   // Request OTP for phone number: POST /api/auth/send-otp
   async function sendOtp(phoneNumber) {
     try {
-      const res = await fetch("/api/auth/send-otp", {
+      const res = await fetch(apiUrl("/api/auth/send-otp"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -115,7 +97,7 @@ export function AuthProvider({ children }) {
   // Verify OTP and authenticate user: POST /api/auth/verify-otp
   async function verifyOtp(phoneNumber, otp) {
     try {
-      const res = await fetch("/api/auth/verify-otp", {
+      const res = await fetch(apiUrl("/api/auth/verify-otp"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,8 +122,10 @@ export function AuthProvider({ children }) {
       }
 
       if (data.user) {
-        localStorage.setItem(AUTH_KEY, JSON.stringify(data.user));
         setUser(data.user);
+        cacheUser(data.user);
+      } else {
+        await restoreSession();
       }
 
       return {
@@ -157,14 +141,15 @@ export function AuthProvider({ children }) {
 
   // Revoke token and logout: POST /api/auth/logout
   async function logout() {
-    const currentToken = token || localStorage.getItem(AUTH_TOKEN_KEY);
+    const currentToken = token || getStoredToken();
+
     if (currentToken) {
       try {
-        await fetch("/api/auth/logout", {
+        await fetch(apiUrl("/api/auth/logout"), {
           method: "POST",
           headers: {
+            ...getAuthHeaders(),
             Authorization: `Bearer ${currentToken}`,
-            Accept: "application/json",
           },
         });
       } catch (err) {
@@ -172,11 +157,7 @@ export function AuthProvider({ children }) {
       }
     }
 
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem(AUTH_KEY);
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-
+    clearSession();
     return { ok: true };
   }
 
@@ -184,11 +165,7 @@ export function AuthProvider({ children }) {
     setUser((prev) => {
       if (!prev) return null;
       const updated = { ...prev, ...updatedFields };
-      try {
-        localStorage.setItem(AUTH_KEY, JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
+      cacheUser(updated);
       return updated;
     });
   }
@@ -203,6 +180,8 @@ export function AuthProvider({ children }) {
         verifyOtp,
         logout,
         updateUser,
+        restoreSession,
+        clearSession,
       }}
     >
       {children}

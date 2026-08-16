@@ -7,6 +7,13 @@
  */
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+export function apiUrl(path) {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalized}`;
+}
+
 // Default map centre when the user denies / has no geolocation (Dhaka).
 export const DEFAULT_CENTER = { lat: 23.7806, lng: 90.4074 };
 export const DEFAULT_ZOOM = 13;
