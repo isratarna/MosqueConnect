@@ -30,10 +30,13 @@ Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    // Follow / unfollow mosque
     Route::post('/mosques/{mosque}/follow', [MosqueFollowController::class, 'follow']);
     Route::delete('/mosques/{mosque}/follow', [MosqueFollowController::class, 'unfollow']);
     Route::get('/me/followed-mosques', [MosqueFollowController::class, 'followed']);
-Route::middleware('auth:sanctum')->group(function () {
+
+    // Mosque admin + super admin
     Route::prefix('admin')
         ->middleware('role:mosque_admin,super_admin')
         ->group(function () {
@@ -41,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::patch('/mosques/{mosque}', [MosqueManagementController::class, 'update']);
         });
 
+    // Super admin only
     Route::prefix('super-admin')
         ->middleware('role:super_admin')
         ->group(function () {
