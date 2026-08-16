@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, BellOff, Heart, LogOut, Menu, UserRound } from "lucide-react";
+import { Bell, BellOff, Heart, Landmark, LogOut, Menu, ShieldCheck, UserRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/Logo.png";
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false); // mobile collapse
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -32,8 +32,8 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", updateScrollState);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     close();
     closeDropdowns();
     navigate("/");
@@ -75,7 +75,7 @@ export default function Navbar() {
               <NavLink className={navLinkClass} to="/community" onClick={close}>Community</NavLink>
             </li>
 
-            {!user ? (
+            {loading ? null : !user ? (
               <>
                 <li className="nav-item ms-lg-2 mt-1 mt-lg-0">
                   <Link className="btn btn-outline-mc btn-sm w-100 w-lg-auto" to="/login" onClick={close}>Login</Link>
@@ -176,6 +176,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  const isSuperAdmin = user.role === "super_admin";
   const isAdminApproved = user.role === "mosque_admin" && user.status === "approved";
   const isAdminPending = user.role === "mosque_admin" && user.status === "pending";
 
@@ -191,6 +192,11 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
         <UserRound size={18} className="me-1" aria-hidden="true" />
         <span>
           {user.name}
+          {isSuperAdmin && (
+            <span className="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" style={{ fontSize: "10px" }}>
+              Super Admin
+            </span>
+          )}
           {isAdminApproved && (
             <span className="badge bg-success-subtle text-success border border-success-subtle ms-1" style={{ fontSize: "10px" }}>
               Admin
@@ -211,7 +217,9 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
         <li className="px-3 py-2 border-bottom">
           <div className="fw-bold small">{user.fullName || user.name}</div>
           <div className="text-muted" style={{ fontSize: "11px" }}>
-            {user.role === "mosque_admin" ? (
+            {isSuperAdmin ? (
+              <span>System Administrator</span>
+            ) : user.role === "mosque_admin" ? (
               <div className="mt-0.5">
                 <div>Admin: <strong>{user.mosqueName}</strong></div>
                 <div className="mt-1">
@@ -237,6 +245,17 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
             <Heart size={15} className="me-2" aria-hidden="true" />Followed Mosques
           </Link>
         </li>
+
+        {isSuperAdmin && (
+          <>
+            <li><hr className="dropdown-divider" /></li>
+            <li>
+              <Link className="dropdown-item d-flex align-items-center text-danger fw-bold" to="/admin" onClick={onClose}>
+                <ShieldCheck size={15} className="me-2" aria-hidden="true" />System Admin
+              </Link>
+            </li>
+          </>
+        )}
 
         {isAdminApproved && (
           <>

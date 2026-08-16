@@ -20,9 +20,20 @@ import { MOSQUES } from "../data/mosques";
 import MosqueCard from "../components/MosqueCard";
 
 export default function Profile() {
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("followed");
+
+  if (loading) {
+    return (
+      <div className="container py-5 text-center" style={{ minHeight: "60vh" }}>
+        <div className="spinner-border text-mc mb-3" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="text-muted">Loading your profile...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

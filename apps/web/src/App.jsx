@@ -1,6 +1,7 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Compass } from "lucide-react";
 import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Browse from "./pages/Browse";
 import MosqueProfile from "./pages/MosqueProfile";
@@ -8,29 +9,12 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import SuperAdminSection from "./pages/SuperAdminSection";
 import Support from "./pages/Support";
 import SupportContinue from "./pages/SupportContinue";
 import Community from "./pages/Community";
 import AnnouncementDetails from "./pages/AnnouncementDetails";
-import { useAuth } from "./context/AuthContext";
-
-function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
-  const { user } = useAuth();
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
-  }
-
-  if (allowedStatuses && !allowedStatuses.includes(user.status)) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-}
 
 export default function App() {
   return (
@@ -45,6 +29,7 @@ export default function App() {
         <Route path="/mosque/:id" element={<MosqueProfile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
         <Route
           path="/profile"
           element={
@@ -53,6 +38,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/admin/dashboard"
           element={
@@ -61,6 +47,71 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/admin/mosque-claims"
+          element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+              <SuperAdminSection
+                title="Mosque Claim Approval"
+                description="Review mosque admin claims, uploaded proof, and approval decisions."
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/mosques"
+          element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+              <SuperAdminSection
+                title="Manage Mosques"
+                description="View and manage registered mosques across the platform."
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+              <SuperAdminSection
+                title="User Management"
+                description="Manage user accounts, roles, and platform access."
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/moderation"
+          element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+              <SuperAdminSection
+                title="Content Moderation"
+                description="Moderate community posts, announcements, and reported content."
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+              <SuperAdminSection
+                title="Reports & Complaints"
+                description="Review complaints, safety reports, and platform issues."
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
