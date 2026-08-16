@@ -59,6 +59,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Mosque::class, 'followers')
             ->withTimestamps();
+    }
+
+    /**
      * Get the mosques owned by this user for administration.
      */
     public function ownedMosques(): HasMany
