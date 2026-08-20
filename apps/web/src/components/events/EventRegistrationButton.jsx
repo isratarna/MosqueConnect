@@ -3,32 +3,32 @@ export default function EventRegistrationButton({
   onRegister,
   isRegistered = false,
   loading = false,
+  registrationEnabled = false,
+  isPast = false,
 }) {
   if (!event.registration_required) {
     return <span className="mc-event-registration-note">No registration needed</span>;
   }
 
-  const participantCount = event.participants_count ?? event.participant_count;
-  const isFull = event.capacity !== null
-    && event.capacity !== undefined
-    && participantCount !== null
-    && participantCount !== undefined
-    && participantCount >= event.capacity;
-  const canRegister = event.status === "published" && !isFull && !isRegistered && Boolean(onRegister);
+  const canRegister = registrationEnabled
+    && event.status === "published"
+    && !isPast
+    && !isRegistered
+    && Boolean(onRegister);
 
-  let label = "Registration coming soon";
+  let label = "Registration unavailable";
   if (loading) label = "Registering...";
   else if (isRegistered) label = "Registered";
-  else if (isFull) label = "Event full";
   else if (event.status === "cancelled") label = "Event cancelled";
   else if (event.status === "completed") label = "Event completed";
+  else if (isPast) label = "Event ended";
   else if (event.status === "draft") label = "Registration unavailable";
-  else if (onRegister) label = "Register";
+  else if (canRegister) label = "Register";
 
   return (
     <button
       type="button"
-      className="btn btn-outline-mc btn-sm"
+      className={`btn btn-sm ${isRegistered ? "btn-success" : "btn-outline-mc"}`}
       disabled={!canRegister || loading}
       onClick={() => onRegister?.(event)}
     >
