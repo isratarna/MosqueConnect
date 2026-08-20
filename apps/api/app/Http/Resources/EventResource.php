@@ -29,6 +29,10 @@ class EventResource extends JsonResource
             'mosque' => $this->whenLoaded('mosque', fn (): array => [
                 'id' => $this->mosque->id,
                 'name' => $this->mosque->name,
+                'address' => $this->mosque->address,
+                'latitude' => (float) $this->mosque->latitude,
+                'longitude' => (float) $this->mosque->longitude,
+                'phone' => $this->mosque->phone,
                 'verification_status' => $this->mosque->verification_status,
             ]),
             'creator' => $this->whenLoaded('creator', fn (): array => [

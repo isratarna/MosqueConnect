@@ -68,7 +68,108 @@ class CommunityEventSystemTest extends TestCase
             ->assertJsonPath('data.end_time', '11:00')
             ->assertJsonPath('data.capacity', 75)
             ->assertJsonPath('data.registration_required', true)
-            ->assertJsonPath('data.mosque.id', $event->mosque_id);
+            ->assertJsonPath('data.mosque.id', $event->mosque_id)
+            ->assertJsonPath('data.mosque.address', $event->mosque->address)
+            ->assertJsonPath('data.creator.id', $event->created_by);
+    }
+
+    public function test_public_event_filters_can_be_combined_without_exposing_drafts(): void
+    {
+        $firstMosque = Mosque::factory()->create(['name' => 'Central Community Mosque']);
+        $secondMosque = Mosque::factory()->create();
+        $creator = User::factory()->create();
+        $eventDate = today()->addDays(10)->toDateString();
+
+        $matching = Event::factory()->published()->create([
+            'mosque_id' => $firstMosque->id,
+            'created_by' => $creator->id,
+            'title' => 'Family Quran Night',
+            'category' => Event::CATEGORY_QURAN_PROGRAM,
+            'event_date' => $eventDate,
+        ]);
+
+        Event::factory()->published()->create([
+            'mosque_id' => $firstMosque->id,
+            'created_by' => $creator->id,
+            'title' => 'Family Charity Drive',
+            'category' => Event::CATEGORY_CHARITY,
+            'event_date' => $eventDate,
+        ]);
+
+        Event::factory()->published()->create([
+            'mosque_id' => $secondMosque->id,
+            'created_by' => $creator->id,
+            'title' => 'Family Quran Night at Another Mosque',
+            'category' => Event::CATEGORY_QURAN_PROGRAM,
+            'event_date' => $eventDate,
+        ]);
+
+        Event::factory()->create([
+            'mosque_id' => $firstMosque->id,
+            'created_by' => $creator->id,
+            'title' => 'Draft Family Quran Night',
+            'category' => Event::CATEGORY_QURAN_PROGRAM,
+            'event_date' => $eventDate,
+            'status' => Event::STATUS_DRAFT,
+        ]);
+
+        $query = http_build_query([
+            'category' => Event::CATEGORY_QURAN_PROGRAM,
+            'mosque_id' => $firstMosque->id,
+            'date' => $eventDate,
+            'status' => Event::STATUS_PUBLISHED,
+            'search' => 'Family Quran',
+        ]);
+
+        $this->getJson("/api/events?{$query}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matching->id);
+
+        $this->getJson('/api/events?status='.Event::STATUS_DRAFT)
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_public_event_list_is_paginated_and_returns_pagination_metadata(): void
+    {
+        $mosque = Mosque::factory()->create();
+        $creator = User::factory()->create();
+
+        Event::factory()->count(18)->published()->create([
+            'mosque_id' => $mosque->id,
+            'created_by' => $creator->id,
+            'event_date' => today()->addMonth()->toDateString(),
+        ]);
+
+        $this->getJson('/api/events?per_page=5&page=2')
+            ->assertOk()
+            ->assertJsonCount(5, 'data')
+            ->assertJsonPath('meta.current_page', 2)
+            ->assertJsonPath('meta.per_page', 5)
+            ->assertJsonPath('meta.total', 18)
+            ->assertJsonPath('meta.last_page', 4);
+    }
+
+    public function test_public_event_list_places_upcoming_events_before_past_events(): void
+    {
+        $mosque = Mosque::factory()->create();
+        $creator = User::factory()->create();
+        $past = Event::factory()->published()->create([
+            'mosque_id' => $mosque->id,
+            'created_by' => $creator->id,
+            'event_date' => today()->subDay()->toDateString(),
+        ]);
+        $upcoming = Event::factory()->published()->create([
+            'mosque_id' => $mosque->id,
+            'created_by' => $creator->id,
+            'event_date' => today()->addDay()->toDateString(),
+        ]);
+
+        $this->getJson('/api/events')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $upcoming->id)
+            ->assertJsonPath('data.1.id', $past->id);
     }
 
     public function test_unpublished_event_details_are_not_publicly_visible(): void
@@ -230,6 +331,20 @@ class CommunityEventSystemTest extends TestCase
         $this->assertDatabaseCount('events', 0);
     }
 
+    public function test_event_creation_requires_end_time_to_be_strictly_after_start_time(): void
+    {
+        [$admin, $mosque] = $this->verifiedAdminAndMosque();
+        Sanctum::actingAs($admin);
+
+        $this->postJson("/api/admin/mosques/{$mosque->id}/events", $this->validPayload([
+            'start_time' => '10:00',
+            'end_time' => '10:00',
+        ]))->assertUnprocessable()
+            ->assertJsonValidationErrors(['end_time']);
+
+        $this->assertDatabaseCount('events', 0);
+    }
+
     public function test_route_ownership_cannot_be_overridden_by_mosque_or_creator_input(): void
     {
         [$admin, $mosque] = $this->verifiedAdminAndMosque();
@@ -376,6 +491,52 @@ class CommunityEventSystemTest extends TestCase
             'status' => Event::STATUS_CANCELLED,
         ])->assertOk()
             ->assertJsonPath('data.status', Event::STATUS_CANCELLED);
+    }
+
+    public function test_dedicated_publish_and_cancel_endpoints_preserve_the_event_record(): void
+    {
+        [$admin, $mosque] = $this->verifiedAdminAndMosque();
+        $event = Event::factory()->create([
+            'mosque_id' => $mosque->id,
+            'created_by' => $admin->id,
+            'status' => Event::STATUS_DRAFT,
+        ]);
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/admin/mosques/{$mosque->id}/events/{$event->id}/publish")
+            ->assertOk()
+            ->assertJsonPath('message', 'Event published successfully.')
+            ->assertJsonPath('data.status', Event::STATUS_PUBLISHED);
+
+        $this->patchJson("/api/admin/mosques/{$mosque->id}/events/{$event->id}/cancel")
+            ->assertOk()
+            ->assertJsonPath('message', 'Event cancelled successfully.')
+            ->assertJsonPath('data.status', Event::STATUS_CANCELLED);
+
+        $this->assertDatabaseHas('events', [
+            'id' => $event->id,
+            'status' => Event::STATUS_CANCELLED,
+        ]);
+
+        $this->patchJson("/api/admin/mosques/{$mosque->id}/events/{$event->id}/publish")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_admin_event_list_is_paginated(): void
+    {
+        [$admin, $mosque] = $this->verifiedAdminAndMosque();
+        Event::factory()->count(16)->create([
+            'mosque_id' => $mosque->id,
+            'created_by' => $admin->id,
+        ]);
+        Sanctum::actingAs($admin);
+
+        $this->getJson("/api/admin/mosques/{$mosque->id}/events?per_page=5")
+            ->assertOk()
+            ->assertJsonCount(5, 'data')
+            ->assertJsonPath('meta.per_page', 5)
+            ->assertJsonPath('meta.total', 16);
     }
 
     public function test_invalid_event_status_transition_is_rejected_without_changing_the_event(): void

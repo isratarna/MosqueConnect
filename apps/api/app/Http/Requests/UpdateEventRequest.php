@@ -32,10 +32,12 @@ class UpdateEventRequest extends FormRequest
         return [
             'mosque_id' => ['prohibited'],
             'created_by' => ['prohibited'],
+            'participant_count' => ['prohibited'],
+            'participants_count' => ['prohibited'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'category' => ['sometimes', 'required', 'string', Rule::in(Event::CATEGORIES)],
-            'event_date' => ['sometimes', 'required', 'date_format:Y-m-d'],
+            'event_date' => ['sometimes', 'required', 'date_format:Y-m-d', 'after_or_equal:today'],
             'start_time' => ['sometimes', 'required', 'date_format:H:i'],
             'end_time' => ['sometimes', 'nullable', 'date_format:H:i'],
             'location' => ['sometimes', 'required', 'string', 'max:255'],
@@ -61,8 +63,8 @@ class UpdateEventRequest extends FormRequest
                 $startTime = $this->input('start_time', $event->start_time);
                 $endTime = $this->exists('end_time') ? $this->input('end_time') : $event->end_time;
 
-                if ($endTime !== null && $this->timeInMinutes($endTime) < $this->timeInMinutes($startTime)) {
-                    $validator->errors()->add('end_time', 'The end time must be after or equal to the start time.');
+                if ($endTime !== null && $this->timeInMinutes($endTime) <= $this->timeInMinutes($startTime)) {
+                    $validator->errors()->add('end_time', 'The end time must be after the start time.');
                 }
 
                 if ($this->has('status') && ! $event->canTransitionTo($this->string('status')->toString())) {

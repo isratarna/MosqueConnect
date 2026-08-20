@@ -113,6 +113,28 @@ class Event extends Model
         return $query->where('status', self::STATUS_PUBLISHED);
     }
 
+    /**
+     * Apply supported event-list filters to a query.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when($filters['category'] ?? null, fn (Builder $query, string $category): Builder => $query->where('category', $category))
+            ->when($filters['mosque_id'] ?? null, fn (Builder $query, int $mosqueId): Builder => $query->where('mosque_id', $mosqueId))
+            ->when($filters['date'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('event_date', $date))
+            ->when($filters['status'] ?? null, fn (Builder $query, string $status): Builder => $query->where('status', $status))
+            ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('location', 'like', "%{$search}%")
+                        ->orWhereHas('mosque', fn (Builder $query): Builder => $query->where('name', 'like', "%{$search}%"));
+                });
+            });
+    }
+
     public function canTransitionTo(string $status): bool
     {
         if ($status === $this->status) {

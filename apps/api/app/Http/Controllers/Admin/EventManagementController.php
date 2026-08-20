@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\EventIndexRequest;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Http\Resources\EventResource;
@@ -11,19 +12,24 @@ use App\Models\Mosque;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class EventManagementController extends Controller
 {
-    public function index(Mosque $mosque): AnonymousResourceCollection
+    public function index(EventIndexRequest $request, Mosque $mosque): AnonymousResourceCollection
     {
         Gate::authorize('view', $mosque);
 
+        $filters = $request->validated();
+
         $events = $mosque->events()
             ->with(['mosque', 'creator'])
+            ->filter($filters)
             ->orderByDesc('event_date')
             ->orderByDesc('start_time')
             ->orderByDesc('id')
-            ->get();
+            ->paginate($request->integer('per_page', 15))
+            ->withQueryString();
 
         return EventResource::collection($events);
     }
@@ -76,5 +82,32 @@ class EventManagementController extends Controller
         return response()->json([
             'message' => 'Event deleted successfully.',
         ]);
+    }
+
+    public function publish(Mosque $mosque, Event $event): EventResource
+    {
+        return $this->transition($event, Event::STATUS_PUBLISHED, 'Event published successfully.');
+    }
+
+    public function cancel(Mosque $mosque, Event $event): EventResource
+    {
+        return $this->transition($event, Event::STATUS_CANCELLED, 'Event cancelled successfully.');
+    }
+
+    private function transition(Event $event, string $status, string $message): EventResource
+    {
+        Gate::authorize('update', $event);
+
+        if (! $event->canTransitionTo($status)) {
+            throw ValidationException::withMessages([
+                'status' => "The event status cannot transition from {$event->status} to {$status}.",
+            ]);
+        }
+
+        $event->transitionTo($status);
+        $event->save();
+
+        return (new EventResource($event->refresh()->load(['mosque', 'creator'])))
+            ->additional(['message' => $message]);
     }
 }
