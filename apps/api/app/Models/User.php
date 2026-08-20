@@ -85,6 +85,14 @@ class User extends Authenticatable
         return $this->hasMany(VerificationRequest::class, 'reviewer_id');
     }
 
+    /**
+     * Get the community events created by this user.
+     */
+    public function createdEvents(): HasMany
+    {
+        return $this->hasMany(Event::class, 'created_by');
+    }
+
     public function hasRole(string $role): bool
     {
         return $this->role === $role;

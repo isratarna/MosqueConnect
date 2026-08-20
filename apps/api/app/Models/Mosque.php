@@ -68,6 +68,14 @@ class Mosque extends Model
         return $this->hasMany(VerificationRequest::class);
     }
 
+    /**
+     * Get the community events hosted by the mosque.
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
+
     public function isVerified(): bool
     {
         return $this->verification_status === self::VERIFICATION_VERIFIED;
