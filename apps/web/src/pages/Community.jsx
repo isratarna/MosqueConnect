@@ -3,11 +3,14 @@ import { FilterX, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import CommunityCard, { CommunityCategoryIcon } from "../components/CommunityCard";
 import EventList from "../components/events/EventList";
+import EventRegistrationFeedback from "../components/events/EventRegistrationFeedback";
+import useEventRegistration from "../hooks/useEventRegistration";
 import {
   COMMUNITY_UPDATES,
   isCommunityCategory,
 } from "../data/community";
-import { fetchPublishedEvents } from "../utils/eventApi";
+import { fetchEventCollection } from "../utils/eventApi";
+import { filterEvents, getEventMosqueName } from "../utils/eventFilters";
 
 const CATEGORY_FILTERS = [
   { key: "announcement", label: "Announcement" },
@@ -34,7 +37,11 @@ export default function Community() {
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState("");
+  const [eventsMeta, setEventsMeta] = useState(null);
   const [eventRequestKey, setEventRequestKey] = useState(0);
+  const [eventCategory, setEventCategory] = useState("");
+  const [upcomingEventsOnly, setUpcomingEventsOnly] = useState(true);
+  const registration = useEventRegistration();
 
   const retryEvents = useCallback(() => {
     setEventRequestKey((current) => current + 1);
@@ -46,8 +53,11 @@ export default function Community() {
     setEventsLoading(true);
     setEventsError("");
 
-    fetchPublishedEvents({ signal: controller.signal })
-      .then(setEvents)
+    fetchEventCollection({ signal: controller.signal })
+      .then(({ events: publishedEvents, meta }) => {
+        setEvents(publishedEvents);
+        setEventsMeta(meta);
+      })
       .catch((error) => {
         if (error.name !== "AbortError") {
           setEventsError(error.message || "Published events could not be loaded.");
@@ -61,15 +71,32 @@ export default function Community() {
   }, [eventRequestKey]);
 
   const mosques = useMemo(
-    () => [...new Set(COMMUNITY_UPDATES.map((item) => item.mosqueName))].sort(),
-    [],
+    () => [...new Set([
+      ...COMMUNITY_UPDATES.map((item) => item.mosqueName),
+      ...events.map(getEventMosqueName),
+    ])].sort(),
+    [events],
   );
   const areas = useMemo(
-    () => [...new Set(COMMUNITY_UPDATES.map((item) => item.area))].sort(),
-    [],
+    () => [...new Set([
+      ...COMMUNITY_UPDATES.map((item) => item.area),
+      ...events.map((event) => event.location),
+    ].filter(Boolean))].sort(),
+    [events],
+  );
+  const eventCategories = useMemo(
+    () => [...new Set(events.map((event) => event.category).filter(Boolean))].sort(),
+    [events],
   );
 
-  const hasFilters = Boolean(search || mosque || area || dateGroup || urgentOnly || activeCategory !== "all");
+  const hasFilters = Boolean(search
+    || mosque
+    || area
+    || dateGroup
+    || urgentOnly
+    || eventCategory
+    || !upcomingEventsOnly
+    || activeCategory !== "all");
 
   const setCategory = (category) => {
     setSearchParams((current) => {
@@ -86,6 +113,8 @@ export default function Community() {
     setArea("");
     setDateGroup("");
     setUrgentOnly(false);
+    setEventCategory("");
+    setUpcomingEventsOnly(true);
     setCategory("all");
   };
 
@@ -97,6 +126,8 @@ export default function Community() {
     const normalizedSearch = search.trim().toLowerCase();
 
     return COMMUNITY_UPDATES.filter((item) => {
+      if (item.category === "event") return false;
+
       const matchesSearch = !normalizedSearch || [item.title, item.summary, item.mosqueName, item.area]
         .join(" ")
         .toLowerCase()
@@ -111,7 +142,18 @@ export default function Community() {
     });
   }, [activeCategory, area, dateGroup, mosque, search, urgentOnly]);
 
+  const filteredEvents = useMemo(() => filterEvents(events, {
+    search,
+    mosque,
+    location: area,
+    category: eventCategory,
+    dateGroup,
+    upcomingOnly: upcomingEventsOnly,
+  }), [area, dateGroup, eventCategory, events, mosque, search, upcomingEventsOnly]);
+
   const feedItems = filteredUpdates.slice(0, visibleItems);
+  const showEvents = activeCategory === "all" || activeCategory === "event";
+  const showCommunityFeed = activeCategory !== "event";
 
   return (
     <section className="mc-community-page mc-atmospheric-section">
@@ -162,8 +204,8 @@ export default function Community() {
               </select>
             </div>
             <div className="col-sm-6 col-lg">
-              <select className="form-select" value={area} onChange={(event) => setArea(event.target.value)} aria-label="Filter by area">
-                <option value="">All areas</option>
+              <select className="form-select" value={area} onChange={(event) => setArea(event.target.value)} aria-label="Filter by area or event venue">
+                <option value="">All areas / venues</option>
                 {areas.map((option) => <option key={option} value={option}>{option}</option>)}
               </select>
             </div>
@@ -191,25 +233,47 @@ export default function Community() {
           </div>
         </section>
 
-        <section className="mc-community-section mc-motion-section" aria-labelledby="upcoming-events-heading">
-          <div className="mc-community-section__heading">
-            <div>
-              <p className="mc-kicker">Published by mosques</p>
-              <h2 id="upcoming-events-heading">Community events</h2>
+        {showEvents && (
+          <section className="mc-community-section mc-motion-section" aria-labelledby="upcoming-events-heading">
+            <div className="mc-community-section__heading">
+              <div>
+                <p className="mc-kicker">Published by mosques</p>
+                <h2 id="upcoming-events-heading">Upcoming events</h2>
+              </div>
+              {!eventsLoading && !eventsError && (
+                <span className="mc-community-section__count" aria-live="polite">
+                  {filteredEvents.length} matching{eventsMeta?.total > events.length ? ` of ${eventsMeta.total}` : ""}
+                </span>
+              )}
             </div>
-            {!eventsLoading && !eventsError && (
-              <span className="mc-community-section__count" aria-live="polite">{events.length} published</span>
-            )}
-          </div>
-          <EventList
-            events={events.slice(0, 3)}
-            loading={eventsLoading}
-            error={eventsError}
-            onRetry={retryEvents}
-          />
-        </section>
 
-        <section className="mc-community-section mc-motion-section" aria-labelledby="community-feed-heading">
+            <div className="mc-event-discovery-controls" aria-label="Filter events">
+              <select className="form-select" value={eventCategory} onChange={(event) => setEventCategory(event.target.value)} aria-label="Filter events by category">
+                <option value="">All event categories</option>
+                {eventCategories.map((category) => <option value={category} key={category}>{category}</option>)}
+              </select>
+              <div className="form-check form-switch mb-0">
+                <input id="upcoming-events-only" className="form-check-input" type="checkbox" checked={upcomingEventsOnly} onChange={(event) => setUpcomingEventsOnly(event.target.checked)} />
+                <label className="form-check-label" htmlFor="upcoming-events-only">Upcoming only</label>
+              </div>
+            </div>
+
+            <EventRegistrationFeedback feedback={registration.feedback} onDismiss={registration.clearFeedback} />
+            <EventList
+              events={filteredEvents}
+              loading={eventsLoading}
+              error={eventsError}
+              onRetry={retryEvents}
+              onRegister={registration.register}
+              registeredEventIds={registration.registeredEventIds}
+              registrationLoadingIds={registration.registrationLoadingIds}
+              registrationEnabled={registration.registrationEnabled}
+              emptyMessage="No events match the current search and filters."
+            />
+          </section>
+        )}
+
+        {showCommunityFeed && <section className="mc-community-section mc-motion-section" aria-labelledby="community-feed-heading">
           <div className="mc-community-section__heading">
             <div>
               <p className="mc-kicker">Community feed</p>
@@ -235,11 +299,7 @@ export default function Community() {
           ) : (
             <EmptyState onClear={clearFilters} />
           )}
-        </section>
-
-        <p className="mc-community-page__note mb-0">
-          Published events are loaded from the MosqueConnect API. Other community notices remain illustrative until their backend modules are introduced; registration and notifications will follow in later event work.
-        </p>
+        </section>}
       </div>
     </section>
   );

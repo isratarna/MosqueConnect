@@ -7,6 +7,9 @@ export default function EventList({
   error = "",
   onRetry,
   onRegister,
+  registeredEventIds = new Set(),
+  registrationLoadingIds = new Set(),
+  registrationEnabled = false,
   emptyMessage = "No published events are available right now.",
 }) {
   if (loading) {
@@ -41,7 +44,14 @@ export default function EventList({
   return (
     <div className="mc-event-list">
       {events.map((event) => (
-        <EventCard event={event} onRegister={onRegister} key={event.id} />
+        <EventCard
+          event={event}
+          onRegister={onRegister}
+          isRegistered={registeredEventIds.has(event.id)}
+          registrationLoading={registrationLoadingIds.has(event.id)}
+          registrationEnabled={registrationEnabled}
+          key={event.id}
+        />
       ))}
     </div>
   );

@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Building2,
-  CalendarCheck,
   CalendarDays,
   Clock3,
   Heart,
@@ -22,6 +21,7 @@ import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import PrayerTimeline from "../components/PrayerTimeline";
+import MosqueEventsSection from "../components/events/MosqueEventsSection";
 
 const DAILY_PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
@@ -136,25 +136,7 @@ export default function MosqueProfile() {
           </div>
 
           {/* events */}
-          <div className="card mc-card">
-            <div className="card-body">
-              <h5 className="fw-bold mb-3"><CalendarDays size={18} className="text-mc me-2" aria-hidden="true" />Events</h5>
-              {mosque.events.length ? (
-                mosque.events.map((e, i) => (
-                  <div className="d-flex mb-3" key={i}>
-                    <div className="mc-feature-icon me-3"><CalendarCheck size={22} aria-hidden="true" /></div>
-                    <div>
-                      <strong>{e.title}</strong>
-                      <div className="small text-mc">{e.when}</div>
-                      <div className="small text-muted">{e.desc}</div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted mb-0">No upcoming events.</p>
-              )}
-            </div>
-          </div>
+          <MosqueEventsSection mosqueId={mosque.id} />
         </div>
 
         <div className="col-lg-4">

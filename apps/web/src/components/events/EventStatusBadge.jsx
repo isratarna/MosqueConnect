@@ -3,10 +3,11 @@ const STATUS_LABELS = {
   published: "Published",
   cancelled: "Cancelled",
   completed: "Completed",
+  past: "Past event",
 };
 
 export default function EventStatusBadge({ status }) {
-  const normalizedStatus = STATUS_LABELS[status] ? status : "draft";
+  const normalizedStatus = STATUS_LABELS[status] ? status : "published";
 
   return (
     <span className={`mc-event-status is-${normalizedStatus}`}>
