@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Event;
 use App\Models\Mosque;
+use App\Policies\EventPolicy;
 use App\Policies\MosquePolicy;
 use App\Services\Otp\LogSmsOtpSender;
 use App\Services\Otp\MissingSmsOtpSender;
@@ -31,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Event::class, EventPolicy::class);
         Gate::policy(Mosque::class, MosquePolicy::class);
 
         RateLimiter::for('otp-send', function (Request $request) {

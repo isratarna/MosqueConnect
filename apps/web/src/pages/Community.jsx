@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FilterX, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import CommunityCard, { CommunityCategoryIcon } from "../components/CommunityCard";
+import EventList from "../components/events/EventList";
 import {
   COMMUNITY_UPDATES,
   isCommunityCategory,
 } from "../data/community";
+import { fetchPublishedEvents } from "../utils/eventApi";
 
 const CATEGORY_FILTERS = [
   { key: "announcement", label: "Announcement" },
@@ -29,6 +31,34 @@ export default function Community() {
   const [dateGroup, setDateGroup] = useState("");
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [visibleItems, setVisibleItems] = useState(INITIAL_VISIBLE_ITEMS);
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState("");
+  const [eventRequestKey, setEventRequestKey] = useState(0);
+
+  const retryEvents = useCallback(() => {
+    setEventRequestKey((current) => current + 1);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    setEventsLoading(true);
+    setEventsError("");
+
+    fetchPublishedEvents({ signal: controller.signal })
+      .then(setEvents)
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setEventsError(error.message || "Published events could not be loaded.");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setEventsLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [eventRequestKey]);
 
   const mosques = useMemo(
     () => [...new Set(COMMUNITY_UPDATES.map((item) => item.mosqueName))].sort(),
@@ -161,6 +191,24 @@ export default function Community() {
           </div>
         </section>
 
+        <section className="mc-community-section mc-motion-section" aria-labelledby="upcoming-events-heading">
+          <div className="mc-community-section__heading">
+            <div>
+              <p className="mc-kicker">Published by mosques</p>
+              <h2 id="upcoming-events-heading">Community events</h2>
+            </div>
+            {!eventsLoading && !eventsError && (
+              <span className="mc-community-section__count" aria-live="polite">{events.length} published</span>
+            )}
+          </div>
+          <EventList
+            events={events.slice(0, 3)}
+            loading={eventsLoading}
+            error={eventsError}
+            onRetry={retryEvents}
+          />
+        </section>
+
         <section className="mc-community-section mc-motion-section" aria-labelledby="community-feed-heading">
           <div className="mc-community-section__heading">
             <div>
@@ -190,7 +238,7 @@ export default function Community() {
         </section>
 
         <p className="mc-community-page__note mb-0">
-          This page uses illustrative frontend data. Live posts, moderation, notifications, and community submissions will connect here in a future backend phase.
+          Published events are loaded from the MosqueConnect API. Other community notices remain illustrative until their backend modules are introduced; registration and notifications will follow in later event work.
         </p>
       </div>
     </section>

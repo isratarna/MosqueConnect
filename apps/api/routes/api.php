@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\EventManagementController;
 use App\Http\Controllers\Admin\MosqueManagementController;
 use App\Http\Controllers\Admin\SystemAdminController;
 use App\Http\Controllers\Auth\PhoneOtpController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +30,8 @@ Route::prefix('auth')->group(function () {
 
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
+Route::get('/events', [EventController::class, 'index']);
+Route::get('/events/{event}', [EventController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -42,6 +46,14 @@ Route::middleware('auth:sanctum')->group(function () {
         ->group(function () {
             Route::get('/mosques/{mosque}', [MosqueManagementController::class, 'show']);
             Route::patch('/mosques/{mosque}', [MosqueManagementController::class, 'update']);
+
+            Route::scopeBindings()->group(function () {
+                Route::get('/mosques/{mosque}/events', [EventManagementController::class, 'index']);
+                Route::post('/mosques/{mosque}/events', [EventManagementController::class, 'store']);
+                Route::get('/mosques/{mosque}/events/{event}', [EventManagementController::class, 'show']);
+                Route::patch('/mosques/{mosque}/events/{event}', [EventManagementController::class, 'update']);
+                Route::delete('/mosques/{mosque}/events/{event}', [EventManagementController::class, 'destroy']);
+            });
         });
 
     // Super admin only
