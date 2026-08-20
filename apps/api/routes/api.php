@@ -52,6 +52,8 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::post('/mosques/{mosque}/events', [EventManagementController::class, 'store']);
                 Route::get('/mosques/{mosque}/events/{event}', [EventManagementController::class, 'show']);
                 Route::patch('/mosques/{mosque}/events/{event}', [EventManagementController::class, 'update']);
+                Route::patch('/mosques/{mosque}/events/{event}/publish', [EventManagementController::class, 'publish']);
+                Route::patch('/mosques/{mosque}/events/{event}/cancel', [EventManagementController::class, 'cancel']);
                 Route::delete('/mosques/{mosque}/events/{event}', [EventManagementController::class, 'destroy']);
             });
         });
