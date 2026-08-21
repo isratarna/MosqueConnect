@@ -16,6 +16,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   const [step, setStep] = useState("phone"); // "phone" | "otp"
+  const [countryCode, setCountryCode] = useState("+880");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,14 +28,16 @@ export default function Login() {
     setError("");
     setMessage("");
 
-    const trimmedPhone = phone.trim();
-    if (!trimmedPhone) {
-      setError("Please enter your phone number.");
+    const localPhone = phone.replace(/\D/g, "");
+    if (!localPhone || localPhone.length < 6 || localPhone.length > 15) {
+      setError("Please enter a valid phone number.");
       return;
     }
 
+    const fullPhone = countryCode + localPhone;
+
     setLoading(true);
-    const res = await sendOtp(trimmedPhone);
+    const res = await sendOtp(fullPhone);
     setLoading(false);
 
     if (!res.ok) {
@@ -42,7 +45,7 @@ export default function Login() {
       return;
     }
 
-    setMessage(res.message || `OTP sent successfully to ${trimmedPhone}.`);
+    setMessage(res.message || `OTP sent successfully to ${fullPhone}.`);
     setStep("otp");
   };
 
@@ -56,8 +59,11 @@ export default function Login() {
       return;
     }
 
+    const localPhone = phone.replace(/\D/g, "");
+    const fullPhone = countryCode + localPhone;
+
     setLoading(true);
-    const res = await verifyOtp(phone.trim(), trimmedOtp);
+    const res = await verifyOtp(fullPhone, trimmedOtp);
     setLoading(false);
 
     if (!res.ok) {
@@ -71,8 +77,12 @@ export default function Login() {
   const handleResendOtp = async () => {
     if (loading) return;
     setError("");
+    
+    const localPhone = phone.replace(/\D/g, "");
+    const fullPhone = countryCode + localPhone;
+    
     setLoading(true);
-    const res = await sendOtp(phone.trim());
+    const res = await sendOtp(fullPhone);
     setLoading(false);
 
     if (!res.ok) {
@@ -105,7 +115,7 @@ export default function Login() {
                 <p className="text-muted mb-0">
                   {step === "phone"
                     ? "Log in using your phone number and OTP."
-                    : `We sent a 6-digit code to ${phone}.`}
+                    : `We sent a 6-digit code to ${countryCode}${phone.replace(/\D/g, '')}.`}
                 </p>
               </div>
 
@@ -128,16 +138,32 @@ export default function Login() {
                   <div className="mb-3">
                     <label className="form-label">Phone Number</label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <Phone size={16} aria-hidden="true" />
-                      </span>
+                      <select 
+                        className="form-select bg-light border-end-0" 
+                        style={{ maxWidth: '120px', flex: '0 0 120px', cursor: 'pointer' }}
+                        value={countryCode}
+                        onChange={(e) => {
+                          setCountryCode(e.target.value);
+                          setError("");
+                        }}
+                        disabled={loading}
+                        aria-label="Country Code"
+                      >
+                        <option value="+880">🇧🇩 +880</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+60">🇲🇾 +60</option>
+                      </select>
                       <input
                         type="tel"
-                        className="form-control"
-                        placeholder="e.g. +8801712345678"
+                        className="form-control flex-grow-1"
+                        placeholder="e.g. 1712345678"
                         value={phone}
                         onChange={(e) => {
-                          setPhone(e.target.value);
+                          setPhone(e.target.value.replace(/\D/g, ""));
                           setError("");
                         }}
                         disabled={loading}
@@ -146,7 +172,7 @@ export default function Login() {
                       />
                     </div>
                     <div className="form-text text-muted small">
-                      Include country code with plus prefix (e.g. +8801XXXXXXXXX).
+                      Select your country code and enter your local number.
                     </div>
                   </div>
 
