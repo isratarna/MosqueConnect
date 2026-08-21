@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PhoneOtpController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -34,6 +35,12 @@ Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{event}', [EventController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    // Current user's notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
 
     // Follow / unfollow mosque
     Route::post('/mosques/{mosque}/follow', [MosqueFollowController::class, 'follow']);
