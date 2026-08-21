@@ -1,26 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { CheckCircle, Clock3, Star } from "lucide-react";
+import { formatClockTime, parseClockTime } from "../utils/prayerTime";
 
 const DAILY_PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
-
-function parsePrayerTime(name, timeStr, ref = new Date()) {
-  const parts = String(timeStr || "").split(":");
-  if (parts.length < 2) return null;
-  let hour = parseInt(parts[0], 10);
-  const minute = parseInt(parts[1], 10) || 0;
-
-  // Heuristic: Fajr = AM, others = PM (works for demo dataset)
-  const isPM = name !== "Fajr";
-  if (isNaN(hour)) return null;
-
-  if (isPM) {
-    if (hour < 12) hour += 12;
-  } else {
-    if (hour === 12) hour = 0;
-  }
-
-  return new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), hour, minute, 0, 0);
-}
 
 function formatRemaining(ms) {
   if (ms <= 0) return "0m";
@@ -36,18 +18,15 @@ function formatTime(date) {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-export default function PrayerTimeline({ prayers = {} }) {
+export default function PrayerTimeline({ prayers = {}, schedule = [] }) {
   const [nowTick, setNowTick] = useState(Date.now());
 
-  // update once per minute
   useEffect(() => {
     const tick = () => setNowTick(Date.now());
-    // align to next whole minute for a cleaner UX
     const untilNextMinute = 60000 - (Date.now() % 60000);
     const t = setTimeout(() => {
       tick();
       const iv = setInterval(tick, 60000);
-      // store on window for cleanup reference
       (window.__mcPrayerInterval = window.__mcPrayerInterval || []).push(iv);
     }, untilNextMinute);
 
@@ -60,23 +39,39 @@ export default function PrayerTimeline({ prayers = {} }) {
   }, []);
 
   const now = new Date(nowTick);
+  const scheduleByLabel = useMemo(() => {
+    const map = {};
+    for (const item of Array.isArray(schedule) ? schedule : []) {
+      if (item?.label) map[item.label] = item;
+    }
+    return map;
+  }, [schedule]);
 
   const list = useMemo(() => {
-    const items = DAILY_PRAYERS.map((p) => {
-      const dt = parsePrayerTime(p, prayers[p], now);
-      return { name: p, time: prayers[p] || "—", date: dt };
+    const items = DAILY_PRAYERS.map((name) => {
+      const jamaat = prayers[name];
+      const details = scheduleByLabel[name];
+      const dt = parseClockTime(jamaat, now);
+      return {
+        name,
+        time: jamaat ? formatClockTime(jamaat) : "—",
+        adhan: details?.adhan_time ? formatClockTime(details.adhan_time) : null,
+        date: dt,
+      };
     });
 
-    // find next prayer (today), otherwise Fajr tomorrow
     const nextIndex = items.findIndex((it) => it.date && it.date.getTime() > now.getTime());
     if (nextIndex !== -1) {
       return items.map((it, i) => ({ ...it, status: i < nextIndex ? "completed" : i === nextIndex ? "next" : "upcoming" }));
     }
 
-    // none remaining today -> next is Fajr tomorrow
-    const tomorrowFajr = parsePrayerTime("Fajr", prayers.Fajr, new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
-    return items.map((it, i) => ({ ...it, status: it.name === "Fajr" ? "next" : "completed", date: it.name === "Fajr" ? tomorrowFajr : it.date }));
-  }, [prayers, nowTick]);
+    const tomorrowFajr = parseClockTime(prayers.Fajr, new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+    return items.map((it) => ({
+      ...it,
+      status: it.name === "Fajr" ? "next" : "completed",
+      date: it.name === "Fajr" ? tomorrowFajr : it.date,
+    }));
+  }, [prayers, scheduleByLabel, nowTick]);
 
   const next = list.find((l) => l.status === "next") || list[0];
   const remaining = next && next.date ? next.date.getTime() - now.getTime() : 0;
@@ -98,7 +93,7 @@ export default function PrayerTimeline({ prayers = {} }) {
             key={it.name}
             className={"mc-prayer-item bg-light rounded-3 me-2 " + (it.status ? `mc-${it.status}` : "")}
             role="group"
-            aria-label={`${it.name} at ${it.time}. ${it.status}.`}
+            aria-label={`${it.name} jamaat at ${it.time}. ${it.status}.`}
           >
             <small className="text-muted d-block">{it.name}</small>
             <div className="d-flex align-items-center justify-content-center gap-2">
@@ -111,7 +106,10 @@ export default function PrayerTimeline({ prayers = {} }) {
               )}
               <span className="h5 mb-0">{it.time}</span>
             </div>
-            {it.status === "next" && (
+            {it.adhan && (
+              <div className="small text-muted mt-1">Adhan {it.adhan}</div>
+            )}
+            {it.status === "next" && it.date && (
               <div className="small text-muted mt-1">in {formatRemaining(it.date.getTime() - now.getTime())}</div>
             )}
           </div>

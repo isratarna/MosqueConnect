@@ -87,6 +87,51 @@ class Mosque extends Model
         return $this->hasMany(Notification::class);
     }
 
+    /**
+     * Get daily prayer and jamaat times for the mosque.
+     */
+    public function prayerTimes(): HasMany
+    {
+        return $this->hasMany(PrayerTime::class)->orderByRaw(
+            "CASE prayer WHEN 'fajr' THEN 1 WHEN 'dhuhr' THEN 2 WHEN 'asr' THEN 3 WHEN 'maghrib' THEN 4 WHEN 'isha' THEN 5 ELSE 6 END",
+        );
+    }
+
+    /**
+     * Get Jumuah sessions hosted by the mosque.
+     */
+    public function jumuahSessions(): HasMany
+    {
+        return $this->hasMany(JumuahSession::class)->orderBy('sequence');
+    }
+
+    /**
+     * Get announcements published by the mosque.
+     */
+    public function announcements(): HasMany
+    {
+        return $this->hasMany(Announcement::class);
+    }
+
+    /**
+     * Get published announcements for public mosque profiles.
+     */
+    public function publishedAnnouncements(): HasMany
+    {
+        return $this->announcements()
+            ->published()
+            ->orderByDesc('published_at')
+            ->orderByDesc('id');
+    }
+
+    /**
+     * Get facilities available at the mosque.
+     */
+    public function facilities(): HasMany
+    {
+        return $this->hasMany(MosqueFacility::class)->orderBy('facility_key');
+    }
+
     public function isVerified(): bool
     {
         return $this->verification_status === self::VERIFICATION_VERIFIED;

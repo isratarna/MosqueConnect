@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\EventManagementController;
 use App\Http\Controllers\Admin\MosqueManagementController;
 use App\Http\Controllers\Admin\SystemAdminController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\PhoneOtpController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\MosqueController;
@@ -31,6 +32,7 @@ Route::prefix('auth')->group(function () {
 
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
+Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
 Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{event}', [EventController::class, 'show']);
 

@@ -24,6 +24,7 @@ import VerifiedBadge from "../components/VerifiedBadge";
 import PrayerTimeline from "../components/PrayerTimeline";
 import MosqueEventsSection from "../components/events/MosqueEventsSection";
 import { directionsUrl, fetchMosqueById } from "../utils/mosqueDiscovery";
+import { formatClockTime } from "../utils/prayerTime";
 
 export default function MosqueProfile() {
   const { id } = useParams();
@@ -87,30 +88,12 @@ export default function MosqueProfile() {
   }
 
   const prayer = mosque.prayer || {};
-const announcements = Array.isArray(mosque.announcements)
-  ? mosque.announcements
-  : [];
-
-const facilities = Array.isArray(mosque.facilities)
-  ? mosque.facilities
-  : [];
-
-const directions = directionsUrl(mosque);
-
-const jummahSessions = [
-  {
-    label: "First Jummah",
-    time: prayer.Jummah || "—",
-  },
-  {
-    label: "Second Jummah",
-    time: "—",
-  },
-  {
-    label: "Third Jummah",
-    time: "—",
-  },
-];
+  const announcements = Array.isArray(mosque.announcements) ? mosque.announcements : [];
+  const facilities = Array.isArray(mosque.facilities) ? mosque.facilities : [];
+  const jumuahSessions = Array.isArray(mosque.jumuah_sessions) ? mosque.jumuah_sessions : [];
+  const prayerSchedule = Array.isArray(mosque.prayer_schedule) ? mosque.prayer_schedule : [];
+  const hasDailyPrayer = Object.values(prayer).some(Boolean) || prayerSchedule.length > 0;
+  const directions = directionsUrl(mosque);
 
   return (
     <div className="container py-4 mc-motion-stagger">
@@ -166,12 +149,11 @@ const jummahSessions = [
 
       <div className="row g-4">
         <div className="col-lg-8">
-          {/* prayer times */}
           <div className="card mc-card mb-4" id="prayer-schedule">
             <div className="card-body">
               <h5 className="fw-bold mb-3"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />Prayer &amp; Jamat Times</h5>
-              {Object.keys(prayer).length ? (
-                <PrayerTimeline prayers={prayer} />
+              {hasDailyPrayer ? (
+                <PrayerTimeline prayers={prayer} schedule={prayerSchedule} />
               ) : (
                 <p className="text-muted mb-0">Prayer times have not been published for this mosque yet.</p>
               )}
@@ -181,16 +163,26 @@ const jummahSessions = [
           <div className="card mc-card mb-4">
             <div className="card-body">
               <h5 className="fw-bold mb-3"><Sun size={18} className="text-mc me-2" aria-hidden="true" />Jummah Prayer</h5>
-              <div className="row row-cols-1 row-cols-md-2 g-2">
-                {jummahSessions.map((session) => (
-                  <div className="col" key={session.label}>
-                    <div className="mc-prayer-cell bg-light rounded-3">
-                      <small className="text-muted d-block">{session.label}</small>
-                      <span className="h5">{session.time}</span>
+              {jumuahSessions.length ? (
+                <div className="row row-cols-1 row-cols-md-2 g-2">
+                  {jumuahSessions.map((session) => (
+                    <div className="col" key={session.id || session.sequence || session.label}>
+                      <div className="mc-prayer-cell bg-light rounded-3">
+                        <small className="text-muted d-block">{session.label}</small>
+                        <span className="h5">{formatClockTime(session.jamaat_time)}</span>
+                        {session.khutbah_time && (
+                          <small className="text-muted d-block">Khutbah {formatClockTime(session.khutbah_time)}</small>
+                        )}
+                        {session.notes && (
+                          <small className="text-muted d-block">{session.notes}</small>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted mb-0">Jumuah times have not been published for this mosque yet.</p>
+              )}
             </div>
           </div>
 
@@ -199,7 +191,8 @@ const jummahSessions = [
               <h5 className="fw-bold mb-3"><Megaphone size={18} className="text-mc me-2" aria-hidden="true" />Announcements</h5>
               {announcements.length ? (
                 announcements.map((announcement, index) => {
-                  const announcementId = getMosqueAnnouncementId(mosque.id, announcement, index);
+                  const announcementId = announcement.id || getMosqueAnnouncementId(mosque.id, announcement, index);
+                  const publishedOn = announcement.date || (announcement.published_at || "").slice(0, 10);
 
                   return (
                     <div className={`border-start border-4 border-${urgencyClass(announcement.urgency)} ps-3 mb-3`} key={announcementId}>
@@ -213,10 +206,12 @@ const jummahSessions = [
                       </div>
                       <p className="mb-1 small text-muted">{announcement.body}</p>
                       <div className="d-flex align-items-center gap-3">
-                        <small className="text-muted">
-                          <CalendarDays size={14} className="me-1" aria-hidden="true" />
-                          {announcement.date}
-                        </small>
+                        {publishedOn && (
+                          <small className="text-muted">
+                            <CalendarDays size={14} className="me-1" aria-hidden="true" />
+                            {publishedOn}
+                          </small>
+                        )}
                         <Link to={getAnnouncementDetailsPath(announcementId)} className="small text-mc text-decoration-none">
                           Read details
                         </Link>

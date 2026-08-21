@@ -1,25 +1,63 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   CalendarDays,
   Clock3,
+  LoaderCircle,
   MapPin,
   Phone,
   TriangleAlert,
   UserRound,
 } from "lucide-react";
-import {
-  getAnnouncementById,
-} from "../data/announcements";
 import { CommunityCategoryIcon } from "../components/CommunityCard";
 import VerifiedBadge from "../components/VerifiedBadge";
+import { fetchAnnouncementById } from "../utils/announcementApi";
 
 export default function AnnouncementDetails() {
   const { id } = useParams();
-  const announcement = getAnnouncementById(id);
+  const [announcement, setAnnouncement] = useState(null);
+  const [status, setStatus] = useState("loading");
+  const [error, setError] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
 
-  if (!announcement) {
-    return <AnnouncementNotFound />;
+  useEffect(() => {
+    let active = true;
+    setStatus("loading");
+    setError("");
+    setAnnouncement(null);
+
+    fetchAnnouncementById(id)
+      .then((result) => {
+        if (!active) return;
+        setAnnouncement(result);
+        setStatus("success");
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        setAnnouncement(null);
+        setStatus("error");
+        setError(requestError.message || "Announcement details could not be loaded.");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id, retryKey]);
+
+  if (status === "loading") {
+    return (
+      <section className="mc-announcement-details mc-atmospheric-section">
+        <div className="container py-5 text-center" role="status">
+          <LoaderCircle size={36} className="text-mc spin" aria-hidden="true" />
+          <p className="text-muted mt-3 mb-0">Loading announcement…</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (status === "error" || !announcement) {
+    return <AnnouncementNotFound error={error} onRetry={() => setRetryKey((value) => value + 1)} />;
   }
 
   return (
@@ -46,10 +84,12 @@ export default function AnnouncementDetails() {
             </div>
 
             <h1>{announcement.title}</h1>
-            <div className="mc-announcement-details__published">
-              <Clock3 size={15} aria-hidden="true" />
-              <span>Published {announcement.publishedLabel}</span>
-            </div>
+            {announcement.publishedLabel && (
+              <div className="mc-announcement-details__published">
+                <Clock3 size={15} aria-hidden="true" />
+                <span>Published {announcement.publishedLabel}</span>
+              </div>
+            )}
 
             <div className="mc-announcement-details__body">
               <p>{announcement.description}</p>
@@ -75,14 +115,18 @@ export default function AnnouncementDetails() {
                   <dt><CalendarDays size={15} aria-hidden="true" /> Type</dt>
                   <dd>{announcement.typeLabel}</dd>
                 </div>
-                <div>
-                  <dt><Clock3 size={15} aria-hidden="true" /> Published</dt>
-                  <dd>{announcement.publishedLabel}</dd>
-                </div>
-                <div>
-                  <dt><MapPin size={15} aria-hidden="true" /> Location</dt>
-                  <dd>{announcement.location}</dd>
-                </div>
+                {announcement.publishedLabel && (
+                  <div>
+                    <dt><Clock3 size={15} aria-hidden="true" /> Published</dt>
+                    <dd>{announcement.publishedLabel}</dd>
+                  </div>
+                )}
+                {announcement.location && (
+                  <div>
+                    <dt><MapPin size={15} aria-hidden="true" /> Location</dt>
+                    <dd>{announcement.location}</dd>
+                  </div>
+                )}
                 <div>
                   <dt><UserRound size={15} aria-hidden="true" /> Published by</dt>
                   <dd>{announcement.publishedBy}</dd>
@@ -113,17 +157,24 @@ export default function AnnouncementDetails() {
   );
 }
 
-function AnnouncementNotFound() {
+function AnnouncementNotFound({ error, onRetry }) {
   return (
     <section className="mc-announcement-details mc-atmospheric-section">
       <div className="container py-5">
         <div className="mc-announcement-details__not-found mc-card text-center">
           <TriangleAlert size={42} className="text-warning" aria-hidden="true" />
           <h1>Announcement not found</h1>
-          <p>This announcement may no longer be available.</p>
-          <Link to="/community" className="btn btn-mc">
-            <ArrowLeft size={16} aria-hidden="true" /> Back to Community
-          </Link>
+          <p>{error || "This announcement may no longer be available."}</p>
+          <div className="d-flex justify-content-center gap-2 flex-wrap">
+            {onRetry && (
+              <button type="button" className="btn btn-outline-mc" onClick={onRetry}>
+                Try again
+              </button>
+            )}
+            <Link to="/community" className="btn btn-mc">
+              <ArrowLeft size={16} aria-hidden="true" /> Back to Community
+            </Link>
+          </div>
         </div>
       </div>
     </section>

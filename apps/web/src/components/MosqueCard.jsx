@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Clock3, Heart, MapPin, Navigation, Star } from "lucide-react";
 import { directionsUrl } from "../utils/mosqueDiscovery";
+import { dhuhrJamaatLabel } from "../utils/prayerTime";
 import FacilityBadge from "./FacilityBadge";
 import VerifiedBadge from "./VerifiedBadge";
 
@@ -48,10 +49,10 @@ export default function MosqueCard({ mosque }) {
           )}
           {mosque.verified && <VerifiedBadge className={mosque.rating !== null ? "ms-1" : "ms-0"} />}
 
-          {mosque.prayer?.Dhuhr && (
+          {dhuhrJamaatLabel(mosque.prayer) && (
             <span className="text-muted ms-2">
               <Clock3 size={14} className="me-1" aria-hidden="true" />
-              Dhuhr {mosque.prayer.Dhuhr} PM
+              {dhuhrJamaatLabel(mosque.prayer)}
             </span>
           )}
         </div>

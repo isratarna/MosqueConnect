@@ -129,6 +129,8 @@ test("profile fetch keeps API ids and works without a distance origin", async ()
     assert.equal(mosque.distance, null);
     assert.deepEqual(mosque.announcements, []);
     assert.deepEqual(mosque.facilities, []);
+    assert.deepEqual(mosque.jumuah_sessions, []);
+    assert.deepEqual(mosque.prayer_schedule, []);
   } finally {
     globalThis.fetch = originalFetch;
   }
