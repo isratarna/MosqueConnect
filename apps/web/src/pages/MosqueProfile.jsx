@@ -29,11 +29,6 @@ export default function MosqueProfile() {
   const { id } = useParams();
   const mosque = getMosque(id);
   const [following, setFollowing] = useState(false);
-  const jummahSessions = [
-    { label: "First Jummah", time: mosque.prayer.Jummah || "—" },
-    { label: "Second Jummah", time: "—" },
-    { label: "Third Jummah", time: "—" },
-  ];
 
   if (!mosque) {
     return (
@@ -45,6 +40,12 @@ export default function MosqueProfile() {
       </div>
     );
   }
+
+  const jummahSessions = [
+    { label: "First Jummah", time: mosque.prayer.Jummah || "—" },
+    { label: "Second Jummah", time: "—" },
+    { label: "Third Jummah", time: "—" },
+  ];
 
   return (
     <div className="container py-4 mc-motion-stagger">
@@ -84,7 +85,7 @@ export default function MosqueProfile() {
       <div className="row g-4">
         <div className="col-lg-8">
           {/* prayer times */}
-          <div className="card mc-card mb-4">
+          <div className="card mc-card mb-4" id="prayer-schedule">
             <div className="card-body">
               <h5 className="fw-bold mb-3"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />Prayer &amp; Jamat Times</h5>
               <PrayerTimeline prayers={mosque.prayer} />
