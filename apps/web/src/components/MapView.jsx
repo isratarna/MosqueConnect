@@ -24,6 +24,8 @@ export default function MapView({
   mosques = [],
   userPos = null,
   className = "mc-map",
+  selectedMosqueId,
+  onMosqueSelect,
 }) {
   // No key → placeholder, no API call.
   if (!GOOGLE_MAPS_API_KEY) {
@@ -46,16 +48,26 @@ export default function MapView({
       mosques={mosques}
       userPos={userPos}
       className={className}
+      selectedMosqueId={selectedMosqueId}
+      onMosqueSelect={onMosqueSelect}
     />
   );
 }
 
-function MapInner({ center, zoom, mosques, userPos, className }) {
+function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId, onMosqueSelect }) {
   const { isLoaded, loadError } = useJsApiLoader({
     id: "mc-google-maps",
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
   });
-  const [active, setActive] = useState(null);
+  const [internalActiveId, setInternalActiveId] = useState(null);
+  const isControlled = selectedMosqueId !== undefined;
+  const activeId = isControlled ? selectedMosqueId : internalActiveId;
+  const active = mosques.find((mosque) => String(mosque.id) === String(activeId));
+
+  const selectMosque = (mosque) => {
+    setInternalActiveId(mosque?.id ?? null);
+    onMosqueSelect?.(mosque?.id ?? null);
+  };
 
   if (loadError) {
     return (
@@ -100,29 +112,46 @@ function MapInner({ center, zoom, mosques, userPos, className }) {
             }}
           />
         )}
-        {mosques.map((m) => (
-          <MarkerF
-            key={m.id}
-            position={{ lat: m.lat, lng: m.lng }}
-            title={m.name}
-            onClick={() => setActive(m)}
-          />
-        ))}
+        {mosques.map((m) => {
+          const position = {
+            lat: Number(m.lat ?? m.latitude),
+            lng: Number(m.lng ?? m.longitude),
+          };
+          const isActive = String(m.id) === String(activeId);
+
+          return (
+            <MarkerF
+              key={m.id}
+              position={position}
+              title={m.name}
+              zIndex={isActive ? 10 : 1}
+              onClick={() => selectMosque(m)}
+            />
+          );
+        })}
         {active && (
           <InfoWindowF
-            position={{ lat: active.lat, lng: active.lng }}
-            onCloseClick={() => setActive(null)}
+            position={{
+              lat: Number(active.lat ?? active.latitude),
+              lng: Number(active.lng ?? active.longitude),
+            }}
+            onCloseClick={() => selectMosque(null)}
           >
-            <div style={{ maxWidth: 220 }}>
+            <div style={{ maxWidth: 240 }}>
               <div className="d-flex align-items-center gap-2 mb-1">
                 <strong>{active.name}</strong>
+                {(active.verified || active.verification_status === "verified") && <VerifiedBadge />}
               </div>
               <span style={{ color: "#666", fontSize: 12 }}>{active.address}</span>
-              <br />
-              <span style={{ fontSize: 12 }}>
-                {active.verified && <VerifiedBadge />}
-                Next Jamat (Dhuhr): {active.prayer.Dhuhr} PM
-              </span>
+              {(active.distance !== undefined || active.distance_km !== undefined) && (
+                <><br /><span style={{ fontSize: 12 }}>{active.distance ?? active.distance_km} km away</span></>
+              )}
+              {active.verification_status && (
+                <><br /><span style={{ fontSize: 12, textTransform: "capitalize" }}>{active.verification_status}</span></>
+              )}
+              {active.prayer?.Dhuhr && (
+                <><br /><span style={{ fontSize: 12 }}>Next Jamat (Dhuhr): {active.prayer.Dhuhr} PM</span></>
+              )}
               <br />
               <Link to={`/mosque/${active.id}`} style={{ fontSize: 13 }}>
                 View profile →

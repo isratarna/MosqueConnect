@@ -9,31 +9,239 @@ import {
   Heart,
   Landmark,
   LocateFixed,
+  LoaderCircle,
   MapPin,
   Navigation,
+  RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
   Search,
+  TriangleAlert,
   UsersRound,
 } from "lucide-react";
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
 import { mosquesByDistance, directionsUrl, IMPACT_STATS } from "../data/mosques";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
+import { useAuth } from "../context/AuthContext";
+import { apiUrl, DEFAULT_CENTER } from "../config";
+
+const nearbyRequestCache = new Map();
+const NEARBY_CACHE_TTL_MS = 60000;
+
+function nearbyCacheKey(latitude, longitude) {
+  return `${latitude.toFixed(6)}:${longitude.toFixed(6)}`;
+}
+
+function normalizeNearbyMosque(mosque) {
+  const lat = Number(mosque.latitude);
+  const lng = Number(mosque.longitude);
+
+  return {
+    ...mosque,
+    lat,
+    lng,
+    distance: mosque.distance_km === null || mosque.distance_km === undefined
+      ? null
+      : Number(mosque.distance_km),
+    verified: mosque.verification_status === "verified",
+  };
+}
+
+function fetchNearbyMosques(latitude, longitude) {
+  const key = nearbyCacheKey(latitude, longitude);
+  const cached = nearbyRequestCache.get(key);
+  if (cached && Date.now() - cached.createdAt < NEARBY_CACHE_TTL_MS) return cached.request;
+  nearbyRequestCache.delete(key);
+
+  const query = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+  });
+  const request = fetch(apiUrl(`/api/mosques/nearby?${query}`), {
+    headers: { Accept: "application/json" },
+  })
+    .then(async (response) => {
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.message || "Nearby mosques could not be loaded.");
+      }
+      if (!Array.isArray(payload.data)) {
+        throw new Error("The nearby mosque response was not in the expected format.");
+      }
+
+      return payload.data
+        .map(normalizeNearbyMosque)
+        .filter((mosque) => Number.isFinite(mosque.lat) && Number.isFinite(mosque.lng));
+    })
+    .catch((error) => {
+      nearbyRequestCache.delete(key);
+      throw error;
+    });
+
+  nearbyRequestCache.set(key, { request, createdAt: Date.now() });
+  return request;
+}
 
 export default function Home() {
+  const { user, loading: authLoading } = useAuth();
   const origin = useGeolocation();
   const nearby = useMemo(() => mosquesByDistance(origin), [origin.lat, origin.lng]);
   const nearest = nearby[0];
 
+  if (authLoading) {
+    return <div className="mc-home-auth-loading" aria-label="Loading homepage" />;
+  }
+
   return (
     <>
-      <Hero origin={origin} nearby={nearby} nearest={nearest} onRequestLocation={() => requestGeolocation()} />
-      <NearbySection origin={origin} nearby={nearby} nearest={nearest} />
+      {user ? (
+        <div className="mc-auth-nearby-experience">
+          <AuthenticatedNearbySection origin={origin} />
+          <NearbySection origin={origin} nearby={nearby} nearest={nearest} showMap={false} />
+        </div>
+      ) : (
+        <>
+          <Hero origin={origin} nearby={nearby} nearest={nearest} onRequestLocation={() => requestGeolocation({ force: origin.status === "failure" })} />
+          <NearbySection origin={origin} nearby={nearby} nearest={nearest} />
+        </>
+      )}
       <SupportSection />
       <ImpactSection />
       <AboutSection />
     </>
+  );
+}
+
+function AuthenticatedNearbySection({ origin }) {
+  const [mosques, setMosques] = useState([]);
+  const [apiStatus, setApiStatus] = useState("idle");
+  const [apiError, setApiError] = useState("");
+  const [selectedMosqueId, setSelectedMosqueId] = useState(null);
+  const [apiAttempt, setApiAttempt] = useState(0);
+
+  useEffect(() => {
+    requestGeolocation();
+  }, []);
+
+  useEffect(() => {
+    if (origin.status !== "success") return undefined;
+
+    let active = true;
+    setApiStatus("loading");
+    setApiError("");
+
+    fetchNearbyMosques(origin.lat, origin.lng)
+      .then((results) => {
+        if (!active) return;
+        setMosques(results);
+        setSelectedMosqueId(null);
+        setApiStatus("success");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setMosques([]);
+        setSelectedMosqueId(null);
+        setApiError(error.message || "Nearby mosques could not be loaded.");
+        setApiStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [origin.status, origin.lat, origin.lng, apiAttempt]);
+
+  const retryApi = () => {
+    nearbyRequestCache.delete(nearbyCacheKey(origin.lat, origin.lng));
+    setApiAttempt((attempt) => attempt + 1);
+  };
+
+  const isFindingLocation = ["idle", "requesting", "locating"].includes(origin.status);
+  const isLoadingMosques = origin.status === "success" && ["idle", "loading"].includes(apiStatus);
+
+  return (
+    <section className="mc-auth-home-map" aria-labelledby="nearby-map-title">
+      <div className="container">
+        <div className="mc-auth-home-map__heading">
+          <div>
+            <p className="mc-kicker">Your neighbourhood</p>
+            <h1 id="nearby-map-title">Mosques near you</h1>
+            <p>Select a mosque marker to preview its location and open its profile.</p>
+          </div>
+          <Link to="/browse" className="btn btn-outline-mc btn-sm">
+            Browse mosques <ChevronRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
+
+        {(isFindingLocation || isLoadingMosques) && (
+          <MapFeedback
+            icon={<LoaderCircle className="spin" size={20} aria-hidden="true" />}
+            title={isFindingLocation ? "Finding your location" : "Finding nearby mosques"}
+            message={isFindingLocation ? "Your browser may ask for location permission." : "Checking mosques closest to you."}
+          />
+        )}
+
+        {origin.status === "failure" && (
+          <MapFeedback
+            icon={<TriangleAlert size={21} aria-hidden="true" />}
+            title={origin.errorCode === "denied" ? "Location permission denied" : "Location unavailable"}
+            message={origin.message || "We could not determine your current location."}
+          >
+            <button type="button" className="btn btn-mc btn-sm" onClick={() => requestGeolocation({ force: true })}>
+              <RefreshCw size={14} aria-hidden="true" /> Try again
+            </button>
+            <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse manually</Link>
+          </MapFeedback>
+        )}
+
+        {apiStatus === "error" && origin.status === "success" && (
+          <MapFeedback
+            icon={<TriangleAlert size={21} aria-hidden="true" />}
+            title="Could not load nearby mosques"
+            message={apiError}
+          >
+            <button type="button" className="btn btn-mc btn-sm" onClick={retryApi}>
+              <RefreshCw size={14} aria-hidden="true" /> Retry
+            </button>
+          </MapFeedback>
+        )}
+
+        {apiStatus === "success" && mosques.length === 0 && (
+          <MapFeedback
+            icon={<Landmark size={21} aria-hidden="true" />}
+            title="No nearby mosques found"
+            message="There are no mosque records near this location yet."
+          >
+            <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse all mosques</Link>
+          </MapFeedback>
+        )}
+
+        <div className="mc-auth-home-map__map-wrap">
+          <MapView
+            className="mc-map mc-auth-home-map__map"
+            center={origin.status === "success" ? { lat: origin.lat, lng: origin.lng } : DEFAULT_CENTER}
+            zoom={14}
+            mosques={mosques}
+            userPos={origin.status === "success" ? { lat: origin.lat, lng: origin.lng } : null}
+            selectedMosqueId={selectedMosqueId}
+            onMosqueSelect={setSelectedMosqueId}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MapFeedback({ icon, title, message, children }) {
+  return (
+    <div className="mc-auth-home-map__feedback" role="status">
+      <div className="mc-auth-home-map__feedback-icon">{icon}</div>
+      <div className="mc-auth-home-map__feedback-copy">
+        <strong>{title}</strong>
+        <span>{message}</span>
+      </div>
+      {children && <div className="mc-auth-home-map__feedback-actions">{children}</div>}
+    </div>
   );
 }
 
@@ -101,7 +309,7 @@ function LocationControls({ origin, nearby, nearest, onRequest }) {
   );
 }
 
-function NearbySection({ origin, nearby, nearest }) {
+function NearbySection({ origin, nearby, nearest, showMap = true }) {
   const [activeIndex, setActiveIndex] = useState(() => {
     if (!nearby.length) return 0;
     if (!nearest) return 0;
@@ -168,29 +376,33 @@ function NearbySection({ origin, nearby, nearest }) {
   };
 
   return (
-    <section id="map" className="mc-explore-section mc-motion-section mc-atmospheric-section">
+    <section id="map" className={`mc-explore-section mc-motion-section mc-atmospheric-section ${showMap ? "" : "mc-explore-section--cards-only"}`}>
       <div className="container">
-        <div className="mc-section-heading">
-          <div>
-            <p className="mc-kicker">Explore</p>
-            <h2>Explore mosques near you</h2>
-            <p>Browse by location, distance, and facilities that matter to you.</p>
+        {showMap && (
+          <div className="mc-section-heading">
+            <div>
+              <p className="mc-kicker">Explore</p>
+              <h2>Explore mosques near you</h2>
+              <p>Browse by location, distance, and facilities that matter to you.</p>
+            </div>
+            <Link to="/browse" className="btn btn-outline-mc btn-sm">
+              Browse all <ChevronRight size={15} aria-hidden="true" />
+            </Link>
           </div>
-          <Link to="/browse" className="btn btn-outline-mc btn-sm">
-            Browse all <ChevronRight size={15} aria-hidden="true" />
-          </Link>
-        </div>
+        )}
 
         <div className="mc-explore-layout mc-motion-stagger">
-          <div className="mc-map-wrap">
-            <MapView
-              className="mc-map"
-              center={origin}
-              zoom={13}
-              mosques={nearby}
-              userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
-            />
-          </div>
+          {showMap && (
+            <div className="mc-map-wrap">
+              <MapView
+                className="mc-map"
+                center={origin}
+                zoom={13}
+                mosques={nearby}
+                userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
+              />
+            </div>
+          )}
 
           <div className="mc-nearby-showcase">
             <div className="mc-nearby-showcase__controls" aria-label="Nearby mosque controls">

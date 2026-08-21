@@ -187,7 +187,7 @@ export default function Browse() {
 
                     <div className="mt-2" aria-live="polite">
                       {origin.status === "idle" && (
-                        <button className="btn btn-sm btn-outline-mc" onClick={() => requestGeolocation()}>Use my location</button>
+                        <button className="btn btn-sm btn-outline-mc" onClick={() => requestGeolocation({ force: origin.status === "failure" })}>Use my location</button>
                       )}
                       {origin.status === "requesting" && <div className="small text-muted">Requesting permission…</div>}
                       {origin.status === "locating" && <div className="small text-muted">Locating…</div>}
