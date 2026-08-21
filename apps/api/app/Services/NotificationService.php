@@ -2,14 +2,96 @@
 
 namespace App\Services;
 
+use App\Models\Event;
 use App\Models\Mosque;
 use App\Models\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class NotificationService
 {
+    /**
+     * Notify the current mosque followers about a newly published event.
+     */
+    public function notifyEventPublished(Event $event): int
+    {
+        if ($event->status !== Event::STATUS_PUBLISHED) {
+            return 0;
+        }
+
+        $event->loadMissing('mosque');
+
+        return $this->notifyMosqueFollowers($event->mosque, [
+            'type' => Notification::TYPE_EVENT,
+            'title' => Str::limit("New Event: {$event->title}", 255, ''),
+            'message' => "{$event->mosque->name} published a new event: {$event->title}.",
+            'reference_type' => Notification::REFERENCE_EVENT,
+            'reference_id' => $event->id,
+        ]);
+    }
+
+    /**
+     * Notify followers when an announcement is published.
+     *
+     * The announcement module is not implemented yet, so its persisted ID and
+     * title form the narrow integration contract for that future feature.
+     */
+    public function notifyAnnouncementPublished(Mosque $mosque, int $announcementId, string $title): int
+    {
+        return $this->notifyMosqueFollowers($mosque, [
+            'type' => Notification::TYPE_ANNOUNCEMENT,
+            'title' => Str::limit("New Announcement: {$title}", 255, ''),
+            'message' => Str::limit("{$mosque->name} published a new announcement: {$title}.", 10000, ''),
+            'reference_type' => Notification::REFERENCE_ANNOUNCEMENT,
+            'reference_id' => $announcementId,
+        ]);
+    }
+
+    /**
+     * Notify followers about one persisted prayer schedule change.
+     *
+     * A distinct change ID should be supplied for each schedule revision. This
+     * lets separate revisions notify followers while retries remain idempotent.
+     */
+    public function notifyPrayerScheduleChanged(
+        Mosque $mosque,
+        int $scheduleChangeId,
+        ?string $summary = null,
+    ): int {
+        $message = "{$mosque->name} updated its prayer schedule.";
+
+        if (filled($summary)) {
+            $message = "{$mosque->name} updated its prayer schedule: ".rtrim(trim($summary), '.').'.';
+        }
+
+        return $this->notifyMosqueFollowers($mosque, [
+            'type' => Notification::TYPE_PRAYER_SCHEDULE,
+            'title' => 'Prayer Schedule Updated',
+            'message' => Str::limit($message, 10000, ''),
+            'reference_type' => Notification::REFERENCE_PRAYER_SCHEDULE,
+            'reference_id' => $scheduleChangeId,
+        ]);
+    }
+
+    /**
+     * Notify followers when a donation campaign is published.
+     *
+     * The campaign module is not implemented yet, so its persisted ID and
+     * title form the narrow integration contract for that future feature.
+     */
+    public function notifyCampaignPublished(Mosque $mosque, int $campaignId, string $title): int
+    {
+        return $this->notifyMosqueFollowers($mosque, [
+            'type' => Notification::TYPE_CAMPAIGN,
+            'title' => Str::limit("New Donation Campaign: {$title}", 255, ''),
+            'message' => Str::limit("{$mosque->name} launched a new donation campaign: {$title}.", 10000, ''),
+            'reference_type' => Notification::REFERENCE_CAMPAIGN,
+            'reference_id' => $campaignId,
+        ]);
+    }
+
     /**
      * Create one notification per current follower of the given mosque.
      *
@@ -42,8 +124,21 @@ class NotificationService
             $created = 0;
             $now = now();
 
-            $mosque->followers()
-                ->select(['id', 'user_id'])
+            $followers = $mosque->followers()
+                ->select(['id', 'user_id']);
+
+            if (isset($validated['reference_type'], $validated['reference_id'])) {
+                $alreadyNotifiedUsers = Notification::query()
+                    ->select('user_id')
+                    ->where('mosque_id', $mosque->id)
+                    ->where('type', $validated['type'])
+                    ->where('reference_type', $validated['reference_type'])
+                    ->where('reference_id', $validated['reference_id']);
+
+                $followers->whereNotIn('user_id', $alreadyNotifiedUsers);
+            }
+
+            $followers
                 ->chunkById(500, function ($followers) use ($mosque, $validated, $now, &$created): void {
                     $notifications = $followers->map(fn ($follower): array => [
                         'user_id' => $follower->user_id,
@@ -58,8 +153,7 @@ class NotificationService
                         'updated_at' => $now,
                     ])->all();
 
-                    Notification::query()->insert($notifications);
-                    $created += count($notifications);
+                    $created += Notification::query()->insertOrIgnore($notifications);
                 });
 
             return $created;

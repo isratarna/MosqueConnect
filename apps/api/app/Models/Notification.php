@@ -33,6 +33,14 @@ class Notification extends Model
 
     public const TYPE_SYSTEM = 'system';
 
+    public const REFERENCE_EVENT = 'event';
+
+    public const REFERENCE_ANNOUNCEMENT = 'announcement';
+
+    public const REFERENCE_PRAYER_SCHEDULE = 'prayer_schedule';
+
+    public const REFERENCE_CAMPAIGN = 'campaign';
+
     public const TYPES = [
         self::TYPE_EVENT,
         self::TYPE_ANNOUNCEMENT,
