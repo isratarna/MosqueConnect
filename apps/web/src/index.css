@@ -1554,6 +1554,7 @@ main { min-height: 70vh; }
 .mc-browse-filter-column { align-self: stretch; }
 
 .mc-browse-filter-column.mc-motion-ready,
+.mc-browse-results.mc-motion-ready,
 .mc-browse-section.mc-motion-ready {
   opacity: 1;
   transform: none;
