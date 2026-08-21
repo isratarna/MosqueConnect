@@ -13,10 +13,15 @@ import SupportContinue from "./pages/SupportContinue";
 import Community from "./pages/Community";
 import AnnouncementDetails from "./pages/AnnouncementDetails";
 import EventDetails from "./pages/EventDetails";
+import Notifications from "./pages/Notifications";
 import { useAuth } from "./context/AuthContext";
 
 function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="container py-5 text-center text-muted" role="status">Loading your account...</div>;
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -44,6 +49,14 @@ export default function App() {
         <Route path="/community" element={<Community />} />
         <Route path="/community/announcements/:id" element={<AnnouncementDetails />} />
         <Route path="/community/events/:id" element={<EventDetails />} />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/mosque/:id" element={<MosqueProfile />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

@@ -1,8 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, BellOff, Heart, LogOut, Menu, UserRound } from "lucide-react";
+import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, UserRound } from "lucide-react";
+import NotificationList from "./notifications/NotificationList";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
+import { fetchNotifications } from "../utils/notificationApi";
+import { getNotificationPath, isNotificationRead } from "../utils/notificationUtils";
 import logo from "../assets/Logo.png";
+
+const NAVBAR_NOTIFICATION_LIMIT = 6;
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -92,6 +98,7 @@ export default function Navbar() {
                   isOpen={activeDropdown === "notifications"}
                   onToggle={() => setActiveDropdown((current) => (current === "notifications" ? null : "notifications"))}
                   onClose={closeDropdowns}
+                  onNavigate={() => { close(); closeDropdowns(); }}
                 />
                 <ProfileMenu
                   user={user}
@@ -109,11 +116,60 @@ export default function Navbar() {
   );
 }
 
-function NotificationBell({ isOpen, onToggle, onClose }) {
+function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
   const wrapperRef = useRef(null);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+  const {
+    unreadCount,
+    unreadLoading,
+    readChange,
+    markAsRead,
+    markAllAsRead,
+    handleRequestError,
+  } = useNotifications();
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [markingAll, setMarkingAll] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const loadNotifications = useCallback((signal) => {
+    setLoading(true);
+    setError("");
+
+    return fetchNotifications({ page: 1, perPage: NAVBAR_NOTIFICATION_LIMIT, signal })
+      .then(({ notifications: items }) => setNotifications(items))
+      .catch((requestError) => {
+        if (requestError.name === "AbortError") return;
+        handleRequestError(requestError);
+        setError(requestError.message || "Notifications could not be loaded.");
+      })
+      .finally(() => {
+        if (!signal?.aborted) setLoading(false);
+      });
+  }, [handleRequestError]);
 
   useEffect(() => {
+    if (!isOpen) return undefined;
+    const controller = new AbortController();
+    loadNotifications(controller.signal);
+    return () => controller.abort();
+  }, [isOpen, loadNotifications, reloadKey]);
+
+  useEffect(() => {
+    if (!readChange) return;
+    setNotifications((current) => current.map((notification) => (
+      readChange.kind === "all" || notification.id === readChange.id
+        ? { ...notification, ...(readChange.notification || {}), is_read: 1 }
+        : notification
+    )));
+  }, [readChange]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
     const handleClickOutside = (event) => {
       if (
         wrapperRef.current &&
@@ -127,29 +183,101 @@ function NotificationBell({ isOpen, onToggle, onClose }) {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
+  }, [isOpen, onClose]);
+
+  const handleSelect = async (notification) => {
+    const wasUnread = !isNotificationRead(notification);
+    const destination = getNotificationPath(notification);
+    setActionError("");
+
+    if (wasUnread) {
+      setNotifications((current) => current.map((item) => (
+        item.id === notification.id ? { ...item, is_read: 1 } : item
+      )));
+
+      try {
+        await markAsRead(notification.id);
+      } catch (requestError) {
+        setNotifications((current) => current.map((item) => (
+          item.id === notification.id ? { ...item, is_read: 0 } : item
+        )));
+        setActionError(requestError.message || "The notification could not be marked as read.");
+      }
+    }
+
+    if (destination) {
+      onNavigate();
+      navigate(destination);
+    }
+  };
+
+  const handleMarkAll = async () => {
+    const previous = notifications;
+    setMarkingAll(true);
+    setActionError("");
+    setNotifications((current) => current.map((notification) => ({ ...notification, is_read: 1 })));
+
+    try {
+      await markAllAsRead();
+    } catch (requestError) {
+      setNotifications(previous);
+      setActionError(requestError.message || "Notifications could not be marked as read.");
+    } finally {
+      setMarkingAll(false);
+    }
+  };
+
+  const displayCount = unreadCount > 99 ? "99+" : unreadCount;
+  const hasUnread = unreadCount > 0 || notifications.some((notification) => !isNotificationRead(notification));
 
   return (
     <li className="nav-item dropdown ms-lg-2" ref={wrapperRef}>
-      <a
-        className="nav-link position-relative"
-        href="#"
-        role="button"
+      <button
+        type="button"
+        className="nav-link mc-notification-trigger position-relative"
         title="Notifications"
-        onClick={(e) => { e.preventDefault(); onToggle(); }}
+        aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        onClick={onToggle}
       >
         <Bell size={18} aria-hidden="true" />
-      </a>
+        {unreadCount > 0 && <span className="mc-notification-badge" aria-hidden="true">{displayCount}</span>}
+        {unreadLoading && <span className="visually-hidden" role="status">Loading unread count</span>}
+      </button>
       <div
         ref={dropdownRef}
+        data-bs-popper="static"
         className={"dropdown-menu dropdown-menu-end shadow mc-notif-menu p-0" + (isOpen ? " show" : "")}
       >
-        <div className="px-3 py-2 border-bottom">
-          <strong className="small">Notifications</strong>
+        <div className="mc-notif-menu__header">
+          <div>
+            <strong>Notifications</strong>
+            {unreadCount > 0 && <span>{unreadCount} unread</span>}
+          </div>
+          <button
+            type="button"
+            className="mc-notif-menu__read-all"
+            onClick={handleMarkAll}
+            disabled={!hasUnread || markingAll}
+          >
+            <CheckCheck size={14} aria-hidden="true" />
+            {markingAll ? "Marking..." : "Mark all read"}
+          </button>
         </div>
-        <div className="text-center text-muted py-4 px-3">
-          <BellOff size={24} className="d-block mx-auto mb-2 opacity-50" aria-hidden="true" />
-          <span className="small">No notifications yet.</span>
+        {actionError && <div className="mc-notif-menu__error" role="alert">{actionError}</div>}
+        <div className="mc-notif-menu__body">
+          <NotificationList
+            notifications={notifications}
+            loading={loading}
+            error={error}
+            onRetry={() => setReloadKey((current) => current + 1)}
+            onSelect={handleSelect}
+            compact
+          />
+        </div>
+        <div className="mc-notif-menu__footer">
+          <Link to="/notifications" onClick={onNavigate}>View all notifications</Link>
         </div>
       </div>
     </li>
@@ -161,6 +289,8 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
+    if (!isOpen) return undefined;
+
     const handleClickOutside = (event) => {
       if (
         wrapperRef.current &&
@@ -174,7 +304,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
+  }, [isOpen, onClose]);
 
   const isAdminApproved = user.role === "mosque_admin" && user.status === "approved";
   const isAdminPending = user.role === "mosque_admin" && user.status === "pending";
