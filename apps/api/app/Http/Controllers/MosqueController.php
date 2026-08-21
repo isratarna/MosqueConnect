@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\MosqueResource;
 use App\Models\Mosque;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,18 +30,20 @@ class MosqueController extends Controller
 
         if (DB::connection()->getDriverName() === 'sqlite') {
             $mosques = Mosque::query()
+                ->with($this->summaryRelations())
                 ->get()
                 ->filter(fn (Mosque $mosque): bool => $this->hasValidCoordinates($mosque))
                 ->map(function (Mosque $mosque) use ($latitude, $longitude): array {
-                    return $this->mosquePayload(
+                    return (new MosqueResource(
                         $mosque,
+                        false,
                         $this->distanceInKilometers(
                             $latitude,
                             $longitude,
                             (float) $mosque->latitude,
                             (float) $mosque->longitude,
                         ),
-                    );
+                    ))->resolve();
                 })
                 ->filter(fn (array $mosque): bool => $mosque['distance_km'] <= $radius)
                 ->sort(fn (array $first, array $second): int => [
@@ -63,6 +66,7 @@ class MosqueController extends Controller
         );
 
         $mosques = Mosque::query()
+            ->with($this->summaryRelations())
             ->select('mosques.*')
             ->selectRaw($expression.' as distance_km', [$latitude, $longitude, $latitude])
             ->whereBetween('latitude', [-90, 90])
@@ -71,7 +75,7 @@ class MosqueController extends Controller
             ->orderBy('distance_km')
             ->orderBy('id')
             ->get()
-            ->map(fn (Mosque $mosque): array => $this->mosquePayload($mosque, (float) $mosque->distance_km));
+            ->map(fn (Mosque $mosque): array => (new MosqueResource($mosque, false, (float) $mosque->distance_km))->resolve());
 
         return response()->json([
             'data' => $mosques,
@@ -80,31 +84,23 @@ class MosqueController extends Controller
 
     public function show(Mosque $mosque): JsonResponse
     {
+        $mosque->load([
+            ...$this->summaryRelations(),
+            'jumuahSessions',
+            'publishedAnnouncements',
+        ]);
+
         return response()->json([
-            'data' => $this->mosquePayload($mosque),
+            'data' => (new MosqueResource($mosque, true))->resolve(),
         ]);
     }
 
-    private function mosquePayload(Mosque $mosque, ?float $distanceKm = null): array
+    /**
+     * @return list<string>
+     */
+    private function summaryRelations(): array
     {
-        $payload = [
-            'id' => $mosque->id,
-            'name' => $mosque->name,
-            'address' => $mosque->address,
-            'latitude' => (float) $mosque->latitude,
-            'longitude' => (float) $mosque->longitude,
-            'phone' => $mosque->phone,
-            'description' => $mosque->description,
-            'verification_status' => $mosque->verification_status,
-            'created_at' => $mosque->created_at?->toJSON(),
-            'updated_at' => $mosque->updated_at?->toJSON(),
-        ];
-
-        if ($distanceKm !== null) {
-            $payload['distance_km'] = round($distanceKm, 3);
-        }
-
-        return $payload;
+        return ['facilities', 'prayerTimes'];
     }
 
     private function distanceInKilometers(float $fromLatitude, float $fromLongitude, float $toLatitude, float $toLongitude): float

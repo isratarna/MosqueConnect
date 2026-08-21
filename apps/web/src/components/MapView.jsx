@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { LoaderCircle, Map, TriangleAlert } from "lucide-react";
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
 import { coordinatesOf } from "../utils/mosqueDiscovery";
+import { dhuhrJamaatLabel } from "../utils/prayerTime";
 import { useGoogleMapsLoader } from "./GoogleMapsProvider";
 import VerifiedBadge from "./VerifiedBadge";
 
@@ -212,8 +213,8 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
                     {mosque.verification_status && (
                       <><br /><span style={{ fontSize: 12, textTransform: "capitalize" }}>{mosque.verification_status}</span></>
                     )}
-                    {mosque.prayer?.Dhuhr && (
-                      <><br /><span style={{ fontSize: 12 }}>Next Jamat (Dhuhr): {mosque.prayer.Dhuhr} PM</span></>
+                    {dhuhrJamaatLabel(mosque.prayer) && (
+                      <><br /><span style={{ fontSize: 12 }}>Next Jamat: {dhuhrJamaatLabel(mosque.prayer)}</span></>
                     )}
                     <br />
                     <Link to={`/mosque/${mosque.id}`} style={{ fontSize: 13 }}>

@@ -23,6 +23,9 @@ class DatabaseSeeder extends Seeder
             'role' => User::ROLE_NORMAL_USER,
         ]);
 
-        $this->call(MosqueSeeder::class);
+        $this->call([
+            MosqueSeeder::class,
+            MosqueProfileSeeder::class,
+        ]);
     }
 }

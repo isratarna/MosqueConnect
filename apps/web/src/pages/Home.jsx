@@ -27,6 +27,7 @@ import { useAuth } from "../context/AuthContext";
 import { DEFAULT_CENTER } from "../config";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
 import { directionsUrl } from "../utils/mosqueDiscovery";
+import { dhuhrJamaatLabel } from "../utils/prayerTime";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -456,7 +457,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                         <div className="mc-next-prayer mb-3">
                           <span>Next Jamat</span>
-                          <strong>{mosque.prayer?.Dhuhr ? `Dhuhr ${mosque.prayer.Dhuhr} PM` : "Times unavailable"}</strong>
+                          <strong>{dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}</strong>
                         </div>
 
                         <div className="d-flex gap-2">

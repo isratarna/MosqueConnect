@@ -67,6 +67,8 @@ export function normalizeMosque(record, origin, options = {}) {
     ? record.facilities.filter((facility) => typeof facility === "string" && facility)
     : [];
   const announcements = Array.isArray(record.announcements) ? record.announcements : [];
+  const jumuahSessions = Array.isArray(record.jumuah_sessions) ? record.jumuah_sessions : [];
+  const prayerSchedule = Array.isArray(record.prayer_schedule) ? record.prayer_schedule : [];
 
   return {
     ...record,
@@ -83,6 +85,8 @@ export function normalizeMosque(record, origin, options = {}) {
     rating: rating !== null && rating >= 0 ? rating : null,
     facilities,
     announcements,
+    jumuah_sessions: jumuahSessions,
+    prayer_schedule: prayerSchedule,
     prayer: record.prayer && typeof record.prayer === "object" ? record.prayer : {},
   };
 }
