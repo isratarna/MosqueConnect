@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
+import VerificationRequests from "./pages/admin/VerificationRequests";
 import Support from "./pages/Support";
 import SupportContinue from "./pages/SupportContinue";
 import Community from "./pages/Community";
@@ -76,6 +77,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/admin/verification-requests" element={<VerificationRequests />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
