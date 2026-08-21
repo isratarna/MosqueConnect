@@ -87,16 +87,30 @@ export default function MosqueProfile() {
   }
 
   const prayer = mosque.prayer || {};
-  const announcements = Array.isArray(mosque.announcements) ? mosque.announcements : [];
-  const facilities = Array.isArray(mosque.facilities) ? mosque.facilities : [];
-  const directions = directionsUrl(mosque);
-  const jummahSessions = [
-    { label: "First Jummah", time: prayer.Jummah || "—" },
-  const jummahSessions = [
-    { label: "First Jummah", time: mosque.prayer.Jummah || "—" },
-    { label: "Second Jummah", time: "—" },
-    { label: "Third Jummah", time: "—" },
-  ];
+const announcements = Array.isArray(mosque.announcements)
+  ? mosque.announcements
+  : [];
+
+const facilities = Array.isArray(mosque.facilities)
+  ? mosque.facilities
+  : [];
+
+const directions = directionsUrl(mosque);
+
+const jummahSessions = [
+  {
+    label: "First Jummah",
+    time: prayer.Jummah || "—",
+  },
+  {
+    label: "Second Jummah",
+    time: "—",
+  },
+  {
+    label: "Third Jummah",
+    time: "—",
+  },
+];
 
   return (
     <div className="container py-4 mc-motion-stagger">
@@ -152,7 +166,6 @@ export default function MosqueProfile() {
 
       <div className="row g-4">
         <div className="col-lg-8">
-          <div className="card mc-card mb-4">
           {/* prayer times */}
           <div className="card mc-card mb-4" id="prayer-schedule">
             <div className="card-body">
