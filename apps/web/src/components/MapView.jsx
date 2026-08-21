@@ -16,6 +16,7 @@ import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from "@react-google-m
 import { Link } from "react-router-dom";
 import { LoaderCircle, Map, TriangleAlert } from "lucide-react";
 import { GOOGLE_MAPS_API_KEY, DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
+import { coordinatesOf } from "../utils/mosqueDiscovery";
 import VerifiedBadge from "./VerifiedBadge";
 
 export default function MapView({
@@ -24,6 +25,8 @@ export default function MapView({
   mosques = [],
   userPos = null,
   className = "mc-map",
+  selectedMosqueId,
+  onMosqueSelect,
 }) {
   // No key → placeholder, no API call.
   if (!GOOGLE_MAPS_API_KEY) {
@@ -46,16 +49,29 @@ export default function MapView({
       mosques={mosques}
       userPos={userPos}
       className={className}
+      selectedMosqueId={selectedMosqueId}
+      onMosqueSelect={onMosqueSelect}
     />
   );
 }
 
-function MapInner({ center, zoom, mosques, userPos, className }) {
+function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId, onMosqueSelect }) {
   const { isLoaded, loadError } = useJsApiLoader({
     id: "mc-google-maps",
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
   });
-  const [active, setActive] = useState(null);
+  const [internalActiveId, setInternalActiveId] = useState(null);
+  const isControlled = selectedMosqueId !== undefined;
+  const activeId = isControlled ? selectedMosqueId : internalActiveId;
+  const active = mosques.find((mosque) => String(mosque.id) === String(activeId));
+  const activePosition = coordinatesOf(active);
+  const safeCenter = coordinatesOf(center) || DEFAULT_CENTER;
+  const safeUserPosition = coordinatesOf(userPos);
+
+  const selectMosque = (mosque) => {
+    setInternalActiveId(mosque?.id ?? null);
+    onMosqueSelect?.(mosque?.id ?? null);
+  };
 
   if (loadError) {
     return (
@@ -82,13 +98,13 @@ function MapInner({ center, zoom, mosques, userPos, className }) {
     <div className={className}>
       <GoogleMap
         mapContainerStyle={{ width: "100%", height: "100%", minHeight: "inherit" }}
-        center={center}
+        center={safeCenter}
         zoom={zoom}
         options={{ mapTypeControl: false, streetViewControl: false, fullscreenControl: true }}
       >
-        {userPos && (
+        {safeUserPosition && (
           <MarkerF
-            position={userPos}
+            position={safeUserPosition}
             title="You are here"
             icon={{
               path: window.google.maps.SymbolPath.CIRCLE,
@@ -100,29 +116,41 @@ function MapInner({ center, zoom, mosques, userPos, className }) {
             }}
           />
         )}
-        {mosques.map((m) => (
-          <MarkerF
-            key={m.id}
-            position={{ lat: m.lat, lng: m.lng }}
-            title={m.name}
-            onClick={() => setActive(m)}
-          />
-        ))}
-        {active && (
+        {mosques.map((m) => {
+          const position = coordinatesOf(m);
+          if (!position) return null;
+          const isActive = String(m.id) === String(activeId);
+
+          return (
+            <MarkerF
+              key={m.id}
+              position={position}
+              title={m.name}
+              zIndex={isActive ? 10 : 1}
+              onClick={() => selectMosque(m)}
+            />
+          );
+        })}
+        {active && activePosition && (
           <InfoWindowF
-            position={{ lat: active.lat, lng: active.lng }}
-            onCloseClick={() => setActive(null)}
+            position={activePosition}
+            onCloseClick={() => selectMosque(null)}
           >
-            <div style={{ maxWidth: 220 }}>
+            <div style={{ maxWidth: 240 }}>
               <div className="d-flex align-items-center gap-2 mb-1">
                 <strong>{active.name}</strong>
+                {(active.verified || active.verification_status === "verified") && <VerifiedBadge />}
               </div>
               <span style={{ color: "#666", fontSize: 12 }}>{active.address}</span>
-              <br />
-              <span style={{ fontSize: 12 }}>
-                {active.verified && <VerifiedBadge />}
-                Next Jamat (Dhuhr): {active.prayer.Dhuhr} PM
-              </span>
+              {(active.distance !== undefined || active.distance_km !== undefined) && (
+                <><br /><span style={{ fontSize: 12 }}>{active.distance ?? active.distance_km} km away</span></>
+              )}
+              {active.verification_status && (
+                <><br /><span style={{ fontSize: 12, textTransform: "capitalize" }}>{active.verification_status}</span></>
+              )}
+              {active.prayer?.Dhuhr && (
+                <><br /><span style={{ fontSize: 12 }}>Next Jamat (Dhuhr): {active.prayer.Dhuhr} PM</span></>
+              )}
               <br />
               <Link to={`/mosque/${active.id}`} style={{ fontSize: 13 }}>
                 View profile →

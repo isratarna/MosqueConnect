@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "node --test src/utils/eventFilters.test.js src/utils/mosqueDiscovery.test.js",
     "test": "node --test src/utils/eventFilters.test.js src/utils/notificationUtils.test.js",
     "preview": "vite preview"
   },

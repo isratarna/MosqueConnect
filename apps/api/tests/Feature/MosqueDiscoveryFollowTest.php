@@ -69,6 +69,53 @@ class MosqueDiscoveryFollowTest extends TestCase
             ->assertJsonValidationErrors(['latitude', 'longitude']);
     }
 
+    public function test_nearby_filters_mosques_by_radius_inclusively(): void
+    {
+        $inside = Mosque::factory()->create([
+            'name' => 'Inside Radius Mosque',
+            'latitude' => 23.7370000,
+            'longitude' => 90.4138000,
+        ]);
+        Mosque::factory()->create([
+            'name' => 'Outside Radius Mosque',
+            'latitude' => 23.7490000,
+            'longitude' => 90.4138000,
+        ]);
+
+        $this->getJson('/api/mosques/nearby?latitude=23.7290000&longitude=90.4138000&radius=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $inside->id);
+    }
+
+    public function test_nearby_rejects_invalid_radius(): void
+    {
+        $this->getJson('/api/mosques/nearby?latitude=23.729&longitude=90.4138&radius=0')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['radius']);
+
+        $this->getJson('/api/mosques/nearby?latitude=23.729&longitude=90.4138&radius=101')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['radius']);
+    }
+
+    public function test_nearby_ignores_mosques_with_invalid_stored_coordinates(): void
+    {
+        Mosque::factory()->create([
+            'latitude' => 91,
+            'longitude' => 90.4138000,
+        ]);
+        $valid = Mosque::factory()->create([
+            'latitude' => 23.7290000,
+            'longitude' => 90.4138000,
+        ]);
+
+        $this->getJson('/api/mosques/nearby?latitude=23.729&longitude=90.4138')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $valid->id);
+    }
+
     public function test_nearby_returns_empty_list_when_no_mosques_exist(): void
     {
         $this->getJson('/api/mosques/nearby?latitude=23.7290000&longitude=90.4138000')

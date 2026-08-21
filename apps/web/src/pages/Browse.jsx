@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { List as ListIcon, Map as MapIcon, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { List as ListIcon, LoaderCircle, Map as MapIcon, MapPin, RefreshCw, Search, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
-import { mosquesByDistance, FACILITY_META } from "../data/mosques";
+import { FACILITY_META } from "../data/mosques";
+import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
+import { DISCOVERY_RADIUS_KM, filterMosques } from "../utils/mosqueDiscovery";
 import FacilityIcon from "../components/FacilityIcon";
 import MosqueCard from "../components/MosqueCard";
 import MapView from "../components/MapView";
@@ -9,7 +11,8 @@ import Pagination from "../components/Pagination";
 
 export default function Browse() {
   const origin = useGeolocation();
-  const all = useMemo(() => mosquesByDistance(origin), [origin.lat, origin.lng]);
+  const discovery = useMosqueDiscovery(origin);
+  const all = discovery.mosques;
 
   const [search, setSearch] = useState("");
   const [facilities, setFacilities] = useState(() => new Set());
@@ -20,14 +23,16 @@ export default function Browse() {
   const [selectedArea, setSelectedArea] = useState("");
   const [pageSize, setPageSize] = useState(9);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedMosqueId, setSelectedMosqueId] = useState(null);
 
   // Derive unique districts and areas from the mosque data.
   const locationOptions = useMemo(() => {
-    const districtSet = new Set(all.map((m) => m.district));
+    const districtSet = new Set(all.map((m) => m.district).filter(Boolean));
     const districts = [...districtSet].sort();
 
     const areasByDistrict = {};
     for (const m of all) {
+      if (!m.district || !m.area) continue;
       if (!areasByDistrict[m.district]) areasByDistrict[m.district] = new Set();
       areasByDistrict[m.district].add(m.area);
     }
@@ -69,27 +74,16 @@ export default function Browse() {
   };
 
   const results = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return all
-      .filter((m) => {
-        const matchesSearch =
-          !q || m.name.toLowerCase().includes(q) || m.address.toLowerCase().includes(q);
-        const matchesFacilities = [...facilities].every((f) => m.facilities.includes(f));
-        const matchesDistance = maxDistance === null || m.distance <= maxDistance;
-        const matchesDistrict =
-          !selectedDistrict || m.district === selectedDistrict;
-        const matchesArea =
-          !selectedArea || m.area === selectedArea;
-        return matchesSearch && matchesFacilities && matchesDistance && matchesDistrict && matchesArea;
-      })
-      .sort((a, b) => {
-        if (sort === "rating") return b.rating - a.rating;
-        if (sort === "name") return a.name.localeCompare(b.name);
-        return a.distance - b.distance;
-      });
+    return filterMosques(all, {
+      search,
+      facilities,
+      maxDistance,
+      district: selectedDistrict,
+      area: selectedArea,
+      sort,
+    });
   }, [all, search, facilities, maxDistance, sort, selectedDistrict, selectedArea]);
 
-  // Reset currentPage to 1 when filters or page size changes
   useEffect(() => {
     setCurrentPage(1);
   }, [search, facilities, maxDistance, sort, selectedDistrict, selectedArea, pageSize]);
@@ -103,6 +97,19 @@ export default function Browse() {
   const paginatedResults = useMemo(() => {
     return results.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   }, [results, currentPage, pageSize]);
+
+  useEffect(() => {
+    if (!paginatedResults.length) {
+      setSelectedMosqueId(null);
+      return;
+    }
+    setSelectedMosqueId((current) => {
+      if (current != null && paginatedResults.some((mosque) => String(mosque.id) === String(current))) {
+        return current;
+      }
+      return paginatedResults[0].id;
+    });
+  }, [paginatedResults]);
 
   const startIndex = useMemo(() => {
     return totalResults === 0 ? 0 : (currentPage - 1) * pageSize + 1;
@@ -187,7 +194,7 @@ export default function Browse() {
 
                     <div className="mt-2" aria-live="polite">
                       {origin.status === "idle" && (
-                        <button className="btn btn-sm btn-outline-mc" onClick={() => requestGeolocation()}>Use my location</button>
+                        <button className="btn btn-sm btn-outline-mc" onClick={() => requestGeolocation({ force: origin.status === "failure" })}>Use my location</button>
                       )}
                       {origin.status === "requesting" && <div className="small text-muted">Requesting permission…</div>}
                       {origin.status === "locating" && <div className="small text-muted">Locating…</div>}
@@ -222,12 +229,12 @@ export default function Browse() {
                     type="range"
                     className="form-range"
                     min="1"
-                    max="20"
-                    value={maxDistance ?? 20}
+                    max={DISCOVERY_RADIUS_KM}
+                    value={maxDistance ?? DISCOVERY_RADIUS_KM}
                     onChange={(e) => setMaxDistance(+e.target.value)}
                   />
                   <div className="small text-muted mb-3">
-                    {maxDistance === null ? "All distances" : `Within ${maxDistance} km`}
+                    {maxDistance === null ? `Within ${DISCOVERY_RADIUS_KM} km` : `Within ${maxDistance} km`}
                   </div>
 
                   <label className="form-label small fw-semibold text-uppercase text-muted">Sort by</label>
@@ -282,7 +289,20 @@ export default function Browse() {
               </div>
 
               <div className="mc-view-panel" key={view}>
-                {view === "list" ? (
+                {discovery.status === "loading" && all.length === 0 ? (
+                  <div className="text-center text-muted py-5" role="status">
+                    <LoaderCircle size={34} className="spin d-block mx-auto mb-2" aria-hidden="true" />
+                    Loading nearby mosques…
+                  </div>
+                ) : discovery.status === "error" ? (
+                  <div className="text-center text-muted py-5" role="alert">
+                    <TriangleAlert size={38} className="d-block mx-auto mb-2 text-danger" aria-hidden="true" />
+                    <div className="mb-3">{discovery.error}</div>
+                    <button type="button" className="btn btn-outline-mc btn-sm" onClick={discovery.retry}>
+                      <RefreshCw size={14} aria-hidden="true" /> Retry
+                    </button>
+                  </div>
+                ) : view === "list" ? (
                   results.length ? (
                     <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mc-browse-results-grid mc-motion-stagger">
                       {paginatedResults.map((m) => (
@@ -303,6 +323,8 @@ export default function Browse() {
                     zoom={12}
                     mosques={paginatedResults}
                     userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
+                    selectedMosqueId={selectedMosqueId}
+                    onMosqueSelect={setSelectedMosqueId}
                   />
                 )}
               </div>

@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Clock3, Heart, MapPin, Navigation, Star } from "lucide-react";
-import { directionsUrl } from "../data/mosques";
+import { directionsUrl } from "../utils/mosqueDiscovery";
 import FacilityBadge from "./FacilityBadge";
 import VerifiedBadge from "./VerifiedBadge";
 
 // A mosque result card used on the Browse page.
 export default function MosqueCard({ mosque }) {
   const [following, setFollowing] = useState(false);
+  const directions = directionsUrl(mosque);
 
   return (
     <div className="card mc-card h-100">
@@ -39,21 +40,20 @@ export default function MosqueCard({ mosque }) {
         </div>
 
         <div className="small mb-2">
-          <Star
-            size={14}
-            className="text-warning me-1"
-            fill="currentColor"
-            aria-hidden="true"
-          />
-          <span className="d-inline-flex align-items-center gap-1">
-            {mosque.verified && <VerifiedBadge className="ms-0" />}
-            {mosque.rating}
-          </span>
+          {mosque.rating !== null && (
+            <>
+              <Star size={14} className="text-warning me-1" fill="currentColor" aria-hidden="true" />
+              {mosque.rating}
+            </>
+          )}
+          {mosque.verified && <VerifiedBadge className={mosque.rating !== null ? "ms-1" : "ms-0"} />}
 
-          <span className="text-muted ms-2">
-            <Clock3 size={14} className="me-1" aria-hidden="true" />
-            Dhuhr {mosque.prayer.Dhuhr} PM
-          </span>
+          {mosque.prayer?.Dhuhr && (
+            <span className="text-muted ms-2">
+              <Clock3 size={14} className="me-1" aria-hidden="true" />
+              Dhuhr {mosque.prayer.Dhuhr} PM
+            </span>
+          )}
         </div>
 
         <div className="mb-3">
@@ -76,15 +76,17 @@ export default function MosqueCard({ mosque }) {
             View
           </Link>
 
-          <a
-            href={directionsUrl(mosque)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-outline-mc btn-sm"
-            title="Get directions"
-          >
-            <Navigation size={16} aria-hidden="true" />
-          </a>
+          {directions && (
+            <a
+              href={directions}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline-mc btn-sm"
+              title="Get directions"
+            >
+              <Navigation size={16} aria-hidden="true" />
+            </a>
+          )}
 
           <button
             className={`btn btn-sm ${
