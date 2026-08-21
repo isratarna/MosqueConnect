@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateEventRequest;
 use App\Http\Resources\EventResource;
 use App\Models\Event;
 use App\Models\Mosque;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class EventManagementController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function index(EventIndexRequest $request, Mosque $mosque): AnonymousResourceCollection
     {
         Gate::authorize('view', $mosque);
@@ -41,6 +44,10 @@ class EventManagementController extends Controller
             'created_by' => $request->user()->id,
             'status' => $request->validated('status', Event::STATUS_DRAFT),
         ]);
+
+        if ($event->status === Event::STATUS_PUBLISHED) {
+            $this->notifications->notifyEventPublished($event);
+        }
 
         return (new EventResource($event->load(['mosque', 'creator'])))
             ->additional(['message' => 'Event created successfully.'])
@@ -68,6 +75,10 @@ class EventManagementController extends Controller
         }
 
         $event->save();
+
+        if ($event->wasChanged('status') && $event->status === Event::STATUS_PUBLISHED) {
+            $this->notifications->notifyEventPublished($event);
+        }
 
         return (new EventResource($event->refresh()->load(['mosque', 'creator'])))
             ->additional(['message' => 'Event updated successfully.']);
@@ -106,6 +117,10 @@ class EventManagementController extends Controller
 
         $event->transitionTo($status);
         $event->save();
+
+        if ($event->wasChanged('status') && $event->status === Event::STATUS_PUBLISHED) {
+            $this->notifications->notifyEventPublished($event);
+        }
 
         return (new EventResource($event->refresh()->load(['mosque', 'creator'])))
             ->additional(['message' => $message]);
