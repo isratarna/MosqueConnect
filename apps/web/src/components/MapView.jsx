@@ -16,6 +16,7 @@ import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from "@react-google-m
 import { Link } from "react-router-dom";
 import { LoaderCircle, Map, TriangleAlert } from "lucide-react";
 import { GOOGLE_MAPS_API_KEY, DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
+import { coordinatesOf } from "../utils/mosqueDiscovery";
 import VerifiedBadge from "./VerifiedBadge";
 
 export default function MapView({
@@ -63,6 +64,9 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
   const isControlled = selectedMosqueId !== undefined;
   const activeId = isControlled ? selectedMosqueId : internalActiveId;
   const active = mosques.find((mosque) => String(mosque.id) === String(activeId));
+  const activePosition = coordinatesOf(active);
+  const safeCenter = coordinatesOf(center) || DEFAULT_CENTER;
+  const safeUserPosition = coordinatesOf(userPos);
 
   const selectMosque = (mosque) => {
     setInternalActiveId(mosque?.id ?? null);
@@ -94,13 +98,13 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
     <div className={className}>
       <GoogleMap
         mapContainerStyle={{ width: "100%", height: "100%", minHeight: "inherit" }}
-        center={center}
+        center={safeCenter}
         zoom={zoom}
         options={{ mapTypeControl: false, streetViewControl: false, fullscreenControl: true }}
       >
-        {userPos && (
+        {safeUserPosition && (
           <MarkerF
-            position={userPos}
+            position={safeUserPosition}
             title="You are here"
             icon={{
               path: window.google.maps.SymbolPath.CIRCLE,
@@ -113,10 +117,8 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
           />
         )}
         {mosques.map((m) => {
-          const position = {
-            lat: Number(m.lat ?? m.latitude),
-            lng: Number(m.lng ?? m.longitude),
-          };
+          const position = coordinatesOf(m);
+          if (!position) return null;
           const isActive = String(m.id) === String(activeId);
 
           return (
@@ -129,12 +131,9 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
             />
           );
         })}
-        {active && (
+        {active && activePosition && (
           <InfoWindowF
-            position={{
-              lat: Number(active.lat ?? active.latitude),
-              lng: Number(active.lng ?? active.longitude),
-            }}
+            position={activePosition}
             onCloseClick={() => selectMosque(null)}
           >
             <div style={{ maxWidth: 240 }}>

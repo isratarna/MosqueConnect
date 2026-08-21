@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen,
@@ -20,74 +20,35 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
-import { mosquesByDistance, directionsUrl, IMPACT_STATS } from "../data/mosques";
+import { IMPACT_STATS } from "../data/mosques";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import { useAuth } from "../context/AuthContext";
-import { apiUrl, DEFAULT_CENTER } from "../config";
-
-const nearbyRequestCache = new Map();
-const NEARBY_CACHE_TTL_MS = 60000;
-
-function nearbyCacheKey(latitude, longitude) {
-  return `${latitude.toFixed(6)}:${longitude.toFixed(6)}`;
-}
-
-function normalizeNearbyMosque(mosque) {
-  const lat = Number(mosque.latitude);
-  const lng = Number(mosque.longitude);
-
-  return {
-    ...mosque,
-    lat,
-    lng,
-    distance: mosque.distance_km === null || mosque.distance_km === undefined
-      ? null
-      : Number(mosque.distance_km),
-    verified: mosque.verification_status === "verified",
-  };
-}
-
-function fetchNearbyMosques(latitude, longitude) {
-  const key = nearbyCacheKey(latitude, longitude);
-  const cached = nearbyRequestCache.get(key);
-  if (cached && Date.now() - cached.createdAt < NEARBY_CACHE_TTL_MS) return cached.request;
-  nearbyRequestCache.delete(key);
-
-  const query = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-  });
-  const request = fetch(apiUrl(`/api/mosques/nearby?${query}`), {
-    headers: { Accept: "application/json" },
-  })
-    .then(async (response) => {
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.message || "Nearby mosques could not be loaded.");
-      }
-      if (!Array.isArray(payload.data)) {
-        throw new Error("The nearby mosque response was not in the expected format.");
-      }
-
-      return payload.data
-        .map(normalizeNearbyMosque)
-        .filter((mosque) => Number.isFinite(mosque.lat) && Number.isFinite(mosque.lng));
-    })
-    .catch((error) => {
-      nearbyRequestCache.delete(key);
-      throw error;
-    });
-
-  nearbyRequestCache.set(key, { request, createdAt: Date.now() });
-  return request;
-}
+import { DEFAULT_CENTER } from "../config";
+import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
+import { directionsUrl } from "../utils/mosqueDiscovery";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const origin = useGeolocation();
-  const nearby = useMemo(() => mosquesByDistance(origin), [origin.lat, origin.lng]);
+  const discovery = useMosqueDiscovery(origin);
+  const nearby = discovery.mosques;
   const nearest = nearby[0];
+  const [selectedMosqueId, setSelectedMosqueId] = useState(null);
+
+  useEffect(() => {
+    if (!nearby.length) {
+      setSelectedMosqueId(null);
+      return;
+    }
+
+    setSelectedMosqueId((current) => {
+      if (current != null && nearby.some((mosque) => String(mosque.id) === String(current))) {
+        return current;
+      }
+      return nearest?.id ?? nearby[0].id;
+    });
+  }, [nearby, nearest]);
 
   if (authLoading) {
     return <div className="mc-home-auth-loading" aria-label="Loading homepage" />;
@@ -97,13 +58,31 @@ export default function Home() {
     <>
       {user ? (
         <div className="mc-auth-nearby-experience">
-          <AuthenticatedNearbySection origin={origin} />
-          <NearbySection origin={origin} nearby={nearby} nearest={nearest} showMap={false} />
+          <AuthenticatedNearbySection
+            origin={origin}
+            discovery={discovery}
+            selectedMosqueId={selectedMosqueId}
+            onMosqueSelect={setSelectedMosqueId}
+          />
+          <NearbySection
+            origin={origin}
+            nearby={nearby}
+            nearest={nearest}
+            showMap={false}
+            selectedMosqueId={selectedMosqueId}
+            onMosqueSelect={setSelectedMosqueId}
+          />
         </div>
       ) : (
         <>
           <Hero origin={origin} nearby={nearby} nearest={nearest} onRequestLocation={() => requestGeolocation({ force: origin.status === "failure" })} />
-          <NearbySection origin={origin} nearby={nearby} nearest={nearest} />
+          <NearbySection
+            origin={origin}
+            nearby={nearby}
+            nearest={nearest}
+            selectedMosqueId={selectedMosqueId}
+            onMosqueSelect={setSelectedMosqueId}
+          />
         </>
       )}
       <SupportSection />
@@ -113,48 +92,12 @@ export default function Home() {
   );
 }
 
-function AuthenticatedNearbySection({ origin }) {
-  const [mosques, setMosques] = useState([]);
-  const [apiStatus, setApiStatus] = useState("idle");
-  const [apiError, setApiError] = useState("");
-  const [selectedMosqueId, setSelectedMosqueId] = useState(null);
-  const [apiAttempt, setApiAttempt] = useState(0);
+function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMosqueSelect }) {
+  const { mosques, status: apiStatus, error: apiError, retry: retryApi } = discovery;
 
   useEffect(() => {
     requestGeolocation();
   }, []);
-
-  useEffect(() => {
-    if (origin.status !== "success") return undefined;
-
-    let active = true;
-    setApiStatus("loading");
-    setApiError("");
-
-    fetchNearbyMosques(origin.lat, origin.lng)
-      .then((results) => {
-        if (!active) return;
-        setMosques(results);
-        setSelectedMosqueId(null);
-        setApiStatus("success");
-      })
-      .catch((error) => {
-        if (!active) return;
-        setMosques([]);
-        setSelectedMosqueId(null);
-        setApiError(error.message || "Nearby mosques could not be loaded.");
-        setApiStatus("error");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [origin.status, origin.lat, origin.lng, apiAttempt]);
-
-  const retryApi = () => {
-    nearbyRequestCache.delete(nearbyCacheKey(origin.lat, origin.lng));
-    setApiAttempt((attempt) => attempt + 1);
-  };
 
   const isFindingLocation = ["idle", "requesting", "locating"].includes(origin.status);
   const isLoadingMosques = origin.status === "success" && ["idle", "loading"].includes(apiStatus);
@@ -224,7 +167,7 @@ function AuthenticatedNearbySection({ origin }) {
             mosques={mosques}
             userPos={origin.status === "success" ? { lat: origin.lat, lng: origin.lng } : null}
             selectedMosqueId={selectedMosqueId}
-            onMosqueSelect={setSelectedMosqueId}
+            onMosqueSelect={onMosqueSelect}
           />
         </div>
       </div>
@@ -309,46 +252,59 @@ function LocationControls({ origin, nearby, nearest, onRequest }) {
   );
 }
 
-function NearbySection({ origin, nearby, nearest, showMap = true }) {
-  const [activeIndex, setActiveIndex] = useState(() => {
-    if (!nearby.length) return 0;
-    if (!nearest) return 0;
-    const nearestIndex = nearby.findIndex((mosque) => mosque.id === nearest.id);
-    return nearestIndex >= 0 ? nearestIndex : 0;
-  });
+function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosqueId, onMosqueSelect }) {
+  const [activeIndex, setActiveIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isInteracting, setIsInteracting] = useState(false);
   const pointerStartX = useRef(0);
 
   useEffect(() => {
-    if (!nearby.length) return;
-    if (!nearest) return;
-
-    const nearestIndex = nearby.findIndex((mosque) => mosque.id === nearest.id);
-    if (nearestIndex >= 0) {
-      setActiveIndex(nearestIndex);
+    if (!nearby.length) {
+      setActiveIndex(0);
+      return;
     }
-  }, [nearest, nearby]);
+
+    if (selectedMosqueId != null) {
+      const selectedIndex = nearby.findIndex((mosque) => String(mosque.id) === String(selectedMosqueId));
+      if (selectedIndex >= 0) {
+        setActiveIndex((current) => (current === selectedIndex ? current : selectedIndex));
+        return;
+      }
+    }
+
+    const fallbackIndex = nearest
+      ? Math.max(0, nearby.findIndex((mosque) => String(mosque.id) === String(nearest.id)))
+      : 0;
+    setActiveIndex(fallbackIndex >= 0 ? fallbackIndex : 0);
+  }, [selectedMosqueId, nearby, nearest]);
+
+  const selectIndex = (index) => {
+    if (!nearby.length) return;
+    const nextIndex = ((index % nearby.length) + nearby.length) % nearby.length;
+    setActiveIndex(nextIndex);
+    const nextId = nearby[nextIndex]?.id ?? null;
+    if (nextId != null && String(nextId) !== String(selectedMosqueId)) {
+      onMosqueSelect?.(nextId);
+    }
+  };
 
   useEffect(() => {
     if (!nearby.length || isInteracting) return;
 
     const timer = window.setTimeout(() => {
-      setActiveIndex((current) => (current + 1) % nearby.length);
+      const nextIndex = (activeIndex + 1) % nearby.length;
+      setActiveIndex(nextIndex);
+      const nextId = nearby[nextIndex]?.id ?? null;
+      if (nextId != null && String(nextId) !== String(selectedMosqueId)) {
+        onMosqueSelect?.(nextId);
+      }
     }, 4500);
 
     return () => window.clearTimeout(timer);
-  }, [activeIndex, nearby, isInteracting]);
+  }, [activeIndex, nearby, isInteracting, onMosqueSelect, selectedMosqueId]);
 
-  const goToPrevious = () => {
-    if (!nearby.length) return;
-    setActiveIndex((current) => (current - 1 + nearby.length) % nearby.length);
-  };
-
-  const goToNext = () => {
-    if (!nearby.length) return;
-    setActiveIndex((current) => (current + 1) % nearby.length);
-  };
+  const goToPrevious = () => selectIndex(activeIndex - 1);
+  const goToNext = () => selectIndex(activeIndex + 1);
 
   const handlePointerDown = (event) => {
     setIsInteracting(true);
@@ -375,6 +331,8 @@ function NearbySection({ origin, nearby, nearest, showMap = true }) {
     setIsInteracting(false);
   };
 
+  const activeMosqueId = nearby[activeIndex]?.id ?? selectedMosqueId ?? null;
+
   return (
     <section id="map" className={`mc-explore-section mc-motion-section mc-atmospheric-section ${showMap ? "" : "mc-explore-section--cards-only"}`}>
       <div className="container">
@@ -400,6 +358,13 @@ function NearbySection({ origin, nearby, nearest, showMap = true }) {
                 zoom={13}
                 mosques={nearby}
                 userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
+                selectedMosqueId={activeMosqueId}
+                onMosqueSelect={(mosqueId) => {
+                  if (mosqueId == null) return;
+                  const selectedIndex = nearby.findIndex((mosque) => String(mosque.id) === String(mosqueId));
+                  if (selectedIndex >= 0) selectIndex(selectedIndex);
+                  else onMosqueSelect?.(mosqueId);
+                }}
               />
             </div>
           )}
@@ -450,10 +415,22 @@ function NearbySection({ origin, nearby, nearest, showMap = true }) {
                       opacity,
                       zIndex,
                       transition: isInteracting ? "none" : "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease",
+                      cursor: isActive ? undefined : "pointer",
+                    }}
+                    onClick={() => {
+                      if (!isActive) selectIndex(index);
                     }}
                   >
                     <div className="card mc-card mc-nearby-card">
-                      <img src={mosque.photo} className="mc-nearby-card__image" alt={mosque.name} />
+                      <img
+                        src={mosque.photo}
+                        className="mc-nearby-card__image"
+                        alt={mosque.name}
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = "/uiRef.jpeg";
+                        }}
+                      />
                       <div className="card-body mc-nearby-card__body">
                         <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
                           <div className="d-flex align-items-center gap-2 min-w-0">
@@ -473,27 +450,36 @@ function NearbySection({ origin, nearby, nearest, showMap = true }) {
                           </span>
                           <span className="d-flex align-items-center gap-1">
                             {mosque.verified && <VerifiedBadge />}
-                            {mosque.rating} rating
+                            {mosque.rating !== null ? `${mosque.rating} rating` : "Not rated"}
                           </span>
                         </div>
 
                         <div className="mc-next-prayer mb-3">
                           <span>Next Jamat</span>
-                          <strong>Dhuhr {mosque.prayer.Dhuhr} PM</strong>
+                          <strong>{mosque.prayer?.Dhuhr ? `Dhuhr ${mosque.prayer.Dhuhr} PM` : "Times unavailable"}</strong>
                         </div>
 
                         <div className="d-flex gap-2">
-                          <Link to={`/mosque/${mosque.id}`} className="btn btn-mc btn-sm flex-fill">View profile</Link>
-                          <a
-                            href={directionsUrl(mosque)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-outline-mc btn-sm mc-icon-button"
-                            title="Get directions"
-                            aria-label={`Get directions to ${mosque.name}`}
+                          <Link
+                            to={`/mosque/${mosque.id}`}
+                            className="btn btn-mc btn-sm flex-fill"
+                            onClick={(event) => event.stopPropagation()}
                           >
-                            <Navigation size={16} aria-hidden="true" />
-                          </a>
+                            View profile
+                          </Link>
+                          {directionsUrl(mosque) && (
+                            <a
+                              href={directionsUrl(mosque)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-outline-mc btn-sm mc-icon-button"
+                              title="Get directions"
+                              aria-label={`Get directions to ${mosque.name}`}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <Navigation size={16} aria-hidden="true" />
+                            </a>
+                          )}
                         </div>
                       </div>
                     </div>

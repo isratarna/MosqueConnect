@@ -5,9 +5,9 @@
  * Copy .env.example to .env and paste your key there to enable the maps.
  * Until then, every page still works — map areas show a friendly placeholder.
  */
-export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+export const GOOGLE_MAPS_API_KEY = import.meta.env?.VITE_GOOGLE_MAPS_API_KEY || "";
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+export const API_BASE_URL = import.meta.env?.VITE_API_URL || "http://localhost:8000";
 
 export function apiUrl(path) {
   const normalized = path.startsWith("/") ? path : `/${path}`;
