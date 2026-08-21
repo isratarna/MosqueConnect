@@ -25,8 +25,11 @@ class Mosque extends Model
     use HasFactory;
 
     public const VERIFICATION_UNVERIFIED = 'unverified';
+
     public const VERIFICATION_PENDING = 'pending';
+
     public const VERIFICATION_VERIFIED = 'verified';
+
     public const VERIFICATION_REJECTED = 'rejected';
 
     public const VERIFICATION_STATUSES = [
@@ -74,6 +77,14 @@ class Mosque extends Model
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
+    }
+
+    /**
+     * Get notifications generated for followers of this mosque.
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
     }
 
     public function isVerified(): bool

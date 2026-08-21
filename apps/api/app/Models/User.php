@@ -16,7 +16,9 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     public const ROLE_NORMAL_USER = 'normal_user';
+
     public const ROLE_MOSQUE_ADMIN = 'mosque_admin';
+
     public const ROLE_SUPER_ADMIN = 'super_admin';
 
     public const ROLES = [
@@ -91,6 +93,14 @@ class User extends Authenticatable
     public function createdEvents(): HasMany
     {
         return $this->hasMany(Event::class, 'created_by');
+    }
+
+    /**
+     * Get notifications belonging to this user.
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
     }
 
     public function hasRole(string $role): bool
