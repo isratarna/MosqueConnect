@@ -22,6 +22,7 @@ export default function Register() {
   const [form, setForm] = useState({
     fullName: "",
     email: "",
+    countryCode: "+880",
     phone: "",
     password: "",
     confirm: "",
@@ -72,6 +73,14 @@ export default function Register() {
       return;
     }
 
+    const localPhone = form.phone.replace(/\D/g, "");
+    if (!localPhone || localPhone.length < 6 || localPhone.length > 15) {
+      setError("Please enter a valid local phone number.");
+      setValidated(true);
+      return;
+    }
+    const fullPhone = form.countryCode + localPhone;
+
     if (role === "mosque_admin") {
       if (!form.mosqueRole.trim()) {
         setError("Role in mosque is required.");
@@ -98,7 +107,7 @@ export default function Register() {
     const res = register({
       fullName: form.fullName,
       email: form.email,
-      phone: form.phone,
+      phone: fullPhone,
       password: form.password,
       role: role,
       mosqueName: form.mosqueName,
@@ -273,18 +282,33 @@ export default function Register() {
                   <div className="col-sm-12 mb-3">
                     <label className="form-label">Phone number</label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <Phone size={16} aria-hidden="true" />
-                      </span>
+                      <select 
+                        className="form-select bg-light border-end-0" 
+                        style={{ maxWidth: '120px', flex: '0 0 120px', cursor: 'pointer' }}
+                        value={form.countryCode}
+                        onChange={set("countryCode")}
+                        aria-label="Country Code"
+                      >
+                        <option value="+880">🇧🇩 +880</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+60">🇲🇾 +60</option>
+                      </select>
                       <input
                         type="tel"
-                        className="form-control"
-                        placeholder="e.g. +880 17XXXXXXXX"
+                        className="form-control flex-grow-1"
+                        placeholder="e.g. 17XXXXXXXX"
                         value={form.phone}
-                        onChange={set("phone")}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          setForm(f => ({ ...f, phone: val }));
+                        }}
                         required
                       />
-                      <div className="invalid-feedback">Please enter your phone number.</div>
+                      <div className="invalid-feedback">Please enter a valid phone number.</div>
                     </div>
                   </div>
                 </div>
