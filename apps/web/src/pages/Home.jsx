@@ -632,7 +632,11 @@ function AnimatedStat({ value }) {
       frame = requestAnimationFrame(tick);
     }, { threshold: 0.65 });
 
-    if (nodeRef.current) observer.observe(nodeRef.current);
+    const node = nodeRef.current;
+    if (node instanceof Element) {
+      observer.observe(node);
+    }
+
     return () => {
       observer.disconnect();
       if (frame) cancelAnimationFrame(frame);
