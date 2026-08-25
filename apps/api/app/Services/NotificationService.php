@@ -75,12 +75,7 @@ class NotificationService
         ]);
     }
 
-    /**
-     * Notify followers when a donation campaign is published.
-     *
-     * The campaign module is not implemented yet, so its persisted ID and
-     * title form the narrow integration contract for that future feature.
-     */
+    /** Notify followers when a donation campaign is published. */
     public function notifyCampaignPublished(Mosque $mosque, int $campaignId, string $title): int
     {
         return $this->notifyMosqueFollowers($mosque, [

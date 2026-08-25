@@ -79,6 +79,12 @@ class Mosque extends Model
         return $this->hasMany(Event::class);
     }
 
+    /** Get fundraising campaigns belonging to the mosque. */
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
     /**
      * Get notifications generated for followers of this mosque.
      */
