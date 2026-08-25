@@ -6,7 +6,6 @@ use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\Mosque;
 use App\Models\MosqueFacility;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class MosqueProfileSeeder extends Seeder
@@ -16,55 +15,57 @@ class MosqueProfileSeeder extends Seeder
      */
     public function run(): void
     {
-        $publisher = User::query()->firstOrCreate(
-            ['phone' => '+8801711000100'],
-            [
-                'name' => 'Mosque Profile Publisher',
-                'role' => User::ROLE_MOSQUE_ADMIN,
-            ],
-        );
-
         $profiles = $this->profiles();
 
         Mosque::query()
+            ->with('owner')
             ->whereIn('name', array_keys($profiles))
             ->get()
-            ->each(function (Mosque $mosque) use ($profiles, $publisher): void {
-                $this->syncProfile($mosque, $profiles[$mosque->name], $publisher);
+            ->each(function (Mosque $mosque) use ($profiles): void {
+                $this->syncProfile($mosque, $profiles[$mosque->name]);
             });
     }
 
     /**
      * @param  array<string, mixed>  $profile
      */
-    private function syncProfile(Mosque $mosque, array $profile, User $publisher): void
+    private function syncProfile(Mosque $mosque, array $profile): void
     {
-        $mosque->prayerTimes()->delete();
         foreach ($profile['prayer_times'] as $prayer => $times) {
-            $mosque->prayerTimes()->create([
-                'prayer' => $prayer,
-                'adhan_time' => $times['adhan'],
-                'jamaat_time' => $times['jamaat'],
-            ]);
+            $mosque->prayerTimes()->updateOrCreate(
+                ['prayer' => $prayer],
+                [
+                    'adhan_time' => $times['adhan'],
+                    'jamaat_time' => $times['jamaat'],
+                ],
+            );
         }
+        $this->removeMissing($mosque->prayerTimes(), 'prayer', array_keys($profile['prayer_times']));
 
-        $mosque->jumuahSessions()->delete();
         foreach ($profile['jumuah_sessions'] as $index => $session) {
-            $mosque->jumuahSessions()->create([
-                'sequence' => $index + 1,
-                'label' => $session['label'],
-                'khutbah_time' => $session['khutbah'] ?? null,
-                'jamaat_time' => $session['jamaat'],
-                'notes' => $session['notes'] ?? null,
-            ]);
+            $mosque->jumuahSessions()->updateOrCreate(
+                ['sequence' => $index + 1],
+                [
+                    'label' => $session['label'],
+                    'khutbah_time' => $session['khutbah'] ?? null,
+                    'jamaat_time' => $session['jamaat'],
+                    'notes' => $session['notes'] ?? null,
+                ],
+            );
         }
+        $sessionCount = count($profile['jumuah_sessions']);
+        $this->removeMissing(
+            $mosque->jumuahSessions(),
+            'sequence',
+            $sessionCount === 0 ? [] : range(1, $sessionCount),
+        );
 
-        $mosque->facilities()->delete();
         foreach ($profile['facilities'] as $facilityKey) {
-            $mosque->facilities()->create([
+            $mosque->facilities()->firstOrCreate([
                 'facility_key' => $facilityKey,
             ]);
         }
+        $this->removeMissing($mosque->facilities(), 'facility_key', $profile['facilities']);
 
         foreach ($profile['announcements'] as $announcement) {
             $mosque->announcements()->updateOrCreate(
@@ -82,7 +83,7 @@ class MosqueProfileSeeder extends Seeder
             $mosque->events()->updateOrCreate(
                 ['title' => $event['title']],
                 [
-                    'created_by' => $publisher->id,
+                    'created_by' => $mosque->owner()->firstOrFail()->id,
                     'description' => $event['description'],
                     'category' => $event['category'],
                     'event_date' => $event['event_date'],
@@ -95,6 +96,24 @@ class MosqueProfileSeeder extends Seeder
                 ],
             );
         }
+    }
+
+    /**
+     * Remove profile rows that are no longer part of the deterministic demo
+     * definition without replacing unchanged rows (and therefore their IDs).
+     *
+     * @param  \Illuminate\Database\Eloquent\Relations\HasMany<*, *>  $relation
+     * @param  list<int|string>  $values
+     */
+    private function removeMissing($relation, string $column, array $values): void
+    {
+        if ($values === []) {
+            $relation->delete();
+
+            return;
+        }
+
+        $relation->whereNotIn($column, $values)->delete();
     }
 
     /**
@@ -150,11 +169,22 @@ class MosqueProfileSeeder extends Seeder
                         'title' => 'Weekly Tafsir after Fajr',
                         'description' => 'Tafsir of Surah Al-Baqarah with the resident Khatib in the main hall. Open to all; arrive before the Fajr jamaat ends.',
                         'category' => Event::CATEGORY_ISLAMIC_LECTURE,
-                        'event_date' => '2026-08-28',
+                        'event_date' => today()->addDays(3)->toDateString(),
                         'start_time' => '05:15',
                         'end_time' => '06:15',
                         'location' => 'Main prayer hall, Baitul Mukarram',
                         'capacity' => 400,
+                        'registration_required' => false,
+                    ],
+                    [
+                        'title' => 'Muharram community health awareness talk',
+                        'description' => 'A completed public session with local physicians on hydration, blood pressure, and preparing elderly family members for congregational prayers.',
+                        'category' => Event::CATEGORY_WORKSHOP,
+                        'event_date' => today()->subDays(12)->toDateString(),
+                        'start_time' => '10:30',
+                        'end_time' => '12:00',
+                        'location' => 'Conference hall, Baitul Mukarram',
+                        'capacity' => 180,
                         'registration_required' => false,
                     ],
                 ],
@@ -236,7 +266,7 @@ class MosqueProfileSeeder extends Seeder
                         'title' => 'Weekend Quran class for children',
                         'description' => 'Nazera and short surah memorisation for ages 6–12. Parents may wait in the ground-floor lounge. New students should bring a notebook and a water bottle.',
                         'category' => Event::CATEGORY_QURAN_PROGRAM,
-                        'event_date' => '2026-08-29',
+                        'event_date' => today()->addDays(4)->toDateString(),
                         'start_time' => '16:30',
                         'end_time' => '18:00',
                         'location' => 'Classroom 2, Gulshan Society Mosque',
@@ -276,7 +306,7 @@ class MosqueProfileSeeder extends Seeder
                         'title' => 'Youth Halaqah: surviving exam season',
                         'description' => 'A short talk and open discussion for students on time, salah, and exam pressure. Light snacks after Isha.',
                         'category' => Event::CATEGORY_YOUTH_PROGRAM,
-                        'event_date' => '2026-08-30',
+                        'event_date' => today()->addDays(5)->toDateString(),
                         'start_time' => '20:30',
                         'end_time' => '21:30',
                         'location' => 'First-floor hall, Banani Central Mosque',
@@ -315,12 +345,13 @@ class MosqueProfileSeeder extends Seeder
                         'title' => 'Community blood donation camp',
                         'description' => 'Organised with a nearby diagnostic centre. Donors should eat beforehand and bring a photo ID. Women donors are welcome; a female volunteer will be present.',
                         'category' => Event::CATEGORY_VOLUNTEER_ACTIVITY,
-                        'event_date' => '2026-08-28',
+                        'event_date' => today()->addDays(8)->toDateString(),
                         'start_time' => '10:00',
                         'end_time' => '13:00',
                         'location' => 'Courtyard, Mohammadpur Central Mosque',
                         'capacity' => 80,
                         'registration_required' => true,
+                        'status' => Event::STATUS_DRAFT,
                     ],
                 ],
             ],
@@ -349,7 +380,20 @@ class MosqueProfileSeeder extends Seeder
                         'days_ago' => 0,
                     ],
                 ],
-                'events' => [],
+                'events' => [
+                    [
+                        'title' => 'Winter blanket distribution planning meeting',
+                        'description' => 'A completed planning session for ward volunteers and local donors covering beneficiary lists and distribution routes.',
+                        'category' => Event::CATEGORY_CHARITY,
+                        'event_date' => today()->subDays(24)->toDateString(),
+                        'start_time' => '19:30',
+                        'end_time' => '20:30',
+                        'location' => 'Mosque office, Dhanmondi Eidgah Mosque',
+                        'capacity' => 30,
+                        'registration_required' => true,
+                        'status' => Event::STATUS_COMPLETED,
+                    ],
+                ],
             ],
             'Chawkbazar Jame Mosque' => [
                 'prayer_times' => $this->withJamaat($dhaka, [
@@ -376,12 +420,13 @@ class MosqueProfileSeeder extends Seeder
                         'title' => 'Heritage talk: Old Dhaka mosques',
                         'description' => 'A local historian will speak on Mughal-era mosques around Chawkbazar, followed by questions. Seating is on the courtyard mats; bring a bottle of water.',
                         'category' => Event::CATEGORY_EDUCATIONAL_PROGRAM,
-                        'event_date' => '2026-08-29',
+                        'event_date' => today()->subDays(7)->toDateString(),
                         'start_time' => '17:30',
                         'end_time' => '18:20',
                         'location' => 'Courtyard, Chawkbazar Jame Mosque',
                         'capacity' => 50,
                         'registration_required' => false,
+                        'status' => Event::STATUS_CANCELLED,
                     ],
                 ],
             ],
@@ -410,7 +455,7 @@ class MosqueProfileSeeder extends Seeder
                         'title' => 'Mosque history circle after Maghrib',
                         'description' => 'An informal sitting on the hilltop mosque’s Mughal period and its role in Chittagong’s old city. Open to visitors and regular musallis.',
                         'category' => Event::CATEGORY_EDUCATIONAL_PROGRAM,
-                        'event_date' => '2026-09-04',
+                        'event_date' => today()->addDays(10)->toDateString(),
                         'start_time' => '18:45',
                         'end_time' => '19:30',
                         'location' => 'Inner hall, Anderkilla Shahi Jame Mosque',
@@ -453,7 +498,7 @@ class MosqueProfileSeeder extends Seeder
                         'title' => 'Chattogram flood relief packing',
                         'description' => 'Volunteers will sort and pack donated food and clothing for distribution. Wear comfortable clothes; drinking water will be provided.',
                         'category' => Event::CATEGORY_CHARITY,
-                        'event_date' => '2026-08-28',
+                        'event_date' => today()->addDays(3)->toDateString(),
                         'start_time' => '15:00',
                         'end_time' => '17:30',
                         'location' => 'South courtyard, Jamiatul Falah Mosque',

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Mosque;
 use App\Models\User;
 use App\Services\Otp\PhoneOtpService;
 use Illuminate\Http\JsonResponse;
@@ -55,7 +56,7 @@ class PhoneOtpController extends Controller
         $token = $user->createToken('phone-otp')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user' => $this->authenticatedUser($user),
             'token' => $token,
             'token_type' => 'Bearer',
         ]);
@@ -73,7 +74,29 @@ class PhoneOtpController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json([
-            'user' => $request->user(),
+            'user' => $this->authenticatedUser($request->user()),
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function authenticatedUser(User $user): array
+    {
+        $user->load('ownedMosques:id,owner_id,name,address,verification_status');
+        $payload = $user->toArray();
+        $managedMosque = $user->ownedMosques->first();
+
+        $payload['managed_mosques'] = $payload['owned_mosques'];
+        $payload['mosqueName'] = $managedMosque?->name;
+        $payload['status'] = $user->isMosqueAdmin()
+            ? match ($managedMosque?->verification_status) {
+                Mosque::VERIFICATION_VERIFIED => 'approved',
+                Mosque::VERIFICATION_REJECTED => 'rejected',
+                default => 'pending',
+            }
+        : null;
+
+        unset($payload['owned_mosques']);
+
+        return $payload;
     }
 }

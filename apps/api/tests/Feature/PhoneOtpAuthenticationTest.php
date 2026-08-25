@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Mosque;
 use App\Models\PhoneOtpVerification;
 use App\Models\User;
 use App\Services\Otp\SmsOtpSender;
@@ -20,7 +21,7 @@ class PhoneOtpAuthenticationTest extends TestCase
     {
         parent::setUp();
 
-        $this->sender = new FakeSmsOtpSender();
+        $this->sender = new FakeSmsOtpSender;
         $this->app->instance(SmsOtpSender::class, $this->sender);
     }
 
@@ -178,6 +179,23 @@ class PhoneOtpAuthenticationTest extends TestCase
         $this->getJson('/api/auth/me')
             ->assertOk()
             ->assertJsonPath('user.id', $user->id);
+    }
+
+    public function test_rejected_mosque_admin_receives_rejected_account_status(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_MOSQUE_ADMIN]);
+        $mosque = Mosque::factory()->create([
+            'owner_id' => $user->id,
+            'verification_status' => Mosque::VERIFICATION_REJECTED,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonPath('user.status', 'rejected')
+            ->assertJsonPath('user.managed_mosques.0.id', $mosque->id)
+            ->assertJsonPath('user.managed_mosques.0.verification_status', Mosque::VERIFICATION_REJECTED);
     }
 
     public function test_unauthenticated_me_is_rejected(): void
