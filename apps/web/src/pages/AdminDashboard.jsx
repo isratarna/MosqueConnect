@@ -415,88 +415,16 @@ export default function AdminDashboard() {
 
             {/* ANNOUNCEMENTS PANEL */}
             {activeTab === "announce" && (
-              <div>
-                <h4 className="fw-bold mb-4 border-bottom pb-2">Manage Announcements</h4>
-                
-                {/* Add announcement form */}
-                <h5 className="fw-bold text-mc mb-3">Add New Announcement</h5>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    const newAnnounce = {
-                      id: createAnnouncementId(),
-                      title: formData.get("title"),
-                      body: formData.get("body"),
-                      urgency: formData.get("urgency"),
-                      date: new Date().toISOString().split("T")[0],
-                    };
-                    const list = mosque.announcements || [];
-                    handleSave({ ...mosque, announcements: [newAnnounce, ...list] });
-                    e.currentTarget.reset();
-                  }}
-                  className="mb-5 p-3 border rounded bg-light"
-                >
-                  <div className="row g-3">
-                    <div className="col-md-8 mb-3">
-                      <label className="form-label small fw-semibold">Title</label>
-                      <input type="text" name="title" className="form-control text-start" placeholder="e.g. Mosque Renovation Progress" required />
-                    </div>
-                    <div className="col-md-4 mb-3">
-                      <label className="form-label small fw-semibold">Urgency Level</label>
-                      <select name="urgency" className="form-select" defaultValue="low">
-                        <option value="low">Low (Info)</option>
-                        <option value="medium">Medium (Warning)</option>
-                        <option value="high">High (Alert)</option>
-                      </select>
-                    </div>
-                    <div className="col-12 mb-3">
-                      <label className="form-label small fw-semibold">Message Body</label>
-                      <textarea name="body" className="form-control text-start" rows={3} placeholder="Provide explanation details here..." required></textarea>
-                    </div>
-                  </div>
-                  <button type="submit" className="btn btn-mc d-flex align-items-center gap-2">
-                    <Plus size={16} /> Add Announcement
-                  </button>
-                </form>
-
-                {/* List announcements */}
-                <h5 className="fw-bold mb-3">Existing Announcements</h5>
-                {(!mosque.announcements || mosque.announcements.length === 0) ? (
-                  <p className="text-muted small">No announcements posted yet.</p>
-                ) : (
-                  <div className="d-flex flex-column gap-3">
-                    {mosque.announcements.map((announce, idx) => {
-                      const announcementId = getMosqueAnnouncementId(mosque.id, announce, idx);
-
-                      return (
-                        <div className="card p-3 shadow-sm border-start border-4 border-mc" key={announcementId}>
-                          <div className="d-flex justify-content-between align-items-start gap-2">
-                            <div>
-                              <span className={`badge bg-${announce.urgency === "high" ? "danger" : announce.urgency === "medium" ? "warning text-dark" : "success"} mb-2 small`}>
-                                {announce.urgency} urgency
-                              </span>
-                              <h6 className="fw-bold mb-1"><Link to={getAnnouncementDetailsPath(announcementId)} className="text-dark text-decoration-none">{announce.title}</Link></h6>
-                              <p className="mb-1 text-secondary small">{announce.body}</p>
-                              <span className="text-muted small" style={{ fontSize: "11px" }}>Posted: {announce.date}</span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                const list = [...mosque.announcements];
-                                list.splice(idx, 1);
-                                handleSave({ ...mosque, announcements: list });
-                              }}
-                              className="btn btn-sm btn-outline-danger"
-                              title="Delete Announcement"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+              <div className="text-center py-5">
+                <Megaphone size={48} className="text-mc mx-auto mb-3 opacity-75" />
+                <h4 className="fw-bold mb-2">Manage Announcements</h4>
+                <p className="text-muted small mb-4">
+                  We have moved announcement management to a dedicated, expansive workspace.
+                  From there you can draft, publish, and track all your community updates.
+                </p>
+                <Link to="/mosque-admin/announcements" className="btn btn-mc d-inline-flex align-items-center gap-2">
+                  Go to Announcements Hub
+                </Link>
               </div>
             )}
 
