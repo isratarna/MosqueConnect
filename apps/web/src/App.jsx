@@ -14,6 +14,7 @@ import Support from "./pages/Support";
 import SupportContinue from "./pages/SupportContinue";
 import Community from "./pages/Community";
 import BloodDonation from "./pages/BloodDonation";
+import VolunteerOpportunities from "./pages/VolunteerOpportunities";
 import AnnouncementDetails from "./pages/AnnouncementDetails";
 import EventDetails from "./pages/EventDetails";
 import Notifications from "./pages/Notifications";
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/support/continue" element={<SupportContinue />} />
         <Route path="/community" element={<Community />} />
         <Route path="/blood-donation" element={<BloodDonation />} />
+        <Route path="/volunteers" element={<VolunteerOpportunities />} />
         <Route path="/community/announcements/:id" element={<AnnouncementDetails />} />
         <Route path="/community/events/:id" element={<EventDetails />} />
         <Route

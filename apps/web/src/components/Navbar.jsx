@@ -80,6 +80,12 @@ export default function Navbar() {
             <li className="nav-item">
               <NavLink className={navLinkClass} to="/community" onClick={close}>Community</NavLink>
             </li>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/blood-donation" onClick={close}>Blood Donation</NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/volunteers" onClick={close}>Volunteers</NavLink>
+            </li>
 
             {!user ? (
               <>
