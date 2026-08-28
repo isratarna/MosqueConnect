@@ -26,6 +26,7 @@ import {
   getAnnouncementDetailsPath,
   getMosqueAnnouncementId,
 } from "../data/announcements";
+import CampaignManager from "../components/admin/CampaignManager";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -38,6 +39,21 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!user) {
       navigate("/login");
+      return;
+    }
+
+    const managedMosque = user.managed_mosques?.[0];
+
+    if (managedMosque) {
+      const localMatch = MOSQUES.find(
+        (item) => item.name.trim().toLowerCase() === managedMosque.name.trim().toLowerCase()
+      );
+      setMosque({
+        ...localMatch,
+        ...managedMosque,
+        announcements: localMatch?.announcements || [],
+        events: localMatch?.events || [],
+      });
       return;
     }
 
@@ -625,48 +641,7 @@ export default function AdminDashboard() {
             )}
 
             {/* DONATION CAMPAIGNS PANEL */}
-            {activeTab === "donations" && (
-              <div>
-                <h4 className="fw-bold mb-4 border-bottom pb-2">Manage Donation Campaigns</h4>
-                <p className="text-muted small mb-4">
-                  Monitor active fundraising projects and edit goals or publish new relief drives.
-                </p>
-
-                {/* Active campaigns list */}
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <div className="card p-3 border shadow-sm">
-                      <h6 className="fw-bold mb-1">Roof Renovation Project</h6>
-                      <span className="badge bg-success-subtle text-success border border-success-subtle mb-2 align-self-start small">Active</span>
-                      <div className="progress mb-2" style={{ height: "10px" }}>
-                        <div className="progress-bar bg-mc" role="progressbar" style={{ width: "60%" }} aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
-                      </div>
-                      <div className="d-flex justify-content-between small text-muted">
-                        <span>Raised: ৳120,000</span>
-                        <span>Goal: ৳200,000</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="card p-3 border shadow-sm">
-                      <h6 className="fw-bold mb-1">Flood Victim Relief Packages</h6>
-                      <span className="badge bg-success-subtle text-success border border-success-subtle mb-2 align-self-start small">Active</span>
-                      <div className="progress mb-2" style={{ height: "10px" }}>
-                        <div className="progress-bar bg-mc" role="progressbar" style={{ width: "85%" }} aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
-                      </div>
-                      <div className="d-flex justify-content-between small text-muted">
-                        <span>Raised: ৳170,000</span>
-                        <span>Goal: ৳200,000</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="alert alert-light border mt-4 small p-3 text-secondary text-center">
-                  Donation tracking system is operated as frontend simulation. Payment gateway configs will arrive in Phase 2.
-                </div>
-              </div>
-            )}
+            {activeTab === "donations" && <CampaignManager mosqueId={mosque.id} />}
 
             {/* VOLUNTEER OPPORTUNITIES PANEL */}
             {activeTab === "volunteers" && (
