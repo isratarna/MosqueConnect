@@ -23,6 +23,7 @@ import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import PrayerTimeline from "../components/PrayerTimeline";
 import MosqueEventsSection from "../components/events/MosqueEventsSection";
+import MosqueCampaignsSection from "../components/campaigns/MosqueCampaignsSection";
 import { directionsUrl, fetchMosqueById } from "../utils/mosqueDiscovery";
 import { formatClockTime } from "../utils/prayerTime";
 
@@ -226,6 +227,7 @@ export default function MosqueProfile() {
           </div>
 
           <MosqueEventsSection mosqueId={mosque.id} />
+          <MosqueCampaignsSection mosqueId={mosque.id} />
         </div>
 
         <div className="col-lg-4">

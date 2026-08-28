@@ -29,7 +29,7 @@ test("notification destinations reuse existing frontend routes", () => {
   assert.equal(getNotificationPath({ type: "event", reference_id: 12 }), "/community/events/12");
   assert.equal(getNotificationPath({ type: "announcement", reference_id: 8 }), "/community/announcements/8");
   assert.equal(getNotificationPath({ type: "prayer_schedule", mosque_id: 3 }), "/mosque/3#prayer-schedule");
-  assert.equal(getNotificationPath({ type: "campaign", reference_id: 5, mosque_id: 2 }), "/support?type=money&campaign=5&mosque=2");
+  assert.equal(getNotificationPath({ type: "campaign", reference_id: 5, mosque_id: 2 }), "/campaigns/5");
   assert.equal(getNotificationPath({ type: "system" }), null);
   assert.equal(getNotificationPath({ type: "event" }), null);
 });
