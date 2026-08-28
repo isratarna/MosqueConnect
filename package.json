@@ -8,6 +8,8 @@
   "scripts": {
     "dev:web": "npm run dev --workspace=apps/web",
     "build:web": "npm run build --workspace=apps/web",
-    "install:all": "npm install --workspaces"
+    "install:all": "npm install --workspaces",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   }
 }
