@@ -38,12 +38,8 @@ export function getNotificationPath(notification) {
       return referenceId ? `/community/events/${encodeURIComponent(referenceId)}` : null;
     case "announcement":
       return referenceId ? `/community/announcements/${encodeURIComponent(referenceId)}` : null;
-    case "campaign": {
-      const params = new URLSearchParams({ type: "money" });
-      if (referenceId) params.set("campaign", referenceId);
-      if (mosqueId) params.set("mosque", mosqueId);
-      return `/support?${params.toString()}`;
-    }
+    case "campaign":
+      return referenceId ? `/campaigns/${encodeURIComponent(referenceId)}` : null;
     case "prayer_schedule":
       return mosqueId ? `/mosque/${encodeURIComponent(mosqueId)}#prayer-schedule` : null;
     default:

@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-     "test": "node --test src/utils/eventFilters.test.js src/utils/mosqueDiscovery.test.js src/utils/notificationUtils.test.js src/utils/prayerTime.test.js",
+     "test": "node --test src/utils/campaignFormat.test.js src/utils/eventFilters.test.js src/utils/mosqueDiscovery.test.js src/utils/notificationUtils.test.js src/utils/prayerTime.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    open: true,
+    open: process.env.VITE_OPEN_BROWSER !== "false",
   },
 });

@@ -78,6 +78,9 @@ export default function Navbar() {
               <NavLink className={navLinkClass} to="/support" onClick={close}>Support</NavLink>
             </li>
             <li className="nav-item">
+              <NavLink className={navLinkClass} to="/campaigns" onClick={close}>Campaigns</NavLink>
+            </li>
+            <li className="nav-item">
               <NavLink className={navLinkClass} to="/community" onClick={close}>Community</NavLink>
             </li>
 
