@@ -8,6 +8,8 @@ import MosqueProfile from "./pages/MosqueProfile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import AdminDashboard from "./pages/AdminDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import VerificationRequests from "./pages/admin/VerificationRequests";
 import Support from "./pages/Support";
 import SupportContinue from "./pages/SupportContinue";
@@ -46,6 +48,52 @@ export default function App() {
 
   return (
     <Layout>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/browse" element={<Browse />} />
+        <Route path="/support" element={<Support />} />
+        <Route path="/support/continue" element={<SupportContinue />} />
+        <Route path="/community" element={<Community />} />
+        <Route path="/community/announcements/:id" element={<AnnouncementDetails />} />
+        <Route path="/community/events/:id" element={<EventDetails />} />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/mosque/:id" element={<MosqueProfile />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/super-admin"
+          element={
+
+            <SuperAdminDashboard />
+
+          }
+        />
+        <Route path="/admin/verification-requests" element={<VerificationRequests />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
       <RouteErrorBoundary key={location.key}>
         <Routes location={location}>
           <Route path="/" element={<Home />} />
