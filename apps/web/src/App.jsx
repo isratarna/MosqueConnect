@@ -14,6 +14,7 @@ import VerificationRequests from "./pages/admin/VerificationRequests";
 import Support from "./pages/Support";
 import SupportContinue from "./pages/SupportContinue";
 import Community from "./pages/Community";
+import BloodDonation from "./pages/BloodDonation";
 import AnnouncementDetails from "./pages/AnnouncementDetails";
 import EventDetails from "./pages/EventDetails";
 import Notifications from "./pages/Notifications";
@@ -54,6 +55,7 @@ export default function App() {
         <Route path="/support" element={<Support />} />
         <Route path="/support/continue" element={<SupportContinue />} />
         <Route path="/community" element={<Community />} />
+        <Route path="/blood-donation" element={<BloodDonation />} />
         <Route path="/community/announcements/:id" element={<AnnouncementDetails />} />
         <Route path="/community/events/:id" element={<EventDetails />} />
         <Route
