@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import MosqueAdminAnnouncements from "./pages/MosqueAdminAnnouncements";
 import VerificationRequests from "./pages/admin/VerificationRequests";
 import Support from "./pages/Support";
 import SupportContinue from "./pages/SupportContinue";
@@ -84,6 +85,14 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mosque-admin/announcements"
+          element={
+            <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
+              <MosqueAdminAnnouncements />
             </ProtectedRoute>
           }
         />
