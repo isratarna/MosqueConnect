@@ -28,13 +28,13 @@ class StoreVerificationRequest extends FormRequest
     /**
      * Ensure a user or mosque does not already have an in-flight request.
      */
-    public function hasActiveConflict(VerificationRequest $request): bool
+    public function hasActiveConflict(): bool
     {
-        return $request->query()
+        return VerificationRequest::query()
             ->whereIn('status', VerificationRequest::ACTIVE_STATUSES)
             ->where(fn ($query) => $query
                 ->where('user_id', $this->user()->id)
-                ->orWhere('mosque_id', $this->input('mosque_id')))
+                ->orWhere('mosque_id', (int) $this->input('mosque_id')))
             ->exists();
     }
 }

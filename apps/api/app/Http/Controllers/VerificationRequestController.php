@@ -21,8 +21,9 @@ class VerificationRequestController extends Controller
             ], 409);
         }
 
-        $path = $request->file('proof_document')->store(
+        $path = $request->file('proof_document')->storeAs(
             'verification/'.$user->id,
+            $request->file('proof_document')->getClientOriginalName(),
             ['disk' => 'local', 'visibility' => 'private'],
         );
 
