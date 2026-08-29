@@ -34,7 +34,7 @@ class StoreVerificationRequest extends FormRequest
             ->whereIn('status', VerificationRequest::ACTIVE_STATUSES)
             ->where(fn ($query) => $query
                 ->where('user_id', $this->user()->id)
-                ->orWhere('mosque_id', $this->input('mosque_id')))
+                ->orWhere('mosque_id', (int) $this->input('mosque_id')))
             ->exists();
     }
 }
