@@ -137,7 +137,30 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/admin/verification-requests" element={<VerificationRequests />} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/super-admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin"]}>
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/verification-requests"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin"]}>
+                <VerificationRequests />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </RouteErrorBoundary>

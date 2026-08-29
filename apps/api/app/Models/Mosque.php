@@ -93,6 +93,12 @@ class Mosque extends Model
         return $this->hasMany(Notification::class);
     }
 
+    public function contentReports(): HasMany
+    {
+        return $this->hasMany(ContentReport::class, 'reportable_id')
+            ->where('reportable_type', 'mosque');
+    }
+
     /**
      * Get daily prayer and jamaat times for the mosque.
      */
