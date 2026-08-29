@@ -17,6 +17,7 @@ use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\CampaignDonationController;
 use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\MosqueClaimController;
 use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
 use App\Http\Controllers\NotificationController;
@@ -62,6 +63,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/mosques/{mosque}/follow', [MosqueFollowController::class, 'follow']);
     Route::delete('/mosques/{mosque}/follow', [MosqueFollowController::class, 'unfollow']);
     Route::get('/me/followed-mosques', [MosqueFollowController::class, 'followed']);
+
+    // Mosque admin applicant claims: submit a claim and track its status
+    Route::post('/mosque-claims', [MosqueClaimController::class, 'store']);
+    Route::get('/me/mosque-claims', [MosqueClaimController::class, 'index']);
+    Route::get('/me/mosque-claims/{claim}', [MosqueClaimController::class, 'show']);
 
     // Manual donation pledges; mosque admins confirm them before totals change.
     Route::post('/campaigns/{campaign}/donations', [CampaignDonationController::class, 'store']);
