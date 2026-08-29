@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, memo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen,
@@ -28,6 +28,9 @@ import { DEFAULT_CENTER } from "../config";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
 import { directionsUrl } from "../utils/mosqueDiscovery";
 import { dhuhrJamaatLabel } from "../utils/prayerTime";
+
+const CAROUSEL_AUTOPLAY_DELAY_MS = 1200;
+const CAROUSEL_TRANSITION_MS = 220;
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -257,15 +260,6 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const [dragOffset, setDragOffset] = useState(0);
   const [isInteracting, setIsInteracting] = useState(false);
   const pointerStartX = useRef(0);
-  const [cardWidth, setCardWidth] = useState(260);
-
-  useEffect(() => {
-    const handleResize = () => setCardWidth(window.innerWidth < 768 ? 235 : 260);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   useEffect(() => {
     if (!nearby.length) {
       setActiveIndex(0);
@@ -306,7 +300,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
       if (nextId != null && String(nextId) !== String(selectedMosqueId)) {
         onMosqueSelect?.(nextId);
       }
-    }, 1600);
+    }, CAROUSEL_AUTOPLAY_DELAY_MS);
 
     return () => window.clearTimeout(timer);
   }, [activeIndex, nearby, isInteracting, onMosqueSelect, selectedMosqueId]);
@@ -328,7 +322,6 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const handlePointerEnd = useCallback(() => {
     if (!nearby.length) return;
 
-    const threshold = 40;
     const threshold = 50;
     if (dragOffset > threshold) {
       goToPrevious();
@@ -407,27 +400,24 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                 if (!isVisible) return null;
 
-                const offsetX = normalizedOffset * 278 + dragOffset * 0.55;
+                const offsetX = dragOffset * 0.55;
+                const slideScale = 1;
                 const opacity = isActive ? 1 : 0.68;
-                const offsetX = normalizedOffset * cardWidth + dragOffset * 1.0;
-                const opacity = isActive ? 1 : 0.5;
                 const zIndex = isActive ? 10 : 5 - absOffset;
+                const positionClass = normalizedOffset < 0
+                  ? `is-offset-minus-${absOffset}`
+                  : `is-offset-${absOffset}`;
 
                 return (
                   <div
                     key={mosque.id}
-                    className={`mc-nearby-slide ${isActive ? "is-active" : ""}`}
+                    className={`mc-nearby-slide ${isActive ? "is-active" : ""} ${positionClass}`}
                     style={{
-                      transform: `translate(calc(-50% + ${offsetX}px), -50%) scale(${isActive ? 1.03 : 0.94})`,
+                      transform: `translate(calc(-50% + ${offsetX}px), -50%) scale(${slideScale})`,
                       opacity,
                       zIndex,
-                      transition: isInteracting ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
-                      transform: `translate3d(calc(-50% + ${offsetX}px), -50%, 0)`,
-                      opacity,
-                      zIndex,
-                      transition: isInteracting ? "none" : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
+                      transition: isInteracting ? "none" : `left ${CAROUSEL_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), transform ${CAROUSEL_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), opacity ${CAROUSEL_TRANSITION_MS}ms ease, filter ${CAROUSEL_TRANSITION_MS}ms ease, box-shadow ${CAROUSEL_TRANSITION_MS}ms ease`,
                       cursor: isActive ? undefined : "pointer",
-                      willChange: "transform, opacity",
                     }}
                     onClick={() => {
                       if (!isActive) selectIndex(index);
@@ -495,7 +485,6 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                         </div>
                       </div>
                     </div>
-                    <NearbyCardContent mosque={mosque} />
                   </div>
                 );
               })}
@@ -658,70 +647,3 @@ function AnimatedStat({ value }) {
 
   return <span ref={nodeRef}>{display}</span>;
 }
-
-const NearbyCardContent = memo(({ mosque }) => {
-  return (
-    <div className="card mc-card mc-nearby-card">
-      <img
-        src={mosque.photo}
-        className="mc-nearby-card__image"
-        alt={mosque.name}
-        onError={(event) => {
-          event.currentTarget.onerror = null;
-          event.currentTarget.src = "/uiRef.jpeg";
-        }}
-      />
-      <div className="card-body mc-nearby-card__body">
-        <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
-          <div className="d-flex align-items-center gap-2 min-w-0">
-            <h5 className="mb-0 mc-nearby-card__title">{mosque.name}</h5>
-          </div>
-          <span className="badge mc-badge">{mosque.distance} km</span>
-        </div>
-
-        <div className="text-muted small mb-2 mc-nearby-card__meta">
-          <MapPin size={14} aria-hidden="true" />
-          <span>{mosque.address}</span>
-        </div>
-
-        <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2">
-          <span className="mc-distance">
-            <Navigation size={13} aria-hidden="true" />{mosque.distance} km away
-          </span>
-          <span className="d-flex align-items-center gap-1">
-            {mosque.verified && <VerifiedBadge />}
-            {mosque.rating !== null ? `${mosque.rating} rating` : "Not rated"}
-          </span>
-        </div>
-
-        <div className="mc-next-prayer mb-3">
-          <span>Next Jamat</span>
-          <strong>{dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}</strong>
-        </div>
-
-        <div className="d-flex gap-2">
-          <Link
-            to={`/mosque/${mosque.id}`}
-            className="btn btn-mc btn-sm flex-fill"
-            onClick={(event) => event.stopPropagation()}
-          >
-            View profile
-          </Link>
-          {directionsUrl(mosque) && (
-            <a
-              href={directionsUrl(mosque)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline-mc btn-sm mc-icon-button"
-              title="Get directions"
-              aria-label={`Get directions to ${mosque.name}`}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Navigation size={16} aria-hidden="true" />
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-});
