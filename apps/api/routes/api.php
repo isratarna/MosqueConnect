@@ -45,6 +45,7 @@ Route::prefix('auth')->group(function () {
 
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
+Route::get('/mosques/{mosque}/prayer-schedule', [MosqueController::class, 'prayerSchedule']);
 Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
 Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{event}', [EventController::class, 'show']);
@@ -84,6 +85,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->group(function () {
             Route::get('/mosques/{mosque}', [MosqueManagementController::class, 'show']);
             Route::patch('/mosques/{mosque}', [MosqueManagementController::class, 'update']);
+            Route::get('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'prayerSchedule']);
+            Route::put('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'updatePrayerSchedule']);
 
             Route::scopeBindings()->group(function () {
                 Route::get('/mosques/{mosque}/events', [EventManagementController::class, 'index']);
