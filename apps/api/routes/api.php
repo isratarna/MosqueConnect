@@ -44,6 +44,7 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
+Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'index']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
 Route::get('/mosques/{mosque}/prayer-schedule', [MosqueController::class, 'prayerSchedule']);
 Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
@@ -89,6 +90,14 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::put('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'updatePrayerSchedule']);
 
             Route::scopeBindings()->group(function () {
+                Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'adminIndex']);
+                Route::post('/mosques/{mosque}/announcements', [AnnouncementController::class, 'store']);
+                Route::get('/mosques/{mosque}/announcements/{announcement}', [AnnouncementController::class, 'adminShow']);
+                Route::patch('/mosques/{mosque}/announcements/{announcement}', [AnnouncementController::class, 'update']);
+                Route::patch('/mosques/{mosque}/announcements/{announcement}/publish', [AnnouncementController::class, 'publish']);
+                Route::patch('/mosques/{mosque}/announcements/{announcement}/unpublish', [AnnouncementController::class, 'unpublish']);
+                Route::delete('/mosques/{mosque}/announcements/{announcement}', [AnnouncementController::class, 'destroy']);
+
                 Route::get('/mosques/{mosque}/events', [EventManagementController::class, 'index']);
                 Route::post('/mosques/{mosque}/events', [EventManagementController::class, 'store']);
                 Route::get('/mosques/{mosque}/events/{event}', [EventManagementController::class, 'show']);
