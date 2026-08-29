@@ -9,6 +9,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { apiUrl } from "../config";
 import {
   AUTH_TOKEN_KEY,
+  AUTH_USER_KEY,
   cacheUser,
   clearAuthStorage,
   getAuthHeaders,
@@ -18,9 +19,18 @@ import {
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem(AUTH_USER_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [token, setToken] = useState(() => getStoredToken());
+  // If we already have a cached user, we can start with loading = false
+  // so the UI renders immediately without a spinner.
+  const [loading, setLoading] = useState(() => !localStorage.getItem(AUTH_USER_KEY));
 
   const clearSession = useCallback(() => {
     setUser(null);
@@ -29,9 +39,21 @@ export function AuthProvider({ children }) {
   }, []);
 
   const restoreSession = useCallback(async () => {
-    setLoading(true);
+    // Only show the blocking spinner if we don't already have a cached user.
+    if (!localStorage.getItem(AUTH_USER_KEY)) {
+      setLoading(true);
+    }
 
     try {
+      const storedToken = getStoredToken();
+      if (!storedToken) {
+        clearSession();
+        setLoading(false);
+        return;
+      }
+
+      // If we already have a user from localStorage, we might not need to clear it 
+      // immediately if the API fetch fails (especially if backend is under development).
       const res = await fetch(apiUrl("/api/auth/me"), {
         method: "GET",
         headers: getAuthHeaders(),
@@ -39,7 +61,6 @@ export function AuthProvider({ children }) {
 
       if (res.ok) {
         const data = await res.json();
-        const storedToken = getStoredToken();
         setUser(data.user ?? null);
         setToken(storedToken);
         if (data.user) {
@@ -53,10 +74,17 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      clearSession();
+      // If backend returns 404 or 500 (e.g. during development), 
+      // keep the localStorage user session active as a fallback.
+      if (!localStorage.getItem(AUTH_USER_KEY)) {
+        clearSession();
+      }
     } catch (err) {
       console.error("Failed to fetch current user:", err);
-      clearSession();
+      // Don't clear session on network error if we have a cached user
+      if (!localStorage.getItem(AUTH_USER_KEY)) {
+        clearSession();
+      }
     } finally {
       setLoading(false);
     }

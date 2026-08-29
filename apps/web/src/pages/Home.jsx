@@ -437,34 +437,36 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                         }}
                       />
                       <div className="card-body mc-nearby-card__body d-flex flex-column">
-                        <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
-                          <div className="d-flex align-items-center gap-2 min-w-0">
-                            <h5 className="mb-0 mc-nearby-card__title">{mosque.name}</h5>
+                        <div className="flex-grow-1 d-flex flex-column">
+                          <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                            <div className="d-flex align-items-center gap-2 min-w-0">
+                              <h5 className="mb-0 mc-nearby-card__title text-truncate">{mosque.name}</h5>
+                            </div>
+                            <span className="badge mc-badge flex-shrink-0">{mosque.distance} km</span>
                           </div>
-                          <span className="badge mc-badge">{mosque.distance} km</span>
+
+                          <div className="text-muted small mb-2 mc-nearby-card__meta">
+                            <MapPin size={14} aria-hidden="true" className="flex-shrink-0" />
+                            <span className="text-truncate">{mosque.address}</span>
+                          </div>
+
+                          <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2 mc-nearby-card__status">
+                            <span className="mc-distance">
+                              <Navigation size={13} aria-hidden="true" />{mosque.distance} km away
+                            </span>
+                            <span className="d-flex align-items-center gap-1">
+                              {mosque.verified && <VerifiedBadge />}
+                              {mosque.rating !== null ? `${mosque.rating} rating` : "Not rated"}
+                            </span>
+                          </div>
+
+                          <div className="mc-next-prayer mb-2">
+                            <span>Next Jamat</span>
+                            <strong>{dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}</strong>
+                          </div>
                         </div>
 
-                        <div className="text-muted small mb-2 mc-nearby-card__meta">
-                          <MapPin size={14} aria-hidden="true" />
-                          <span>{mosque.address}</span>
-                        </div>
-
-                        <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2 mc-nearby-card__status">
-                          <span className="mc-distance">
-                            <Navigation size={13} aria-hidden="true" />{mosque.distance} km away
-                          </span>
-                          <span className="d-flex align-items-center gap-1">
-                            {mosque.verified && <VerifiedBadge />}
-                            {mosque.rating !== null ? `${mosque.rating} rating` : "Not rated"}
-                          </span>
-                        </div>
-
-                        <div className="mc-next-prayer mb-3 flex-grow-1">
-                          <span>Next Jamat</span>
-                          <strong>{dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}</strong>
-                        </div>
-
-                        <div className="d-flex gap-2 mt-auto">
+                        <div className="d-flex gap-2 mt-auto pt-1">
                           <Link
                             to={`/mosque/${mosque.id}`}
                             className="btn btn-mc btn-sm flex-fill"

@@ -224,7 +224,7 @@ export default function AdminDashboard() {
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   className={`list-group-item list-group-item-action border-0 py-3 px-4 d-flex align-items-center gap-3 fw-medium ${
-                    activeTab === item.id ? "bg-mc text-white active" : "text-secondary"
+                    activeTab === item.id ? "bg-mc text-white active" : "text-slate-700 font-medium"
                   }`}
                   style={{ borderRadius: "0" }}
                 >
@@ -265,29 +265,29 @@ export default function AdminDashboard() {
                       <div className="col-sm-6 col-lg-3">
                         <div className="p-3 border rounded-3 bg-light text-center h-100 d-flex flex-column justify-content-center shadow-sm">
                           <Users size={20} className="text-mc mb-2 mx-auto" />
-                          <h6 className="text-muted small text-uppercase mb-1">Total Followers</h6>
-                          <h3 className="fw-bold mb-0 text-dark">{dashboardMetrics?.totalFollowers || 0}</h3>
+                          <h6 className="text-slate-700 small font-semibold uppercase tracking-wider mb-1">Total Followers</h6>
+                          <h3 className="fw-bold mb-0 text-slate-800">{dashboardMetrics?.totalFollowers || 0}</h3>
                         </div>
                       </div>
                       <div className="col-sm-6 col-lg-3">
                         <div className="p-3 border rounded-3 bg-light text-center h-100 d-flex flex-column justify-content-center shadow-sm">
                           <Megaphone size={20} className="text-mc mb-2 mx-auto" />
-                          <h6 className="text-muted small text-uppercase mb-1">Active Announcements</h6>
-                          <h3 className="fw-bold mb-0 text-dark">{dashboardMetrics?.activeAnnouncements || 0}</h3>
+                          <h6 className="text-slate-700 small font-semibold uppercase tracking-wider mb-1">Active Announcements</h6>
+                          <h3 className="fw-bold mb-0 text-slate-800">{dashboardMetrics?.activeAnnouncements || 0}</h3>
                         </div>
                       </div>
                       <div className="col-sm-6 col-lg-3">
                         <div className="p-3 border rounded-3 bg-light text-center h-100 d-flex flex-column justify-content-center shadow-sm">
                           <HeartHandshake size={20} className="text-mc mb-2 mx-auto" />
-                          <h6 className="text-muted small text-uppercase mb-1">Upcoming Volunteers</h6>
-                          <h3 className="fw-bold mb-0 text-dark">{dashboardMetrics?.upcomingVolunteers || 0}</h3>
+                          <h6 className="text-slate-700 small font-semibold uppercase tracking-wider mb-1">Upcoming Volunteers</h6>
+                          <h3 className="fw-bold mb-0 text-slate-800">{dashboardMetrics?.upcomingVolunteers || 0}</h3>
                         </div>
                       </div>
                       <div className="col-sm-6 col-lg-3">
                         <div className="p-3 border rounded-3 bg-light text-center h-100 d-flex flex-column justify-content-center shadow-sm">
                           <Activity size={20} className="text-mc mb-2 mx-auto" />
-                          <h6 className="text-muted small text-uppercase mb-1">Blood Requests</h6>
-                          <h3 className="fw-bold mb-0 text-dark">{dashboardMetrics?.activeBloodRequests || 0}</h3>
+                          <h6 className="text-slate-700 small font-semibold uppercase tracking-wider mb-1">Blood Requests</h6>
+                          <h3 className="fw-bold mb-0 text-slate-800">{dashboardMetrics?.activeBloodRequests || 0}</h3>
                         </div>
                       </div>
                     </div>
@@ -308,13 +308,13 @@ export default function AdminDashboard() {
                               {recentActivities.map((activity) => (
                                 <div key={activity.id} className="list-group-item bg-transparent py-3 border-bottom">
                                   <div className="d-flex w-100 justify-content-between align-items-start mb-1">
-                                    <h6 className="mb-0 fw-bold">{activity.title}</h6>
-                                    <small className="text-muted" style={{ fontSize: "0.75rem" }}>
+                                    <h6 className="mb-0 fw-bold text-slate-800">{activity.title}</h6>
+                                    <small className="text-slate-600" style={{ fontSize: "0.75rem" }}>
                                       {new Date(activity.timestamp).toLocaleDateString()}
                                     </small>
                                   </div>
-                                  <p className="mb-1 small text-secondary">{activity.description}</p>
-                                  <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style={{ fontSize: "0.65rem" }}>
+                                  <p className="mb-1 small text-slate-600">{activity.description}</p>
+                                  <span className="badge bg-secondary-subtle text-slate-700 border border-secondary-subtle" style={{ fontSize: "0.65rem" }}>
                                     {activity.type.replace("_", " ").toUpperCase()}
                                   </span>
                                 </div>
@@ -330,16 +330,16 @@ export default function AdminDashboard() {
                           <Settings size={18} className="text-mc" /> Quick Actions
                         </h5>
                         <div className="d-flex flex-column gap-2">
-                          <Link to="/mosque-admin/prayer-schedule" className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white">
+                          <Link to="/mosque-admin/prayer-schedule" className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white text-slate-800 font-medium">
                             <span>Manage Prayer Schedule</span> <ArrowRight size={16} />
                           </Link>
-                          <Link to="/mosque-admin/announcements" className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white">
+                          <Link to="/mosque-admin/announcements" className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white text-slate-800 font-medium">
                             <span>Create Announcement</span> <ArrowRight size={16} />
                           </Link>
-                          <button onClick={() => setActiveTab("volunteers")} className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white">
+                          <button onClick={() => setActiveTab("volunteers")} className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white text-slate-800 font-medium">
                             <span>Manage Volunteers</span> <ArrowRight size={16} />
                           </button>
-                          <Link to="/blood-donation" className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white">
+                          <Link to="/blood-donation" className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white text-slate-800 font-medium">
                             <span>View Community Blood Requests</span> <ArrowRight size={16} />
                           </Link>
                         </div>
