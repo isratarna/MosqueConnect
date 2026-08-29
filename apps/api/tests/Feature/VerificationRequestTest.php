@@ -72,7 +72,7 @@ class VerificationRequestTest extends TestCase
             'status' => VerificationRequest::STATUS_PENDING,
         ]);
 
-        Storage::disk('local')->assertExists('verification/'.$user->id.'/committee-auth.pdf');
+        Storage::disk('local')->assertExists($response->json('data.document_path'));
     }
 
     public function test_proof_document_is_required(): void

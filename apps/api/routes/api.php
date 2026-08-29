@@ -17,6 +17,7 @@ use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\CampaignDonationController;
 use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\MosqueClaimController;
 use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
 use App\Http\Controllers\NotificationController;
@@ -44,9 +45,11 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
+Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'index']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
 Route::get('/volunteer-opportunities', [VolunteerOpportunityController::class, 'index']);
 Route::get('/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'show']);
+Route::get('/mosques/{mosque}/prayer-schedule', [MosqueController::class, 'prayerSchedule']);
 Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
 Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{event}', [EventController::class, 'show']);
@@ -66,6 +69,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::delete('/mosques/{mosque}/follow', [MosqueFollowController::class, 'unfollow']);
     Route::get('/me/followed-mosques', [MosqueFollowController::class, 'followed']);
 
+    // Mosque admin applicant claims: submit a claim and track its status
+    Route::post('/mosque-claims', [MosqueClaimController::class, 'store']);
+    Route::get('/me/mosque-claims', [MosqueClaimController::class, 'index']);
+    Route::get('/me/mosque-claims/{claim}', [MosqueClaimController::class, 'show']);
+
     // Manual donation pledges; mosque admins confirm them before totals change.
     Route::post('/campaigns/{campaign}/donations', [CampaignDonationController::class, 'store']);
     Route::post('/reports', [ContentReportController::class, 'store']);
@@ -81,6 +89,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->group(function () {
             Route::get('/mosques/{mosque}', [MosqueManagementController::class, 'show']);
             Route::patch('/mosques/{mosque}', [MosqueManagementController::class, 'update']);
+            Route::get('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'prayerSchedule']);
+            Route::put('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'updatePrayerSchedule']);
 
             Route::scopeBindings()->group(function () {
                 Route::get('/mosques/{mosque}/volunteer-opportunities', [VolunteerOpportunityController::class, 'adminIndex']);
@@ -89,6 +99,14 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
                 Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'update']);
                 Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/status', [VolunteerOpportunityController::class, 'updateStatus']);
                 Route::delete('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'destroy']);
+
+                Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'adminIndex']);
+                Route::post('/mosques/{mosque}/announcements', [AnnouncementController::class, 'store']);
+                Route::get('/mosques/{mosque}/announcements/{announcement}', [AnnouncementController::class, 'adminShow']);
+                Route::patch('/mosques/{mosque}/announcements/{announcement}', [AnnouncementController::class, 'update']);
+                Route::patch('/mosques/{mosque}/announcements/{announcement}/publish', [AnnouncementController::class, 'publish']);
+                Route::patch('/mosques/{mosque}/announcements/{announcement}/unpublish', [AnnouncementController::class, 'unpublish']);
+                Route::delete('/mosques/{mosque}/announcements/{announcement}', [AnnouncementController::class, 'destroy']);
 
                 Route::get('/mosques/{mosque}/events', [EventManagementController::class, 'index']);
                 Route::post('/mosques/{mosque}/events', [EventManagementController::class, 'store']);

@@ -114,6 +114,11 @@ class User extends Authenticatable
         return $this->hasMany(VolunteerOpportunity::class, 'created_by');
     }
 
+    public function createdAnnouncements(): HasMany
+    {
+        return $this->hasMany(Announcement::class, 'created_by');
+    }
+
     public function campaignDonations(): HasMany
     {
         return $this->hasMany(CampaignDonation::class);

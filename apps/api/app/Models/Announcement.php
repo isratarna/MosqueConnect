@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'mosque_id',
+    'created_by',
     'title',
     'body',
     'urgency',
@@ -46,6 +47,11 @@ class Announcement extends Model
         self::STATUS_PUBLISHED,
     ];
 
+    public const INITIAL_STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_PUBLISHED,
+    ];
+
     public const MODERATION_PENDING = 'pending';
 
     public const MODERATION_APPROVED = 'approved';
@@ -60,6 +66,11 @@ class Announcement extends Model
     public function mosque(): BelongsTo
     {
         return $this->belongsTo(Mosque::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function contentReports(): HasMany
