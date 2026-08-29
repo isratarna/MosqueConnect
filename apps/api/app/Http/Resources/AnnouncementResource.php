@@ -16,10 +16,12 @@ class AnnouncementResource extends JsonResource
         return [
             'id' => $this->id,
             'mosque_id' => $this->mosque_id,
+            'created_by' => $this->created_by,
             'title' => $this->title,
             'body' => $this->body,
             'urgency' => $this->urgency,
             'status' => $this->status,
+            'moderation_status' => $this->moderation_status,
             'published_at' => $this->published_at?->toJSON(),
             'date' => $this->published_at?->toDateString(),
             'mosque' => $this->whenLoaded('mosque', fn (): array => [
@@ -29,6 +31,10 @@ class AnnouncementResource extends JsonResource
                 'phone' => $this->mosque->phone,
                 'verification_status' => $this->mosque->verification_status,
                 'verified' => $this->mosque->verification_status === Mosque::VERIFICATION_VERIFIED,
+            ]),
+            'creator' => $this->whenLoaded('creator', fn (): array => [
+                'id' => $this->creator->id,
+                'name' => $this->creator->name,
             ]),
             'created_at' => $this->created_at?->toJSON(),
             'updated_at' => $this->updated_at?->toJSON(),
