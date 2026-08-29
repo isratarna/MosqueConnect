@@ -1423,6 +1423,7 @@ main {
   border: 1px solid rgba(124, 102, 83, 0.18);
   border-radius: 10px;
   box-shadow: 0 5px 16px rgba(53, 39, 29, 0.11);
+}
 
 .mc-auth-home-map__heading {
   align-items: end;
@@ -1560,6 +1561,7 @@ main {
   right: 0;
   top: 1rem;
   width: calc(100% - 1.5rem);
+}
 .mc-auth-home-map__feedback-icon {
   color: var(--mc-rust);
   display: flex;
@@ -4809,3 +4811,12 @@ main {
     justify-content: start;
   }
 }
+
+/* Text Readability / Contrast Utility Classes */
+.text-slate-600 { color: #475569 !important; }
+.text-slate-700 { color: #334155 !important; }
+.text-slate-800 { color: #1e293b !important; }
+.font-medium { font-weight: 500 !important; }
+.font-semibold { font-weight: 600 !important; }
+.uppercase { text-transform: uppercase !important; }
+.tracking-wider { letter-spacing: 0.05em !important; }
