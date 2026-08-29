@@ -21,6 +21,7 @@ use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\VerificationRequestController;
+use App\Http\Controllers\VolunteerApplicationController;
 use App\Http\Controllers\VolunteerOpportunityController;
 use Illuminate\Support\Facades\Route;
 
@@ -70,6 +71,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/campaigns/{campaign}/donations', [CampaignDonationController::class, 'store']);
     Route::post('/reports', [ContentReportController::class, 'store']);
 
+    Route::post('/volunteer-opportunities/{volunteerOpportunity}/applications', [VolunteerApplicationController::class, 'apply']);
+    Route::get('/volunteer-applications', [VolunteerApplicationController::class, 'index']);
+    Route::get('/volunteer-applications/{volunteerApplication}', [VolunteerApplicationController::class, 'show']);
+
     // Mosque admin onboarding & verification
     Route::post('/verification-requests', [VerificationRequestController::class, 'store']);
     Route::get('/verification-requests/me', [VerificationRequestController::class, 'me']);
@@ -89,6 +94,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
                 Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'update']);
                 Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/status', [VolunteerOpportunityController::class, 'updateStatus']);
                 Route::delete('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'destroy']);
+
+                Route::get('/mosques/{mosque}/volunteer-applications', [VolunteerApplicationController::class, 'adminIndex']);
+                Route::get('/mosques/{mosque}/volunteer-applications/{volunteerApplication}', [VolunteerApplicationController::class, 'adminShow']);
+                Route::patch('/mosques/{mosque}/volunteer-applications/{volunteerApplication}/accept', [VolunteerApplicationController::class, 'accept']);
+                Route::patch('/mosques/{mosque}/volunteer-applications/{volunteerApplication}/reject', [VolunteerApplicationController::class, 'reject']);
 
                 Route::get('/mosques/{mosque}/events', [EventManagementController::class, 'index']);
                 Route::post('/mosques/{mosque}/events', [EventManagementController::class, 'store']);

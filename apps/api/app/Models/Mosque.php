@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 #[Fillable([
     'name',
@@ -128,6 +129,11 @@ class Mosque extends Model
     public function volunteerOpportunities(): HasMany
     {
         return $this->hasMany(VolunteerOpportunity::class);
+    }
+
+    public function volunteerApplications(): HasManyThrough
+    {
+        return $this->hasManyThrough(VolunteerApplication::class, VolunteerOpportunity::class);
     }
 
     /**
