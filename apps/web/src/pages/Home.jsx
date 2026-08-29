@@ -106,60 +106,6 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
   return (
     <section className="mc-auth-home-map" aria-labelledby="nearby-map-title">
       <div className="container">
-        <div className="mc-auth-home-map__heading">
-          <div>
-            <p className="mc-kicker">Your neighbourhood</p>
-            <h1 id="nearby-map-title">Mosques near you</h1>
-            <p>Select a mosque marker to preview its location and open its profile.</p>
-          </div>
-          <Link to="/browse" className="btn btn-outline-mc btn-sm">
-            Browse mosques <ChevronRight size={15} aria-hidden="true" />
-          </Link>
-        </div>
-
-        {(isFindingLocation || isLoadingMosques) && (
-          <MapFeedback
-            icon={<LoaderCircle className="spin" size={20} aria-hidden="true" />}
-            title={isFindingLocation ? "Finding your location" : "Finding nearby mosques"}
-            message={isFindingLocation ? "Your browser may ask for location permission." : "Checking mosques closest to you."}
-          />
-        )}
-
-        {origin.status === "failure" && (
-          <MapFeedback
-            icon={<TriangleAlert size={21} aria-hidden="true" />}
-            title={origin.errorCode === "denied" ? "Location permission denied" : "Location unavailable"}
-            message={origin.message || "We could not determine your current location."}
-          >
-            <button type="button" className="btn btn-mc btn-sm" onClick={() => requestGeolocation({ force: true })}>
-              <RefreshCw size={14} aria-hidden="true" /> Try again
-            </button>
-            <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse manually</Link>
-          </MapFeedback>
-        )}
-
-        {apiStatus === "error" && origin.status === "success" && (
-          <MapFeedback
-            icon={<TriangleAlert size={21} aria-hidden="true" />}
-            title="Could not load nearby mosques"
-            message={apiError}
-          >
-            <button type="button" className="btn btn-mc btn-sm" onClick={retryApi}>
-              <RefreshCw size={14} aria-hidden="true" /> Retry
-            </button>
-          </MapFeedback>
-        )}
-
-        {apiStatus === "success" && mosques.length === 0 && (
-          <MapFeedback
-            icon={<Landmark size={21} aria-hidden="true" />}
-            title="No nearby mosques found"
-            message="There are no mosque records near this location yet."
-          >
-            <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse all mosques</Link>
-          </MapFeedback>
-        )}
-
         <div className="mc-auth-home-map__map-wrap">
           <MapView
             className="mc-map mc-auth-home-map__map"
@@ -170,6 +116,59 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
             selectedMosqueId={selectedMosqueId}
             onMosqueSelect={onMosqueSelect}
           />
+
+          <div className="mc-auth-home-map__label">
+            <MapPin size={14} aria-hidden="true" />
+            <h1 id="nearby-map-title">Nearby mosques</h1>
+          </div>
+          <Link to="/browse" className="mc-auth-home-map__browse btn btn-sm">
+            Browse mosques <ChevronRight size={14} aria-hidden="true" />
+          </Link>
+
+          <div className="mc-auth-home-map__feedback-stack">
+            {(isFindingLocation || isLoadingMosques) && (
+              <MapFeedback
+                icon={<LoaderCircle className="spin" size={20} aria-hidden="true" />}
+                title={isFindingLocation ? "Finding your location" : "Finding nearby mosques"}
+                message={isFindingLocation ? "Your browser may ask for location permission." : "Checking mosques closest to you."}
+              />
+            )}
+
+            {origin.status === "failure" && (
+              <MapFeedback
+                icon={<TriangleAlert size={21} aria-hidden="true" />}
+                title={origin.errorCode === "denied" ? "Location permission denied" : "Location unavailable"}
+                message={origin.message || "We could not determine your current location."}
+              >
+                <button type="button" className="btn btn-mc btn-sm" onClick={() => requestGeolocation({ force: true })}>
+                  <RefreshCw size={14} aria-hidden="true" /> Try again
+                </button>
+                <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse manually</Link>
+              </MapFeedback>
+            )}
+
+            {apiStatus === "error" && origin.status === "success" && (
+              <MapFeedback
+                icon={<TriangleAlert size={21} aria-hidden="true" />}
+                title="Could not load nearby mosques"
+                message={apiError}
+              >
+                <button type="button" className="btn btn-mc btn-sm" onClick={retryApi}>
+                  <RefreshCw size={14} aria-hidden="true" /> Retry
+                </button>
+              </MapFeedback>
+            )}
+
+            {apiStatus === "success" && mosques.length === 0 && (
+              <MapFeedback
+                icon={<Landmark size={21} aria-hidden="true" />}
+                title="No nearby mosques found"
+                message="There are no mosque records near this location yet."
+              >
+                <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse all mosques</Link>
+              </MapFeedback>
+            )}
+          </div>
         </div>
       </div>
     </section>
@@ -299,7 +298,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
       if (nextId != null && String(nextId) !== String(selectedMosqueId)) {
         onMosqueSelect?.(nextId);
       }
-    }, 4500);
+    }, 1600);
 
     return () => window.clearTimeout(timer);
   }, [activeIndex, nearby, isInteracting, onMosqueSelect, selectedMosqueId]);
@@ -321,7 +320,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const handlePointerEnd = () => {
     if (!nearby.length) return;
 
-    const threshold = 70;
+    const threshold = 40;
     if (dragOffset > threshold) {
       goToPrevious();
     } else if (dragOffset < -threshold) {
@@ -339,13 +338,9 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
       <div className="container">
         {showMap && (
           <div className="mc-section-heading">
-            <div>
-              <p className="mc-kicker">Explore</p>
-              <h2>Explore mosques near you</h2>
-              <p>Browse by location, distance, and facilities that matter to you.</p>
-            </div>
+            <h2>Nearby mosques</h2>
             <Link to="/browse" className="btn btn-outline-mc btn-sm">
-              Browse all <ChevronRight size={15} aria-hidden="true" />
+              Browse mosques <ChevronRight size={15} aria-hidden="true" />
             </Link>
           </div>
         )}
@@ -399,12 +394,12 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                 const absOffset = Math.abs(normalizedOffset);
                 const isActive = normalizedOffset === 0;
-                const isVisible = absOffset <= 4;
+                const isVisible = absOffset <= 2;
 
                 if (!isVisible) return null;
 
-                const offsetX = normalizedOffset * 250 + dragOffset * 0.22;
-                const opacity = isActive ? 1 : 0.5;
+                const offsetX = normalizedOffset * 278 + dragOffset * 0.55;
+                const opacity = isActive ? 1 : 0.68;
                 const zIndex = isActive ? 10 : 5 - absOffset;
 
                 return (
@@ -412,17 +407,17 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                     key={mosque.id}
                     className={`mc-nearby-slide ${isActive ? "is-active" : ""}`}
                     style={{
-                      transform: `translate(calc(-50% + ${offsetX}px), -50%)`,
+                      transform: `translate(calc(-50% + ${offsetX}px), -50%) scale(${isActive ? 1.03 : 0.94})`,
                       opacity,
                       zIndex,
-                      transition: isInteracting ? "none" : "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease",
+                      transition: isInteracting ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
                       cursor: isActive ? undefined : "pointer",
                     }}
                     onClick={() => {
                       if (!isActive) selectIndex(index);
                     }}
                   >
-                    <div className="card mc-card mc-nearby-card">
+                    <div className="card mc-card mc-nearby-card mc-nearby-card--compact">
                       <img
                         src={mosque.photo}
                         className="mc-nearby-card__image"
@@ -445,7 +440,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                           <span>{mosque.address}</span>
                         </div>
 
-                        <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2">
+                        <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2 mc-nearby-card__status">
                           <span className="mc-distance">
                             <Navigation size={13} aria-hidden="true" />{mosque.distance} km away
                           </span>

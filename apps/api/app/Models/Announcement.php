@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'mosque_id',
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'urgency',
     'status',
     'published_at',
+    'moderation_status',
+    'moderation_note',
 ])]
 class Announcement extends Model
 {
@@ -43,6 +46,14 @@ class Announcement extends Model
         self::STATUS_PUBLISHED,
     ];
 
+    public const MODERATION_PENDING = 'pending';
+
+    public const MODERATION_APPROVED = 'approved';
+
+    public const MODERATION_REJECTED = 'rejected';
+
+    public const MODERATION_STATUSES = [self::MODERATION_PENDING, self::MODERATION_APPROVED, self::MODERATION_REJECTED];
+
     /**
      * Get the mosque that published this announcement.
      */
@@ -51,12 +62,20 @@ class Announcement extends Model
         return $this->belongsTo(Mosque::class);
     }
 
+    public function contentReports(): HasMany
+    {
+        return $this->hasMany(ContentReport::class, 'reportable_id')
+            ->where('reportable_type', 'announcement');
+    }
+
     /**
      * Limit a query to announcements visible to the public.
      */
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', self::STATUS_PUBLISHED);
+        return $query
+            ->where('status', self::STATUS_PUBLISHED)
+            ->where('moderation_status', self::MODERATION_APPROVED);
     }
 
     /**

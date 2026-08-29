@@ -71,7 +71,13 @@ export default function Login() {
       return;
     }
 
-    navigate("/");
+    if (res.user?.role === "super_admin") {
+      navigate("/super-admin/dashboard");
+    } else if (res.user?.role === "mosque_admin" && res.user?.status === "approved") {
+      navigate("/admin/dashboard");
+    } else {
+      navigate("/");
+    }
   };
 
   const handleResendOtp = async () => {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, UserRound } from "lucide-react";
+import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, ShieldCheck, UserRound } from "lucide-react";
 import NotificationList from "./notifications/NotificationList";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -311,6 +311,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
 
   const isAdminApproved = user.role === "mosque_admin" && user.status === "approved";
   const isAdminPending = user.role === "mosque_admin" && user.status === "pending";
+  const isSuperAdmin = user.role === "super_admin";
 
   return (
     <li className="nav-item dropdown" ref={wrapperRef}>
@@ -334,6 +335,11 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
               Pending
             </span>
           )}
+          {isSuperAdmin && (
+            <span className="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" style={{ fontSize: "10px" }}>
+              Super Admin
+            </span>
+          )}
         </span>
       </a>
       <ul
@@ -344,7 +350,9 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
         <li className="px-3 py-2 border-bottom">
           <div className="fw-bold small">{user.fullName || user.name}</div>
           <div className="text-muted" style={{ fontSize: "11px" }}>
-            {user.role === "mosque_admin" ? (
+            {isSuperAdmin ? (
+              <span>System Administrator</span>
+            ) : user.role === "mosque_admin" ? (
               <div className="mt-0.5">
                 <div>Admin: <strong>{user.mosqueName}</strong></div>
                 <div className="mt-1">
@@ -377,6 +385,17 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
             <li>
               <Link className="dropdown-item d-flex align-items-center text-success fw-bold" to="/admin/dashboard" onClick={onClose}>
                 <Landmark size={15} className="me-2" aria-hidden="true" />Mosque Dashboard
+              </Link>
+            </li>
+          </>
+        )}
+
+        {isSuperAdmin && (
+          <>
+            <li><hr className="dropdown-divider" /></li>
+            <li>
+              <Link className="dropdown-item d-flex align-items-center text-danger fw-bold" to="/super-admin/dashboard" onClick={onClose}>
+                <ShieldCheck size={15} className="me-2" aria-hidden="true" />System Dashboard
               </Link>
             </li>
           </>

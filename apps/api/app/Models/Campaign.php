@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'mosque_id', 'created_by', 'title', 'summary', 'description', 'category',
     'target_amount', 'currency', 'starts_on', 'ends_on', 'image_url', 'status',
+    'moderation_status', 'moderation_note',
 ])]
 class Campaign extends Model
 {
@@ -65,6 +66,14 @@ class Campaign extends Model
         self::STATUS_EXPIRED,
     ];
 
+    public const MODERATION_PENDING = 'pending';
+
+    public const MODERATION_APPROVED = 'approved';
+
+    public const MODERATION_REJECTED = 'rejected';
+
+    public const MODERATION_STATUSES = [self::MODERATION_PENDING, self::MODERATION_APPROVED, self::MODERATION_REJECTED];
+
     public const INITIAL_STATUSES = [self::STATUS_DRAFT, self::STATUS_ACTIVE];
 
     private const STATUS_TRANSITIONS = [
@@ -90,10 +99,17 @@ class Campaign extends Model
         return $this->hasMany(CampaignDonation::class);
     }
 
+    public function contentReports(): HasMany
+    {
+        return $this->hasMany(ContentReport::class, 'reportable_id')
+            ->where('reportable_type', 'campaign');
+    }
+
     public function scopePubliclyActive(Builder $query): Builder
     {
         return $query
             ->where('status', self::STATUS_ACTIVE)
+            ->where('moderation_status', self::MODERATION_APPROVED)
             ->whereDate('starts_on', '<=', today())
             ->whereDate('ends_on', '>=', today());
     }

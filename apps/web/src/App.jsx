@@ -8,6 +8,8 @@ import MosqueProfile from "./pages/MosqueProfile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import AdminDashboard from "./pages/AdminDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import VerificationRequests from "./pages/admin/VerificationRequests";
 import Support from "./pages/Support";
 import SupportContinue from "./pages/SupportContinue";
@@ -76,7 +78,30 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/admin/verification-requests" element={<VerificationRequests />} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/super-admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin"]}>
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/verification-requests"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin"]}>
+                <VerificationRequests />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </RouteErrorBoundary>

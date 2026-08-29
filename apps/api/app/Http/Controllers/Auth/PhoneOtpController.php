@@ -53,6 +53,12 @@ class PhoneOtpController extends Controller
             );
         });
 
+        if ($user->isSuspended()) {
+            return response()->json([
+                'message' => 'This account has been suspended.',
+            ], 403);
+        }
+
         $token = $user->createToken('phone-otp')->plainTextToken;
 
         return response()->json([
