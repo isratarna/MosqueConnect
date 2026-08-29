@@ -316,46 +316,16 @@ export default function AdminDashboard() {
 
             {/* PRAYER TIMES PANEL */}
             {activeTab === "prayer" && (
-              <div>
-                <h4 className="fw-bold mb-4 border-bottom pb-2">Manage Prayer & Jamat Times</h4>
+              <div className="text-center py-5">
+                <Clock size={48} className="text-mc mx-auto mb-3 opacity-75" />
+                <h4 className="fw-bold mb-2">Manage Prayer & Jamat Times</h4>
                 <p className="text-muted small mb-4">
-                  Update the Jamat times for the five daily prayers. These modifications sync immediately to the public pages.
+                  We have moved prayer schedule management to a dedicated, expansive workspace.
+                  From there you can set both Adhan and Iqamah times for all daily prayers.
                 </p>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    const updatedPrayer = {
-                      Fajr: formData.get("Fajr"),
-                      Dhuhr: formData.get("Dhuhr"),
-                      Asr: formData.get("Asr"),
-                      Maghrib: formData.get("Maghrib"),
-                      Isha: formData.get("Isha"),
-                      Jummah: mosque.prayer.Jummah || "1:15",
-                    };
-                    handleSave({ ...mosque, prayer: updatedPrayer });
-                  }}
-                >
-                  <div className="row g-3">
-                    {["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"].map((pName) => (
-                      <div className="col-sm-6 col-md-4 mb-3" key={pName}>
-                        <label className="form-label small fw-semibold">{pName} Jamat Time</label>
-                        <input
-                          type="text"
-                          name={pName}
-                          className="form-control"
-                          defaultValue={mosque.prayer[pName]}
-                          placeholder="e.g. 5:15"
-                          required
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <button type="submit" className="btn btn-mc d-flex align-items-center gap-2 mt-3">
-                    <Save size={16} />
-                    Save Prayer Times
-                  </button>
-                </form>
+                <Link to="/mosque-admin/prayer-schedule" className="btn btn-mc d-inline-flex align-items-center gap-2">
+                  Go to Prayer Schedule Hub
+                </Link>
               </div>
             )}
 
