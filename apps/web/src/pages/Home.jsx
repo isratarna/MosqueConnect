@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, memo } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen,
@@ -257,6 +257,14 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const [dragOffset, setDragOffset] = useState(0);
   const [isInteracting, setIsInteracting] = useState(false);
   const pointerStartX = useRef(0);
+  const [cardWidth, setCardWidth] = useState(260);
+
+  useEffect(() => {
+    const handleResize = () => setCardWidth(window.innerWidth < 768 ? 235 : 260);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!nearby.length) {
@@ -278,7 +286,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
     setActiveIndex(fallbackIndex >= 0 ? fallbackIndex : 0);
   }, [selectedMosqueId, nearby, nearest]);
 
-  const selectIndex = (index) => {
+  const selectIndex = useCallback((index) => {
     if (!nearby.length) return;
     const nextIndex = ((index % nearby.length) + nearby.length) % nearby.length;
     setActiveIndex(nextIndex);
@@ -286,7 +294,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
     if (nextId != null && String(nextId) !== String(selectedMosqueId)) {
       onMosqueSelect?.(nextId);
     }
-  };
+  }, [nearby, selectedMosqueId, onMosqueSelect]);
 
   useEffect(() => {
     if (!nearby.length || isInteracting) return;
@@ -303,24 +311,25 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
     return () => window.clearTimeout(timer);
   }, [activeIndex, nearby, isInteracting, onMosqueSelect, selectedMosqueId]);
 
-  const goToPrevious = () => selectIndex(activeIndex - 1);
-  const goToNext = () => selectIndex(activeIndex + 1);
+  const goToPrevious = useCallback(() => selectIndex(activeIndex - 1), [activeIndex, selectIndex]);
+  const goToNext = useCallback(() => selectIndex(activeIndex + 1), [activeIndex, selectIndex]);
 
-  const handlePointerDown = (event) => {
+  const handlePointerDown = useCallback((event) => {
     setIsInteracting(true);
     pointerStartX.current = event.clientX;
-  };
+  }, []);
 
-  const handlePointerMove = (event) => {
+  const handlePointerMove = useCallback((event) => {
     if (!isInteracting) return;
     const deltaX = event.clientX - pointerStartX.current;
     setDragOffset(deltaX);
-  };
+  }, [isInteracting]);
 
-  const handlePointerEnd = () => {
+  const handlePointerEnd = useCallback(() => {
     if (!nearby.length) return;
 
     const threshold = 40;
+    const threshold = 50;
     if (dragOffset > threshold) {
       goToPrevious();
     } else if (dragOffset < -threshold) {
@@ -329,7 +338,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
     setDragOffset(0);
     setIsInteracting(false);
-  };
+  }, [nearby.length, dragOffset, goToPrevious, goToNext]);
 
   const activeMosqueId = nearby[activeIndex]?.id ?? selectedMosqueId ?? null;
 
@@ -400,6 +409,8 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                 const offsetX = normalizedOffset * 278 + dragOffset * 0.55;
                 const opacity = isActive ? 1 : 0.68;
+                const offsetX = normalizedOffset * cardWidth + dragOffset * 1.0;
+                const opacity = isActive ? 1 : 0.5;
                 const zIndex = isActive ? 10 : 5 - absOffset;
 
                 return (
@@ -411,7 +422,12 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                       opacity,
                       zIndex,
                       transition: isInteracting ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
+                      transform: `translate3d(calc(-50% + ${offsetX}px), -50%, 0)`,
+                      opacity,
+                      zIndex,
+                      transition: isInteracting ? "none" : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
                       cursor: isActive ? undefined : "pointer",
+                      willChange: "transform, opacity",
                     }}
                     onClick={() => {
                       if (!isActive) selectIndex(index);
@@ -479,6 +495,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                         </div>
                       </div>
                     </div>
+                    <NearbyCardContent mosque={mosque} />
                   </div>
                 );
               })}
@@ -641,3 +658,70 @@ function AnimatedStat({ value }) {
 
   return <span ref={nodeRef}>{display}</span>;
 }
+
+const NearbyCardContent = memo(({ mosque }) => {
+  return (
+    <div className="card mc-card mc-nearby-card">
+      <img
+        src={mosque.photo}
+        className="mc-nearby-card__image"
+        alt={mosque.name}
+        onError={(event) => {
+          event.currentTarget.onerror = null;
+          event.currentTarget.src = "/uiRef.jpeg";
+        }}
+      />
+      <div className="card-body mc-nearby-card__body">
+        <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+          <div className="d-flex align-items-center gap-2 min-w-0">
+            <h5 className="mb-0 mc-nearby-card__title">{mosque.name}</h5>
+          </div>
+          <span className="badge mc-badge">{mosque.distance} km</span>
+        </div>
+
+        <div className="text-muted small mb-2 mc-nearby-card__meta">
+          <MapPin size={14} aria-hidden="true" />
+          <span>{mosque.address}</span>
+        </div>
+
+        <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2">
+          <span className="mc-distance">
+            <Navigation size={13} aria-hidden="true" />{mosque.distance} km away
+          </span>
+          <span className="d-flex align-items-center gap-1">
+            {mosque.verified && <VerifiedBadge />}
+            {mosque.rating !== null ? `${mosque.rating} rating` : "Not rated"}
+          </span>
+        </div>
+
+        <div className="mc-next-prayer mb-3">
+          <span>Next Jamat</span>
+          <strong>{dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}</strong>
+        </div>
+
+        <div className="d-flex gap-2">
+          <Link
+            to={`/mosque/${mosque.id}`}
+            className="btn btn-mc btn-sm flex-fill"
+            onClick={(event) => event.stopPropagation()}
+          >
+            View profile
+          </Link>
+          {directionsUrl(mosque) && (
+            <a
+              href={directionsUrl(mosque)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline-mc btn-sm mc-icon-button"
+              title="Get directions"
+              aria-label={`Get directions to ${mosque.name}`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Navigation size={16} aria-hidden="true" />
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
