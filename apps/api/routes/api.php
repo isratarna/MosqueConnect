@@ -21,6 +21,7 @@ use App\Http\Controllers\MosqueClaimController;
 use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\VerificationRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -71,6 +72,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     // Manual donation pledges; mosque admins confirm them before totals change.
     Route::post('/campaigns/{campaign}/donations', [CampaignDonationController::class, 'store']);
     Route::post('/reports', [ContentReportController::class, 'store']);
+
+    // Mosque admin onboarding & verification
+    Route::post('/verification-requests', [VerificationRequestController::class, 'store']);
+    Route::get('/verification-requests/me', [VerificationRequestController::class, 'me']);
+    Route::get('/verification-requests/{verificationRequest}', [VerificationRequestController::class, 'show']);
 
     // Mosque admin + super admin
     Route::prefix('admin')

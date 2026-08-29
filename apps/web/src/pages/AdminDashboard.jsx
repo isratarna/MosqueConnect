@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  AlertCircle,
+  Activity,
+  ArrowRight,
   BookOpen,
   Building,
   Building2,
@@ -27,6 +30,7 @@ import {
   getMosqueAnnouncementId,
 } from "../data/announcements";
 import CampaignManager from "../components/admin/CampaignManager";
+import { fetchDashboardOverview, fetchRecentActivities } from "../services/adminDashboardService";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -34,6 +38,12 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [mosque, setMosque] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // New Dashboard States
+  const [dashboardMetrics, setDashboardMetrics] = useState(null);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState("");
 
   // Initialize mosque profile associated with the admin user
   useEffect(() => {
@@ -88,6 +98,35 @@ export default function AdminDashboard() {
     }
   }, [user, navigate]);
 
+  // Fetch Dashboard Data when on Overview Tab
+  useEffect(() => {
+    if (mosque && activeTab === "overview" && !dashboardMetrics) {
+      const loadDashboardData = async () => {
+        setDashboardLoading(true);
+        setDashboardError("");
+        try {
+          const overview = await fetchDashboardOverview(mosque.id);
+          const activities = await fetchRecentActivities(mosque.id);
+          
+          if (overview && overview.metrics) {
+            setDashboardMetrics(overview.metrics);
+            // Optionally update the mosque state with the mock overview data
+            if (overview.mosque) {
+               setMosque((prev) => ({ ...prev, ...overview.mosque }));
+            }
+          }
+          setRecentActivities(activities || []);
+        } catch (err) {
+          setDashboardError("Failed to load dashboard data. Please try again later.");
+        } finally {
+          setDashboardLoading(false);
+        }
+      };
+
+      loadDashboardData();
+    }
+  }, [mosque, activeTab, dashboardMetrics]);
+
   // Guard access control
   if (!user || user.role !== "mosque_admin" || user.status !== "approved") {
     return (
@@ -140,14 +179,14 @@ export default function AdminDashboard() {
         {/* HEADER BRANDING */}
         <div className="col-12 border-bottom pb-3 mb-2 d-flex flex-wrap align-items-center justify-content-between gap-3">
           <div>
-            <div className="d-flex align-items-center gap-2">
+            <div className="d-flex align-items-center gap-2 mb-1">
               <h2 className="fw-bold mb-0 text-mc">{mosque.name}</h2>
-              <span className="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 rounded">
-                Verified Admin
+              <span className={`badge py-1.5 px-2.5 rounded ${mosque.status === 'Pending' ? 'bg-warning-subtle text-dark border border-warning-subtle' : 'bg-success-subtle text-success border border-success-subtle'}`}>
+                {mosque.status || "Verified"} Admin
               </span>
             </div>
-            <p className="text-muted small mb-0 mt-1">
-              <strong>Admin Mode</strong> &mdash; Managing profiles, prayer logs, announcements, and events.
+            <p className="text-muted small mb-0 d-flex align-items-center gap-1">
+              <Building size={14} /> {mosque.address || "Address not provided"}
             </p>
           </div>
           {saveSuccess && (
@@ -185,7 +224,7 @@ export default function AdminDashboard() {
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   className={`list-group-item list-group-item-action border-0 py-3 px-4 d-flex align-items-center gap-3 fw-medium ${
-                    activeTab === item.id ? "bg-mc text-white active" : "text-secondary"
+                    activeTab === item.id ? "bg-mc text-white active" : "text-slate-700 font-medium"
                   }`}
                   style={{ borderRadius: "0" }}
                 >
@@ -205,59 +244,109 @@ export default function AdminDashboard() {
               <div>
                 <h4 className="fw-bold mb-4 border-bottom pb-2">Dashboard Overview</h4>
                 
-                {/* Stats Grid */}
-                <div className="row g-3 mb-4">
-                  <div className="col-sm-6 col-lg-3">
-                    <div className="p-3 border rounded-3 bg-light text-center">
-                      <h6 className="text-muted small uppercase mb-1">Total Followers</h6>
-                      <h3 className="fw-bold mb-0 text-mc">240</h3>
-                    </div>
+                {dashboardError && (
+                  <div className="alert alert-danger py-2 px-3 mb-4 d-flex align-items-center gap-2 shadow-sm">
+                    <AlertCircle size={18} />
+                    <span>{dashboardError}</span>
                   </div>
-                  <div className="col-sm-6 col-lg-3">
-                    <div className="p-3 border rounded-3 bg-light text-center">
-                      <h6 className="text-muted small uppercase mb-1">Donations (Monthly)</h6>
-                      <h3 className="fw-bold mb-0 text-mc">৳64,200</h3>
-                    </div>
-                  </div>
-                  <div className="col-sm-6 col-lg-3">
-                    <div className="p-3 border rounded-3 bg-light text-center">
-                      <h6 className="text-muted small uppercase mb-1">Announcements</h6>
-                      <h3 className="fw-bold mb-0 text-mc">{mosque.announcements?.length || 0}</h3>
-                    </div>
-                  </div>
-                  <div className="col-sm-6 col-lg-3">
-                    <div className="p-3 border rounded-3 bg-light text-center">
-                      <h6 className="text-muted small uppercase mb-1">Upcoming Events</h6>
-                      <h3 className="fw-bold mb-0 text-mc">{mosque.events?.length || 0}</h3>
-                    </div>
-                  </div>
-                </div>
+                )}
 
-                {/* Daily prayers log preview */}
-                <div className="card border-0 bg-light p-4 mb-4">
-                  <h5 className="fw-bold mb-3 text-mc d-flex align-items-center gap-2">
-                    <Clock size={20} />
-                    Current Daily Jamat Times
-                  </h5>
-                  <div className="row g-2">
-                    {Object.entries(mosque.prayer).map(([name, time]) => (
-                      <div className="col-6 col-sm-4 col-md-2" key={name}>
-                        <div className="card p-2 text-center shadow-sm">
-                          <span className="small text-muted">{name}</span>
-                          <span className="fw-bold text-mc mt-1">{time}</span>
+                {dashboardLoading ? (
+                  <div className="text-center py-5 my-5">
+                    <div className="spinner-border text-mc" role="status">
+                      <span className="visually-hidden">Loading overview...</span>
+                    </div>
+                    <p className="text-muted small mt-3">Loading dashboard metrics...</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Stats Grid */}
+                    <div className="row g-3 mb-4">
+                      <div className="col-sm-6 col-lg-3">
+                        <div className="p-3 border rounded-3 bg-light text-center h-100 d-flex flex-column justify-content-center shadow-sm">
+                          <Users size={20} className="text-mc mb-2 mx-auto" />
+                          <h6 className="text-slate-700 small font-semibold uppercase tracking-wider mb-1">Total Followers</h6>
+                          <h3 className="fw-bold mb-0 text-slate-800">{dashboardMetrics?.totalFollowers || 0}</h3>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <div className="col-sm-6 col-lg-3">
+                        <div className="p-3 border rounded-3 bg-light text-center h-100 d-flex flex-column justify-content-center shadow-sm">
+                          <Megaphone size={20} className="text-mc mb-2 mx-auto" />
+                          <h6 className="text-slate-700 small font-semibold uppercase tracking-wider mb-1">Active Announcements</h6>
+                          <h3 className="fw-bold mb-0 text-slate-800">{dashboardMetrics?.activeAnnouncements || 0}</h3>
+                        </div>
+                      </div>
+                      <div className="col-sm-6 col-lg-3">
+                        <div className="p-3 border rounded-3 bg-light text-center h-100 d-flex flex-column justify-content-center shadow-sm">
+                          <HeartHandshake size={20} className="text-mc mb-2 mx-auto" />
+                          <h6 className="text-slate-700 small font-semibold uppercase tracking-wider mb-1">Upcoming Volunteers</h6>
+                          <h3 className="fw-bold mb-0 text-slate-800">{dashboardMetrics?.upcomingVolunteers || 0}</h3>
+                        </div>
+                      </div>
+                      <div className="col-sm-6 col-lg-3">
+                        <div className="p-3 border rounded-3 bg-light text-center h-100 d-flex flex-column justify-content-center shadow-sm">
+                          <Activity size={20} className="text-mc mb-2 mx-auto" />
+                          <h6 className="text-slate-700 small font-semibold uppercase tracking-wider mb-1">Blood Requests</h6>
+                          <h3 className="fw-bold mb-0 text-slate-800">{dashboardMetrics?.activeBloodRequests || 0}</h3>
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Quick Shortcuts */}
-                <h5 className="fw-bold mb-3">Quick Actions</h5>
-                <div className="d-flex flex-wrap gap-2">
-                  <button className="btn btn-outline-mc" onClick={() => setActiveTab("prayer")}>Update Jamat Times</button>
-                  <button className="btn btn-outline-mc" onClick={() => setActiveTab("announce")}>Post Announcement</button>
-                  <button className="btn btn-outline-mc" onClick={() => setActiveTab("events")}>Create Event</button>
-                </div>
+                    <div className="row g-4">
+                      {/* Recent Activity Feed */}
+                      <div className="col-lg-7">
+                        <h5 className="fw-bold mb-3 d-flex align-items-center gap-2">
+                          <Clock size={18} className="text-mc" /> Recent Activity
+                        </h5>
+                        <div className="card border-0 bg-light p-0 shadow-sm overflow-hidden">
+                          {recentActivities.length === 0 ? (
+                            <div className="p-4 text-center text-muted small">
+                              No recent activities found.
+                            </div>
+                          ) : (
+                            <div className="list-group list-group-flush border-0">
+                              {recentActivities.map((activity) => (
+                                <div key={activity.id} className="list-group-item bg-transparent py-3 border-bottom">
+                                  <div className="d-flex w-100 justify-content-between align-items-start mb-1">
+                                    <h6 className="mb-0 fw-bold text-slate-800">{activity.title}</h6>
+                                    <small className="text-slate-600" style={{ fontSize: "0.75rem" }}>
+                                      {new Date(activity.timestamp).toLocaleDateString()}
+                                    </small>
+                                  </div>
+                                  <p className="mb-1 small text-slate-600">{activity.description}</p>
+                                  <span className="badge bg-secondary-subtle text-slate-700 border border-secondary-subtle" style={{ fontSize: "0.65rem" }}>
+                                    {activity.type.replace("_", " ").toUpperCase()}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Quick Shortcuts */}
+                      <div className="col-lg-5">
+                        <h5 className="fw-bold mb-3 d-flex align-items-center gap-2">
+                          <Settings size={18} className="text-mc" /> Quick Actions
+                        </h5>
+                        <div className="d-flex flex-column gap-2">
+                          <Link to="/mosque-admin/prayer-schedule" className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white text-slate-800 font-medium">
+                            <span>Manage Prayer Schedule</span> <ArrowRight size={16} />
+                          </Link>
+                          <Link to="/mosque-admin/announcements" className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white text-slate-800 font-medium">
+                            <span>Create Announcement</span> <ArrowRight size={16} />
+                          </Link>
+                          <button onClick={() => setActiveTab("volunteers")} className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white text-slate-800 font-medium">
+                            <span>Manage Volunteers</span> <ArrowRight size={16} />
+                          </button>
+                          <Link to="/blood-donation" className="btn btn-outline-mc text-start d-flex justify-content-between align-items-center w-100 p-3 shadow-sm bg-white text-slate-800 font-medium">
+                            <span>View Community Blood Requests</span> <ArrowRight size={16} />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

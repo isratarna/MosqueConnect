@@ -47,6 +47,16 @@ class VerificationRequest extends Model
         self::STATUS_REJECTED,
     ];
 
+    /**
+     * Statuses that are still in-flight; a request in one of these states
+     * blocks a new active request for the same user or mosque.
+     */
+    public const ACTIVE_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_AI_REVIEWED,
+        self::STATUS_UNDER_HUMAN_REVIEW,
+    ];
+
     protected static function booted(): void
     {
         static::creating(function (self $request): void {
