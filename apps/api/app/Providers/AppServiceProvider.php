@@ -9,9 +9,12 @@ use App\Models\Event;
 use App\Models\JumuahSession;
 use App\Models\Mosque;
 use App\Models\PrayerTime;
+use App\Models\VolunteerOpportunity;
 use App\Observers\AdminActivityObserver;
+use App\Policies\AnnouncementPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\MosquePolicy;
+use App\Policies\VolunteerOpportunityPolicy;
 use App\Services\Otp\LogSmsOtpSender;
 use App\Services\Otp\MissingSmsOtpSender;
 use App\Services\Otp\SmsOtpSender;
@@ -39,10 +42,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);
         Gate::policy(Mosque::class, MosquePolicy::class);
+        Gate::policy(VolunteerOpportunity::class, VolunteerOpportunityPolicy::class);
 
-        foreach ([Mosque::class, PrayerTime::class, JumuahSession::class, Announcement::class, Event::class, Campaign::class, CampaignDonation::class] as $model) {
+        foreach ([Mosque::class, PrayerTime::class, JumuahSession::class, Announcement::class, Event::class, Campaign::class, CampaignDonation::class, VolunteerOpportunity::class] as $model) {
             $model::observe(AdminActivityObserver::class);
         }
 

@@ -125,6 +125,11 @@ class Mosque extends Model
         return $this->hasMany(Announcement::class);
     }
 
+    public function volunteerOpportunities(): HasMany
+    {
+        return $this->hasMany(VolunteerOpportunity::class);
+    }
+
     /**
      * Get published announcements for public mosque profiles.
      */
