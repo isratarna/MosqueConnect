@@ -95,6 +95,38 @@ class MosqueController extends Controller
         ]);
     }
 
+    public function prayerSchedule(Mosque $mosque): JsonResponse
+    {
+        $mosque->load(['prayerTimes', 'jumuahSessions']);
+
+        return response()->json([
+            'data' => [
+                'mosque_id' => $mosque->id,
+                'prayer_schedule' => $mosque->prayerTimes
+                    ->map(fn ($time): array => [
+                        'id' => $time->id,
+                        'prayer' => $time->prayer,
+                        'label' => $time->label(),
+                        'adhan_time' => $time->adhan_time ? substr($time->adhan_time, 0, 5) : null,
+                        'jamaat_time' => $time->jamaat_time ? substr($time->jamaat_time, 0, 5) : null,
+                    ])
+                    ->values()
+                    ->all(),
+                'jumuah_sessions' => $mosque->jumuahSessions
+                    ->map(fn ($session): array => [
+                        'id' => $session->id,
+                        'sequence' => $session->sequence,
+                        'label' => $session->label,
+                        'khutbah_time' => $session->khutbah_time ? substr($session->khutbah_time, 0, 5) : null,
+                        'jamaat_time' => $session->jamaat_time ? substr($session->jamaat_time, 0, 5) : null,
+                        'notes' => $session->notes,
+                    ])
+                    ->values()
+                    ->all(),
+            ],
+        ]);
+    }
+
     /**
      * @return list<string>
      */
