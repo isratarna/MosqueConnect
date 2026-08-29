@@ -27,6 +27,12 @@ class User extends Authenticatable
         self::ROLE_SUPER_ADMIN,
     ];
 
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_SUSPENDED = 'suspended';
+
+    public const ACCOUNT_STATUSES = [self::STATUS_ACTIVE, self::STATUS_SUSPENDED];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -36,6 +42,9 @@ class User extends Authenticatable
         'name',
         'phone',
         'role',
+        'account_status',
+        'suspended_at',
+        'suspension_reason',
     ];
 
     /**
@@ -141,6 +150,11 @@ class User extends Authenticatable
         return $this->hasRole(self::ROLE_SUPER_ADMIN);
     }
 
+    public function isSuspended(): bool
+    {
+        return $this->account_status === self::STATUS_SUSPENDED;
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -148,6 +162,8 @@ class User extends Authenticatable
      */
     protected function casts(): array
     {
-        return [];
+        return [
+            'suspended_at' => 'datetime',
+        ];
     }
 }

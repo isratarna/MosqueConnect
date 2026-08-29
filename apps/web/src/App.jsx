@@ -97,6 +97,10 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
                 <MosqueAdminAnnouncements />
+            path="/super-admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin"]}>
+                <SuperAdminDashboard />
               </ProtectedRoute>
             }
           />
@@ -110,6 +114,13 @@ export default function App() {
           />
           <Route path="/super-admin" element={<SuperAdminDashboard />} />
           <Route path="/admin/verification-requests" element={<VerificationRequests />} />
+            path="/admin/verification-requests"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin"]}>
+                <VerificationRequests />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </RouteErrorBoundary>

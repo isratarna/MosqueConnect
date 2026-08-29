@@ -1,13 +1,21 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CampaignManagementController;
+use App\Http\Controllers\Admin\ContentModerationController;
 use App\Http\Controllers\Admin\EventManagementController;
 use App\Http\Controllers\Admin\MosqueManagementController;
+use App\Http\Controllers\Admin\MosqueSystemManagementController;
+use App\Http\Controllers\Admin\ReportManagementController;
 use App\Http\Controllers\Admin\SystemAdminController;
+use App\Http\Controllers\Admin\SystemSettingController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\VerificationRequestManagementController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\PhoneOtpController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\CampaignDonationController;
+use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
@@ -27,7 +35,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/verify-otp', [PhoneOtpController::class, 'verifyOtp'])
         ->middleware('throttle:otp-verify');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/logout', [PhoneOtpController::class, 'logout']);
         Route::get('/me', [PhoneOtpController::class, 'me']);
     });
@@ -41,7 +49,7 @@ Route::get('/events/{event}', [EventController::class, 'show']);
 Route::get('/campaigns', [CampaignController::class, 'index']);
 Route::get('/campaigns/{campaign}', [CampaignController::class, 'show']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     // Current user's notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
@@ -56,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Manual donation pledges; mosque admins confirm them before totals change.
     Route::post('/campaigns/{campaign}/donations', [CampaignDonationController::class, 'store']);
+    Route::post('/reports', [ContentReportController::class, 'store']);
 
     // Mosque admin + super admin
     Route::prefix('admin')
@@ -94,6 +103,24 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('role:super_admin')
         ->group(function () {
             Route::get('/overview', [SystemAdminController::class, 'overview']);
+            Route::get('/statistics', [SystemAdminController::class, 'statistics']);
+            Route::get('/claims', [VerificationRequestManagementController::class, 'index']);
+            Route::get('/claims/{verificationRequest}', [VerificationRequestManagementController::class, 'show']);
+            Route::get('/claims/{verificationRequest}/document', [VerificationRequestManagementController::class, 'document']);
+            Route::patch('/claims/{verificationRequest}/approve', [VerificationRequestManagementController::class, 'approve']);
+            Route::patch('/claims/{verificationRequest}/reject', [VerificationRequestManagementController::class, 'reject']);
+            Route::patch('/claims/{verificationRequest}/request-information', [VerificationRequestManagementController::class, 'requestInformation']);
+            Route::get('/users', [UserManagementController::class, 'index']);
+            Route::patch('/users/{user}', [UserManagementController::class, 'update']);
+            Route::get('/mosques', [MosqueSystemManagementController::class, 'index']);
             Route::get('/mosques/{mosque}', [MosqueManagementController::class, 'show']);
+            Route::patch('/mosques/{mosque}/verification', [MosqueSystemManagementController::class, 'updateStatus']);
+            Route::get('/moderation', [ContentModerationController::class, 'index']);
+            Route::patch('/moderation/{type}/{id}', [ContentModerationController::class, 'update']);
+            Route::get('/reports', [ReportManagementController::class, 'index']);
+            Route::patch('/reports/{contentReport}', [ReportManagementController::class, 'update']);
+            Route::get('/audit-logs', [AuditLogController::class, 'index']);
+            Route::get('/settings', [SystemSettingController::class, 'index']);
+            Route::patch('/settings', [SystemSettingController::class, 'update']);
         });
 });

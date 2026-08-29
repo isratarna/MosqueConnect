@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'mosque_id',
@@ -23,6 +24,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'capacity',
     'registration_required',
     'status',
+    'moderation_status',
+    'moderation_note',
 ])]
 class Event extends Model
 {
@@ -77,6 +80,14 @@ class Event extends Model
         self::STATUS_COMPLETED,
     ];
 
+    public const MODERATION_PENDING = 'pending';
+
+    public const MODERATION_APPROVED = 'approved';
+
+    public const MODERATION_REJECTED = 'rejected';
+
+    public const MODERATION_STATUSES = [self::MODERATION_PENDING, self::MODERATION_APPROVED, self::MODERATION_REJECTED];
+
     public const INITIAL_STATUSES = [
         self::STATUS_DRAFT,
         self::STATUS_PUBLISHED,
@@ -105,12 +116,20 @@ class Event extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function contentReports(): HasMany
+    {
+        return $this->hasMany(ContentReport::class, 'reportable_id')
+            ->where('reportable_type', 'event');
+    }
+
     /**
      * Limit a query to events visible to the public.
      */
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', self::STATUS_PUBLISHED);
+        return $query
+            ->where('status', self::STATUS_PUBLISHED)
+            ->where('moderation_status', self::MODERATION_APPROVED);
     }
 
     /**

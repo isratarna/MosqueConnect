@@ -6,6 +6,7 @@ use App\Models\Mosque;
 use App\Models\User;
 use App\Models\VerificationRequest;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class VerificationRequestSeeder extends Seeder
 {
@@ -94,14 +95,20 @@ class VerificationRequestSeeder extends Seeder
 
         foreach ($requests as $mosqueName => $data) {
             $mosque = Mosque::query()->with('owner')->where('name', $mosqueName)->firstOrFail();
-            $documentPath = 'demo/verification/'.str($mosqueName)->slug().'-committee-authorization.pdf';
+            $documentPath = 'demo/verification/'.str($mosqueName)->slug().'-committee-authorization.txt';
             $reviewed = in_array($data['status'], ['approved', 'rejected', 'under_human_review'], true);
 
+            Storage::disk('local')->put($documentPath, implode(PHP_EOL, [
+                'MosqueConnect demo verification evidence',
+                'Mosque: '.$mosque->name,
+                'Applicant: '.$mosque->owner->name,
+                'Submitted for demonstration and testing only.',
+            ]));
+
             VerificationRequest::query()->updateOrCreate(
-                ['document_path' => $documentPath],
+                ['user_id' => $mosque->owner->id, 'mosque_id' => $mosque->id],
                 [
-                    'user_id' => $mosque->owner->id,
-                    'mosque_id' => $mosque->id,
+                    'document_path' => $documentPath,
                     'status' => $data['status'],
                     'ai_score' => $data['ai_score'],
                     'ai_result' => $data['ai_score'] === null ? null : [

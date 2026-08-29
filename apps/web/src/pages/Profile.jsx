@@ -223,6 +223,24 @@ export default function Profile() {
             </div>
           )}
 
+          {user.role === "super_admin" && (
+            <div className="card border border-danger bg-danger-subtle shadow-sm p-4 mb-4">
+              <div className="d-flex gap-3 align-items-start">
+                <ShieldCheck className="text-danger flex-shrink-0 mt-1" size={28} />
+                <div className="w-100">
+                  <h5 className="fw-bold text-danger mb-1">System Administrator</h5>
+                  <p className="mb-3 text-dark">
+                    You have system-wide access to MosqueConnect administration and overview data.
+                  </p>
+                  <Link to="/super-admin/dashboard" className="btn btn-danger d-inline-flex align-items-center gap-2 fw-semibold shadow-sm">
+                    <ShieldCheck size={16} />
+                    Go to System Dashboard
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB LINKS */}
           <div className="card shadow-sm border-0">
             <div className="card-header bg-white border-0 pt-3">
