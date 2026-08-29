@@ -11,6 +11,7 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import MosqueAdminAnnouncements from "./pages/MosqueAdminAnnouncements";
+import MosqueAdminPrayerSchedule from "./pages/MosqueAdminPrayerSchedule";
 import VerificationRequests from "./pages/admin/VerificationRequests";
 import Support from "./pages/Support";
 import SupportContinue from "./pages/SupportContinue";
@@ -51,71 +52,17 @@ export default function App() {
 
   return (
     <Layout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/browse" element={<Browse />} />
-        <Route path="/support" element={<Support />} />
-        <Route path="/support/continue" element={<SupportContinue />} />
-        <Route path="/community" element={<Community />} />
-        <Route path="/blood-donation" element={<BloodDonation />} />
-        <Route path="/volunteers" element={<VolunteerOpportunities />} />
-        <Route path="/community/announcements/:id" element={<AnnouncementDetails />} />
-        <Route path="/community/events/:id" element={<EventDetails />} />
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <Notifications />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/mosque/:id" element={<MosqueProfile />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/mosque-admin/announcements"
-          element={
-            <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
-              <MosqueAdminAnnouncements />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/super-admin"
-          element={
-
-            <SuperAdminDashboard />
-
-          }
-        />
-        <Route path="/admin/verification-requests" element={<VerificationRequests />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
       <RouteErrorBoundary key={location.key}>
         <Routes location={location}>
           <Route path="/" element={<Home />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/support" element={<Support />} />
           <Route path="/support/continue" element={<SupportContinue />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/blood-donation" element={<BloodDonation />} />
+          <Route path="/volunteers" element={<VolunteerOpportunities />} />
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/campaigns/:id" element={<CampaignDetails />} />
-          <Route path="/community" element={<Community />} />
           <Route path="/community/announcements/:id" element={<AnnouncementDetails />} />
           <Route path="/community/events/:id" element={<EventDetails />} />
           <Route
@@ -137,6 +84,31 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mosque-admin/announcements"
+            element={
+              <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
+                <MosqueAdminAnnouncements />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mosque-admin/prayer-schedule"
+            element={
+              <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
+                <MosqueAdminPrayerSchedule />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/super-admin" element={<SuperAdminDashboard />} />
           <Route path="/admin/verification-requests" element={<VerificationRequests />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
