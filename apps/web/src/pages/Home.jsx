@@ -328,7 +328,6 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const handlePointerEnd = useCallback(() => {
     if (!nearby.length) return;
 
-    const threshold = 40;
     const threshold = 50;
     if (dragOffset > threshold) {
       goToPrevious();
@@ -409,8 +408,6 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                 const offsetX = normalizedOffset * 278 + dragOffset * 0.55;
                 const opacity = isActive ? 1 : 0.68;
-                const offsetX = normalizedOffset * cardWidth + dragOffset * 1.0;
-                const opacity = isActive ? 1 : 0.5;
                 const zIndex = isActive ? 10 : 5 - absOffset;
 
                 return (
@@ -422,10 +419,6 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                       opacity,
                       zIndex,
                       transition: isInteracting ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
-                      transform: `translate3d(calc(-50% + ${offsetX}px), -50%, 0)`,
-                      opacity,
-                      zIndex,
-                      transition: isInteracting ? "none" : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
                       cursor: isActive ? undefined : "pointer",
                       willChange: "transform, opacity",
                     }}

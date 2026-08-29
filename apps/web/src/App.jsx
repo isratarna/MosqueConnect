@@ -97,6 +97,10 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
                 <MosqueAdminAnnouncements />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/super-admin/dashboard"
             element={
               <ProtectedRoute allowedRoles={["super_admin"]}>
@@ -113,7 +117,7 @@ export default function App() {
             }
           />
           <Route path="/super-admin" element={<SuperAdminDashboard />} />
-          <Route path="/admin/verification-requests" element={<VerificationRequests />} />
+          <Route
             path="/admin/verification-requests"
             element={
               <ProtectedRoute allowedRoles={["super_admin"]}>
