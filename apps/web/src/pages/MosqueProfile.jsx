@@ -26,14 +26,15 @@ import MosqueEventsSection from "../components/events/MosqueEventsSection";
 import MosqueCampaignsSection from "../components/campaigns/MosqueCampaignsSection";
 import { directionsUrl, fetchMosqueById } from "../utils/mosqueDiscovery";
 import { formatClockTime } from "../utils/prayerTime";
+import { useFollow } from "../context/FollowContext";
 
 export default function MosqueProfile() {
   const { id } = useParams();
   const [mosque, setMosque] = useState(null);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
-  const [following, setFollowing] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
+  const { isFollowing: following, toggleFollow } = useFollow(id);
 
   useEffect(() => {
     let active = true;
@@ -136,7 +137,7 @@ export default function MosqueProfile() {
           )}
           <button
             className={"btn btn-sm " + (following ? "btn-danger" : "btn-outline-mc")}
-            onClick={() => setFollowing((value) => !value)}
+            onClick={() => toggleFollow(mosque)}
           >
             <Heart size={16} fill={following ? "currentColor" : "none"} aria-hidden="true" />
             {following ? "Following" : "Follow"}

@@ -1,14 +1,14 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Clock3, Heart, MapPin, Navigation, Star } from "lucide-react";
 import { directionsUrl } from "../utils/mosqueDiscovery";
 import { dhuhrJamaatLabel } from "../utils/prayerTime";
+import { useFollow } from "../context/FollowContext";
 import FacilityBadge from "./FacilityBadge";
 import VerifiedBadge from "./VerifiedBadge";
 
 // A mosque result card used on the Browse page.
 export default function MosqueCard({ mosque }) {
-  const [following, setFollowing] = useState(false);
+  const { isFollowing: following, toggleFollow } = useFollow(mosque?.id);
   const directions = directionsUrl(mosque);
 
   return (
@@ -93,8 +93,12 @@ export default function MosqueCard({ mosque }) {
             className={`btn btn-sm ${
               following ? "btn-danger" : "btn-outline-secondary"
             }`}
-            title="Follow"
-            onClick={() => setFollowing((v) => !v)}
+            title={following ? "Unfollow" : "Follow"}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFollow(mosque);
+            }}
           >
             <Heart
               size={16}
