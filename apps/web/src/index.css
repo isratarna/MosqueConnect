@@ -1423,6 +1423,7 @@ main {
   border: 1px solid rgba(124, 102, 83, 0.18);
   border-radius: 10px;
   box-shadow: 0 5px 16px rgba(53, 39, 29, 0.11);
+}
 
 .mc-auth-home-map__heading {
   align-items: end;
@@ -1560,6 +1561,7 @@ main {
   right: 0;
   top: 1rem;
   width: calc(100% - 1.5rem);
+}
 .mc-auth-home-map__feedback-icon {
   color: var(--mc-rust);
   display: flex;
