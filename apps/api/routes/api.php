@@ -4,9 +4,11 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CampaignManagementController;
 use App\Http\Controllers\Admin\ContentModerationController;
 use App\Http\Controllers\Admin\EventManagementController;
+use App\Http\Controllers\Admin\MosqueDashboardController;
 use App\Http\Controllers\Admin\MosqueManagementController;
 use App\Http\Controllers\Admin\MosqueSystemManagementController;
 use App\Http\Controllers\Admin\ReportManagementController;
+use App\Http\Controllers\Admin\SuperAdminDashboardController;
 use App\Http\Controllers\Admin\SystemAdminController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -86,6 +88,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->group(function () {
             Route::get('/mosques/{mosque}', [MosqueManagementController::class, 'show']);
             Route::patch('/mosques/{mosque}', [MosqueManagementController::class, 'update']);
+            Route::get('/mosques/{mosque}/dashboard', [MosqueDashboardController::class, 'show']);
             Route::get('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'prayerSchedule']);
             Route::put('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'updatePrayerSchedule']);
 
@@ -128,6 +131,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->group(function () {
             Route::get('/overview', [SystemAdminController::class, 'overview']);
             Route::get('/statistics', [SystemAdminController::class, 'statistics']);
+            Route::get('/dashboard', [SuperAdminDashboardController::class, 'index']);
             Route::get('/claims', [VerificationRequestManagementController::class, 'index']);
             Route::get('/claims/{verificationRequest}', [VerificationRequestManagementController::class, 'show']);
             Route::get('/claims/{verificationRequest}/document', [VerificationRequestManagementController::class, 'document']);
