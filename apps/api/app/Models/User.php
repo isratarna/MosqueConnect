@@ -114,6 +114,16 @@ class User extends Authenticatable
         return $this->hasMany(Announcement::class, 'created_by');
     }
 
+    public function bloodRequests(): HasMany
+    {
+        return $this->hasMany(BloodRequest::class, 'created_by');
+    }
+
+    public function bloodRequestResponses(): HasMany
+    {
+        return $this->hasMany(BloodRequestResponse::class);
+    }
+
     public function campaignDonations(): HasMany
     {
         return $this->hasMany(CampaignDonation::class);

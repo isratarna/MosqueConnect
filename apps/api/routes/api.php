@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VerificationRequestManagementController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\PhoneOtpController;
+use App\Http\Controllers\BloodRequestController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\CampaignDonationController;
 use App\Http\Controllers\ContentReportController;
@@ -48,6 +49,10 @@ Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'i
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
 Route::get('/mosques/{mosque}/prayer-schedule', [MosqueController::class, 'prayerSchedule']);
 Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
+Route::get('/blood-requests', [BloodRequestController::class, 'index']);
+Route::get('/blood-requests/me', [BloodRequestController::class, 'mine'])
+    ->middleware(['auth:sanctum', 'active']);
+Route::get('/blood-requests/{bloodRequest}', [BloodRequestController::class, 'show']);
 Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{event}', [EventController::class, 'show']);
 Route::get('/campaigns', [CampaignController::class, 'index']);
@@ -79,6 +84,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/verification-requests', [VerificationRequestController::class, 'store']);
     Route::get('/verification-requests/me', [VerificationRequestController::class, 'me']);
     Route::get('/verification-requests/{verificationRequest}', [VerificationRequestController::class, 'show']);
+
+    // Community blood requests
+    Route::post('/blood-requests', [BloodRequestController::class, 'store']);
+    Route::post('/blood-requests/{bloodRequest}/responses', [BloodRequestController::class, 'storeResponse']);
+    Route::patch('/blood-requests/{bloodRequest}/status', [BloodRequestController::class, 'updateStatus']);
 
     // Mosque admin + super admin
     Route::prefix('admin')
