@@ -225,3 +225,66 @@ export function fetchMosqueById(id) {
     return mosque;
   });
 }
+
+export async function followMosque(mosqueId) {
+  const id = String(mosqueId ?? "").trim();
+  if (!id) throw new Error("A mosque id is required to follow.");
+
+  const response = await fetch(apiUrl(`/api/mosques/${encodeURIComponent(id)}/follow`), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(localStorage.getItem("mc_auth_token") ? { Authorization: `Bearer ${localStorage.getItem("mc_auth_token")}` } : {}),
+    },
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (response.status === 409) {
+    return { ok: true, message: payload.message || "Already following this mosque." };
+  }
+  if (!response.ok) {
+    throw new Error(payload.message || "Failed to follow mosque.");
+  }
+  return { ok: true, data: payload.data };
+}
+
+export async function unfollowMosque(mosqueId) {
+  const id = String(mosqueId ?? "").trim();
+  if (!id) throw new Error("A mosque id is required to unfollow.");
+
+  const response = await fetch(apiUrl(`/api/mosques/${encodeURIComponent(id)}/follow`), {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      ...(localStorage.getItem("mc_auth_token") ? { Authorization: `Bearer ${localStorage.getItem("mc_auth_token")}` } : {}),
+    },
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (response.status === 404) {
+    return { ok: true, message: payload.message || "You are not following this mosque." };
+  }
+  if (!response.ok) {
+    throw new Error(payload.message || "Failed to unfollow mosque.");
+  }
+  return { ok: true };
+}
+
+export async function fetchFollowedMosques() {
+  const token = localStorage.getItem("mc_auth_token");
+  if (!token) return [];
+
+  const response = await fetch(apiUrl("/api/me/followed-mosques"), {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 401 || response.status === 403) return [];
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || "Could not load followed mosques.");
+  return Array.isArray(payload.data) ? payload.data : [];
+}
+

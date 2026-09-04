@@ -16,6 +16,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { MOSQUES, saveMosqueToLocal } from "../data/mosques";
 import { createAnnouncementId } from "../data/announcements";
+import { getAnnouncements, saveAnnouncements } from "../services/announcementService";
 
 export default function MosqueAdminAnnouncements() {
   const { user } = useAuth();
@@ -52,8 +53,9 @@ export default function MosqueAdminAnnouncements() {
 
     if (found) {
       setMosque(found);
+      const fetchedAnnouncements = getAnnouncements(found.id);
       // Ensure all announcements have a status property for the UI (default to published if missing)
-      setAnnouncements((found.announcements || []).map(a => ({
+      setAnnouncements(fetchedAnnouncements.map(a => ({
         ...a,
         status: a.status || "published"
       })));
@@ -67,8 +69,7 @@ export default function MosqueAdminAnnouncements() {
   const handleSaveToStorage = (updatedList) => {
     setAnnouncements(updatedList);
     if (mosque) {
-      const updatedMosque = { ...mosque, announcements: updatedList };
-      saveMosqueToLocal(updatedMosque);
+      saveAnnouncements(mosque.id, updatedList);
     }
   };
 

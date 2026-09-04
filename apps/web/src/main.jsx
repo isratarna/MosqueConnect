@@ -9,6 +9,7 @@ import "./index.css";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
+import { FollowProvider } from "./context/FollowContext";
 import { GoogleMapsProvider } from "./components/GoogleMapsProvider";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -16,9 +17,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
-          <GoogleMapsProvider>
-            <App />
-          </GoogleMapsProvider>
+          <FollowProvider>
+            <GoogleMapsProvider>
+              <App />
+            </GoogleMapsProvider>
+          </FollowProvider>
         </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
