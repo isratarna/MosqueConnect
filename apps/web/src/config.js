@@ -1,5 +1,5 @@
 /*
- * MosqueConnect — App configuration (Phase 1, React frontend)
+ * MosqueConnect application configuration.
  *
  * The Google Maps API key is read from the Vite env var VITE_GOOGLE_MAPS_API_KEY.
  * Copy .env.example to .env and paste your key there to enable the maps.

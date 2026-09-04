@@ -1,9 +1,9 @@
 /*
- * MosqueConnect — Dummy dataset (Phase 1)
+ * MosqueConnect fallback mosque dataset.
  *
- * In later phases this file is replaced by calls to the Laravel REST API.
- * For now every page reads from these in-memory arrays so the UI is fully
- * demonstrable without a backend.
+ * These records provide a graceful UI fallback when live discovery data is
+ * unavailable. API-backed discovery and profile views are implemented in the
+ * hooks and service utilities under src/.
  */
 
 export const FACILITY_META = {
