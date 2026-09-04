@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Announcement;
+use App\Models\BloodRequest;
 use App\Models\Campaign;
 use App\Models\CampaignDonation;
 use App\Models\Event;
@@ -12,6 +13,7 @@ use App\Models\PrayerTime;
 use App\Models\VolunteerOpportunity;
 use App\Observers\AdminActivityObserver;
 use App\Policies\AnnouncementPolicy;
+use App\Policies\BloodRequestPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\MosquePolicy;
 use App\Policies\VolunteerOpportunityPolicy;
@@ -43,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
+        Gate::policy(BloodRequest::class, BloodRequestPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);
         Gate::policy(Mosque::class, MosquePolicy::class);
         Gate::policy(VolunteerOpportunity::class, VolunteerOpportunityPolicy::class);
