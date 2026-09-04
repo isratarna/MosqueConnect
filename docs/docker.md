@@ -32,8 +32,8 @@ docker compose exec api php artisan db:seed
 ## Common commands
 
 ```sh
-# Run backend tests
-docker compose exec api php artisan test
+# Run backend tests in isolated, in-memory SQLite (never the development MySQL database)
+docker compose exec -e APP_ENV=testing -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: api php artisan test
 
 # Run frontend tests
 docker compose exec web npm run test --workspace=apps/web

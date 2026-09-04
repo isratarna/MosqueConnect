@@ -1,5 +1,5 @@
 /*
- * MapView — Google Maps wrapper (Phase 1)
+ * Google Maps wrapper used by mosque discovery views.
  *
  * Uses @react-google-maps/api. The script is loaded once by GoogleMapsProvider.
  * If no API key is configured it renders a friendly placeholder instead of crashing.
