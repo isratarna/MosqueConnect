@@ -1,5 +1,5 @@
 /*
- * Community hub placeholder data (Phase 1).
+ * Community hub placeholder data.
  *
  * These exports mirror the shape expected from the future Community API. The
  * page deliberately reads only from this module, so the static list can be

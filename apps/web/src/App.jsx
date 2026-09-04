@@ -29,7 +29,13 @@ function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="container py-5 text-center text-muted" role="status">Loading your account...</div>;
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-mc" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {

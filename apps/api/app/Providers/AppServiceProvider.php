@@ -10,6 +10,7 @@ use App\Models\JumuahSession;
 use App\Models\Mosque;
 use App\Models\PrayerTime;
 use App\Observers\AdminActivityObserver;
+use App\Policies\AnnouncementPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\MosquePolicy;
 use App\Services\Otp\LogSmsOtpSender;
@@ -39,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);
         Gate::policy(Mosque::class, MosquePolicy::class);
 
