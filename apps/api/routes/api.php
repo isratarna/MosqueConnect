@@ -22,6 +22,7 @@ use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\VerificationRequestController;
+use App\Http\Controllers\VolunteerOpportunityController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -46,6 +47,8 @@ Route::prefix('auth')->group(function () {
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
 Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'index']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
+Route::get('/volunteer-opportunities', [VolunteerOpportunityController::class, 'index']);
+Route::get('/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'show']);
 Route::get('/mosques/{mosque}/prayer-schedule', [MosqueController::class, 'prayerSchedule']);
 Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
 Route::get('/events', [EventController::class, 'index']);
@@ -90,6 +93,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::put('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'updatePrayerSchedule']);
 
             Route::scopeBindings()->group(function () {
+                Route::get('/mosques/{mosque}/volunteer-opportunities', [VolunteerOpportunityController::class, 'adminIndex']);
+                Route::post('/mosques/{mosque}/volunteer-opportunities', [VolunteerOpportunityController::class, 'store']);
+                Route::get('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'adminShow']);
+                Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'update']);
+                Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/status', [VolunteerOpportunityController::class, 'updateStatus']);
+                Route::delete('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'destroy']);
+
                 Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'adminIndex']);
                 Route::post('/mosques/{mosque}/announcements', [AnnouncementController::class, 'store']);
                 Route::get('/mosques/{mosque}/announcements/{announcement}', [AnnouncementController::class, 'adminShow']);
