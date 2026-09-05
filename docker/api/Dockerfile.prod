@@ -1,0 +1,49 @@
+# Production image for the Laravel API: nginx + php-fpm supervised together,
+# serving on the single port Container Apps routes ingress to.
+FROM php:8.4-fpm-bookworm
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        libicu-dev \
+        libonig-dev \
+        libzip-dev \
+        nginx \
+        supervisor \
+        unzip \
+    && docker-php-ext-install -j"$(nproc)" \
+        bcmath \
+        intl \
+        mbstring \
+        opcache \
+        pcntl \
+        pdo_mysql \
+        zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY docker/api/php.prod.ini /usr/local/etc/php/conf.d/zz-mosqueconnect.ini
+COPY docker/api/nginx.conf /etc/nginx/sites-available/default
+COPY docker/api/supervisord.conf /etc/supervisor/conf.d/mosqueconnect.conf
+
+WORKDIR /var/www/html
+
+# Dependencies first so that application edits do not invalidate the composer
+# layer. --no-scripts is required here because the application code (which the
+# package:discover script needs) has not been copied yet.
+COPY apps/api/composer.json apps/api/composer.lock ./
+RUN composer install --no-interaction --prefer-dist --no-dev --no-scripts --no-autoloader
+
+COPY apps/api ./
+
+RUN composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+COPY docker/api/prod-entrypoint.sh /usr/local/bin/mosqueconnect-prod-entrypoint
+
+EXPOSE 8080
+
+ENTRYPOINT ["sh", "/usr/local/bin/mosqueconnect-prod-entrypoint"]
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf", "-n"]
