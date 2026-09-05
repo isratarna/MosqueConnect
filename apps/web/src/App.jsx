@@ -15,6 +15,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const SuperAdminDashboard = lazy(() => import("./pages/SuperAdminDashboard"));
 const MosqueAdminAnnouncements = lazy(() => import("./pages/MosqueAdminAnnouncements"));
 const MosqueAdminPrayerSchedule = lazy(() => import("./pages/MosqueAdminPrayerSchedule"));
+const MosqueAdminClaim = lazy(() => import("./pages/MosqueAdminClaim"));
 const VerificationRequests = lazy(() => import("./pages/admin/VerificationRequests"));
 const Support = lazy(() => import("./pages/Support"));
 const SupportContinue = lazy(() => import("./pages/SupportContinue"));
@@ -127,6 +128,14 @@ export default function App() {
             }
           />
           <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
+          <Route
+            path="/mosque-admin/claim"
+            element={
+              <ProtectedRoute>
+                <MosqueAdminClaim />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/admin/verification-requests"
             element={
