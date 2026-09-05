@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Container Apps terminates TLS at its ingress and forwards plain HTTP
+        // inside the environment. Without trusting the X-Forwarded-* headers,
+        // Laravel builds http:// URLs (pagination links, redirects), which the
+        // HTTPS SPA then cannot follow without mixed-content errors.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
             'role' => EnsureUserHasRole::class,
