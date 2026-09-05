@@ -12,6 +12,8 @@ import {
   LoaderCircle,
   MapPin,
   Navigation,
+  Pause,
+  Play,
   RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
@@ -260,6 +262,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const [activeIndex, setActiveIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isInteracting, setIsInteracting] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const pointerStartX = useRef(0);
   const [cardWidth, setCardWidth] = useState(260);
 
@@ -301,7 +304,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   }, [nearby, selectedMosqueId, onMosqueSelect]);
 
   useEffect(() => {
-    if (!nearby.length || isInteracting) return;
+    if (!nearby.length || isInteracting || isPaused) return;
 
     const timer = window.setTimeout(() => {
       const nextIndex = (activeIndex + 1) % nearby.length;
@@ -313,7 +316,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
     }, 1600);
 
     return () => window.clearTimeout(timer);
-  }, [activeIndex, nearby, isInteracting, onMosqueSelect, selectedMosqueId]);
+  }, [activeIndex, nearby, isInteracting, isPaused, onMosqueSelect, selectedMosqueId]);
 
   const goToPrevious = useCallback(() => selectIndex(activeIndex - 1), [activeIndex, selectIndex]);
   const goToNext = useCallback(() => selectIndex(activeIndex + 1), [activeIndex, selectIndex]);
@@ -385,6 +388,16 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
             <div className="mc-nearby-showcase__controls" aria-label="Nearby mosque controls">
               <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToPrevious} aria-label="Previous mosque">
                 <ChevronRight size={14} aria-hidden="true" className="mc-rotate-180" />
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-mc btn-sm"
+                onClick={() => setIsPaused((paused) => !paused)}
+                aria-label={isPaused ? "Resume nearby mosques" : "Pause nearby mosques"}
+                aria-pressed={isPaused}
+                title={isPaused ? "Resume nearby mosques" : "Pause nearby mosques"}
+              >
+                {isPaused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}
               </button>
               <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToNext} aria-label="Next mosque">
                 <ChevronRight size={14} aria-hidden="true" />
