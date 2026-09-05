@@ -1,36 +1,22 @@
-// TODO: Connect to backend API when Member 3 is ready
-// This is a mock API service layer using localStorage.
+﻿import { apiRequest } from "../utils/api";
 
-const STORAGE_KEY_PREFIX = "mock_prayer_schedule_";
-
+const prayers = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 export async function fetchPrayerSchedule(mosqueId) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      try {
-        const data = localStorage.getItem(`${STORAGE_KEY_PREFIX}${mosqueId}`);
-        if (data) {
-          resolve(JSON.parse(data));
-        } else {
-          resolve(null);
-        }
-      } catch (error) {
-        console.error("Failed to parse mock prayer schedule", error);
-        resolve(null);
-      }
-    }, 600); // Simulate network delay
-  });
+  const { data } = await apiRequest(`/api/admin/mosques/${mosqueId}/prayer-schedule`);
+  const schedule = Object.fromEntries(prayers.map((label) => {
+    const entry = data.prayer_schedule.find((item) => item.prayer === label.toLowerCase());
+    return [label, { adhan: entry?.adhan_time || "", iqamah: entry?.jamaat_time || "" }];
+  }));
+  const jummah = data.jumuah_sessions.find((entry) => entry.sequence === 1);
+  schedule.Jummah = { adhan: jummah?.khutbah_time || "", iqamah: jummah?.jamaat_time || "" };
+  schedule.jumuahSessions = data.jumuah_sessions;
+  return schedule;
 }
 
-export async function updatePrayerSchedule(mosqueId, scheduleData) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      try {
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${mosqueId}`, JSON.stringify(scheduleData));
-        resolve({ success: true });
-      } catch (error) {
-        console.error("Failed to save mock prayer schedule", error);
-        reject(new Error("Failed to save schedule."));
-      }
-    }, 800); // Simulate network delay
-  });
+export async function updatePrayerSchedule(mosqueId, schedule) {
+  const existing = schedule.jumuahSessions?.find((entry) => entry.sequence === 1);
+  return apiRequest(`/api/admin/mosques/${mosqueId}/prayer-schedule`, { method: "PUT", body: {
+    prayer_schedule: prayers.map((label) => ({ prayer: label.toLowerCase(), adhan_time: schedule[label].adhan, jamaat_time: schedule[label].iqamah })),
+    jumuah_sessions: [{ sequence: 1, label: existing?.label || "First Jumuah", khutbah_time: schedule.Jummah.adhan || null, jamaat_time: schedule.Jummah.iqamah, notes: existing?.notes || null }],
+  } });
 }

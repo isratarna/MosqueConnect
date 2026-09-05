@@ -1,7 +1,7 @@
 import { apiUrl } from "../config";
 import { getAuthHeaders } from "./authApi";
 
-export const EVENT_REGISTRATION_ENABLED = import.meta.env.VITE_EVENT_REGISTRATION_ENABLED === "true";
+export const EVENT_REGISTRATION_ENABLED = true;
 
 export class EventApiError extends Error {
   constructor(message, status, payload = {}) {
@@ -83,6 +83,16 @@ export async function registerForEvent(id) {
   });
 
   return payload;
+}
+
+export async function fetchMyEventRegistrations({ signal } = {}) {
+  const payload = await request("/api/me/event-registrations", {
+    method: "GET",
+    headers: getAuthHeaders(),
+    signal,
+  });
+
+  return Array.isArray(payload.data) ? payload.data : [];
 }
 
 export async function unregisterFromEvent(id) {

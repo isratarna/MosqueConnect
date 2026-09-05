@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\Gate;
 
 class BloodRequestController extends Controller
 {
+    public function responses(): JsonResponse
+    {
+        return response()->json(['data' => request()->user()->bloodRequestResponses()->get(['id', 'blood_request_id'])]);
+    }
+
     /**
      * List active (open) blood requests available to the community.
      */

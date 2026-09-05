@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   Calendar,
@@ -11,10 +11,12 @@ import {
   Plus
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { apiRequest } from "../utils/api";
 
 export default function VolunteerOpportunities() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
 
   const isAdmin = user?.role === "mosque_admin" && user?.status === "approved";
 
@@ -22,6 +24,8 @@ export default function VolunteerOpportunities() {
   const [error, setError] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
   
+  const [actionError, setActionError] = useState("");
+  const managedMosqueId = (user?.managed_mosques?.find((item) => String(item.id) === params.get("mosque")) || user?.managed_mosques?.[0])?.id;
   // Form State
   const [showForm, setShowForm] = useState(false);
   const [submittingForm, setSubmittingForm] = useState(false);
@@ -36,152 +40,77 @@ export default function VolunteerOpportunities() {
   const [capacity, setCapacity] = useState("");
   const [instructions, setInstructions] = useState("");
 
-  const fetchData = async () => {
+  const normalize = (item, registrations = []) => ({
+    ...item, mosqueName: item.mosque?.name, date: item.opportunity_date,
+    time: [item.start_time, item.end_time].filter(Boolean).join(" - ") || "Contact the mosque",
+    capacity: item.volunteers_required, instructions: item.requirements,
+    participantCount: item.registrations_count || 0,
+    hasApplied: registrations.some((entry) => entry.volunteer_opportunity_id === item.id),
+  });
+
+  const fetchData = useCallback(async (signal) => {
     setLoading(true);
     setError(null);
     try {
-      // Simulate API network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      setOpportunities([
-        { 
-          id: "vol-1", 
-          title: "Jummah Crowd Control", 
-          mosqueName: "Baitul Mukarram National Mosque",
-          description: "Assist with guiding attendees and managing parking during Friday prayers.", 
-          date: "2026-08-28", 
-          time: "12:00 PM - 2:30 PM",
-          location: "Main Gate & Parking Area", 
-          capacity: 10, 
-          status: "active",
-          instructions: "Please wear a high-visibility vest provided at the management office.",
-          participants: ["user-222", "user-333"] 
-        },
-        { 
-          id: "vol-2", 
-          title: "Disaster Relief Packing", 
-          mosqueName: "Gulshan Society Mosque",
-          description: "Help pack dry food and relief materials for flood victims.", 
-          date: "2026-08-29", 
-          time: "9:00 AM - 5:00 PM",
-          location: "Community Center Hall B", 
-          capacity: 25, 
-          status: "active",
-          instructions: "",
-          participants: ["user_mock_id", "user-444", "user-555", "user-666"] 
-        },
-        { 
-          id: "vol-3", 
-          title: "Youth Quran Class Setup", 
-          mosqueName: "Sobhanbag Jame Masjid",
-          description: "Arrange chairs, whiteboards, and materials for the weekend youth classes.", 
-          date: "2026-08-30", 
-          time: "4:00 PM - 5:00 PM",
-          location: "Level 2 Classrooms", 
-          capacity: 3, 
-          status: "filled",
-          instructions: "",
-          participants: ["user-1", "user-2", "user-3"] 
-        },
+      const [publicData, ownData, registrations] = await Promise.all([
+        apiRequest("/api/volunteer-opportunities", { signal }),
+        isAdmin && managedMosqueId ? apiRequest(`/api/admin/mosques/${managedMosqueId}/volunteer-opportunities`, { signal }) : Promise.resolve({ data: [] }),
+        user ? apiRequest("/api/me/volunteer-registrations", { signal }) : Promise.resolve({ data: [] }),
       ]);
-    } catch (err) {
-      setError("Failed to load volunteer opportunities. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      const items = new Map([...publicData.data, ...ownData.data].map((item) => [item.id, item]));
+      setOpportunities([...items.values()].map((item) => normalize(item, registrations.data)));
+    } catch (err) { if (err.name !== "AbortError") setError(err.message); }
+    finally { if (!signal?.aborted) setLoading(false); }
+  }, [user?.id, isAdmin, managedMosqueId]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    const controller = new AbortController();
+    fetchData(controller.signal);
+    return () => controller.abort();
+  }, [fetchData]);
 
   const handleApply = async (id) => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    
-    setOpportunities(prev => prev.map(opp => {
-      if (opp.id === id) {
-        return { ...opp, isApplying: true };
-      }
-      return opp;
-    }));
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    setOpportunities(prev => prev.map(opp => {
-      if (opp.id === id) {
-        const newParticipants = [...opp.participants, user.id || "current-user"];
-        const newStatus = newParticipants.length >= opp.capacity ? "filled" : opp.status;
-        return { ...opp, isApplying: false, participants: newParticipants, status: newStatus };
-      }
-      return opp;
-    }));
+    if (!user) { navigate("/login", { state: { from: "/volunteers" } }); return; }
+    const opportunity = opportunities.find((item) => item.id === id);
+    setActionError("");
+    setOpportunities((items) => items.map((item) => item.id === id ? { ...item, isApplying: true } : item));
+    try {
+      await apiRequest(`/api/volunteer-opportunities/${id}/register`, { method: opportunity.hasApplied ? "DELETE" : "POST" });
+      setOpportunities((items) => items.map((item) => item.id === id ? { ...item, hasApplied: !opportunity.hasApplied, participantCount: item.participantCount + (opportunity.hasApplied ? -1 : 1) } : item));
+    } catch (err) { setActionError(err.message); }
+    finally { setOpportunities((items) => items.map((item) => item.id === id ? { ...item, isApplying: false } : item)); }
   };
 
   const handleCloseOpportunity = async (id) => {
-    // Admin action
-    setOpportunities(prev => prev.map(opp => {
-      if (opp.id === id) {
-        return { ...opp, isUpdating: true };
-      }
-      return opp;
-    }));
-
-    await new Promise(resolve => setTimeout(resolve, 400));
-
-    setOpportunities(prev => prev.map(opp => {
-      if (opp.id === id) {
-        return { ...opp, isUpdating: false, status: "completed" };
-      }
-      return opp;
-    }));
+    const opportunity = opportunities.find((item) => item.id === id);
+    setActionError("");
+    setOpportunities((items) => items.map((item) => item.id === id ? { ...item, isUpdating: true } : item));
+    try {
+      const { data } = await apiRequest(`/api/admin/mosques/${opportunity.mosque_id}/volunteer-opportunities/${id}/status`, { method: "PATCH", body: { status: "completed" } });
+      setOpportunities((items) => items.map((item) => item.id === id ? { ...item, ...normalize(data) } : item));
+    } catch (err) { setActionError(err.message); }
+    finally { setOpportunities((items) => items.map((item) => item.id === id ? { ...item, isUpdating: false } : item)); }
   };
 
   const handleCreateOpportunity = async (e) => {
     e.preventDefault();
-    if (!isAdmin) return;
-    
+    if (!isAdmin || !managedMosqueId || submittingForm) return;
     setSubmittingForm(true);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const newOpp = {
-      id: `vol-${Date.now()}`,
-      title,
-      mosqueName: user.mosqueName || "Your Admin Mosque",
-      description,
-      date,
-      time,
-      location,
-      capacity: parseInt(capacity, 10),
-      instructions,
-      status: "active",
-      participants: []
-    };
-
-    setOpportunities(prev => [newOpp, ...prev]);
-    setSubmittingForm(false);
-    setFormSuccess(true);
-    
-    setTimeout(() => {
-      setFormSuccess(false);
-      setShowForm(false);
-      setTitle("");
-      setDescription("");
-      setDate("");
-      setTime("");
-      setLocation("");
-      setCapacity("");
-      setInstructions("");
-    }, 2500);
+    setActionError("");
+    try {
+      const { data } = await apiRequest(`/api/admin/mosques/${managedMosqueId}/volunteer-opportunities`, { method: "POST", body: {
+        title, description, opportunity_date: date, start_time: time, location,
+        volunteers_required: Number(capacity), requirements: instructions,
+      } });
+      setOpportunities((items) => [normalize(data), ...items]);
+      setFormSuccess(true);
+      setTitle(""); setDescription(""); setDate(""); setTime(""); setLocation(""); setCapacity(""); setInstructions("");
+    } catch (err) { setActionError(err.message); }
+    finally { setSubmittingForm(false); }
   };
 
   return (
-    <div className="container py-4 py-lg-5 mc-motion-section" style={{ maxWidth: "900px", minHeight: "80vh" }}>
+    <div className="container mc-page-narrow py-4 py-lg-5 mc-motion-section">
       <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3 border-bottom pb-3">
         <div>
           <h2 className="fw-bold mb-1 d-flex align-items-center gap-2">
@@ -193,13 +122,14 @@ export default function VolunteerOpportunities() {
         {isAdmin && (
           <button 
             className="btn btn-mc d-flex align-items-center gap-2"
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => { setFormSuccess(false); setShowForm(!showForm); }}
           >
             {showForm ? "Cancel Creation" : <><Plus size={18} /> Create Opportunity</>}
           </button>
         )}
       </div>
 
+      {actionError && <div className="alert alert-danger" role="alert">{actionError}</div>}
       {showForm && isAdmin && (
         <div className="card border-0 shadow-sm mb-5 border-top border-4 border-mc">
           <div className="card-body p-4">
@@ -230,8 +160,8 @@ export default function VolunteerOpportunities() {
                     <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} required />
                   </div>
                   <div className="col-md-4 mb-3">
-                    <label className="form-label fw-semibold small">Time Window <span className="text-danger">*</span></label>
-                    <input type="text" className="form-control" placeholder="e.g. 10:00 AM - 1:00 PM" value={time} onChange={(e) => setTime(e.target.value)} required />
+                    <label className="form-label fw-semibold small">Start time <span className="text-danger">*</span></label>
+                    <input type="time" className="form-control" value={time} onChange={(e) => setTime(e.target.value)} required />
                   </div>
                   <div className="col-md-4 mb-3">
                     <label className="form-label fw-semibold small">Specific Location <span className="text-danger">*</span></label>
@@ -270,7 +200,7 @@ export default function VolunteerOpportunities() {
           <AlertCircle size={32} className="text-warning mb-3 mx-auto" />
           <h5 className="fw-bold">Failed to load opportunities</h5>
           <p>{error}</p>
-          <button className="btn btn-warning mt-2" onClick={fetchData}>Try Again</button>
+          <button className="btn btn-warning mt-2" onClick={() => fetchData()}>Try Again</button>
         </div>
       ) : opportunities.length === 0 ? (
         <div className="text-center py-5 text-muted border rounded shadow-sm bg-white">
@@ -281,10 +211,11 @@ export default function VolunteerOpportunities() {
       ) : (
         <div className="d-flex flex-column gap-3">
           {opportunities.map(opp => {
-            const hasApplied = opp.participants.includes(user?.id || "current-user");
-            const isFilled = opp.status === "filled";
+            const hasApplied = opp.hasApplied;
+            const isFilled = opp.participantCount >= opp.capacity;
             const isCompleted = opp.status === "completed";
-            const isDisabled = isFilled || isCompleted || hasApplied;
+            const isDisabled = !hasApplied && (isFilled || opp.status !== "active");
+            const canManage = isAdmin && opp.mosque_id === managedMosqueId;
 
             return (
               <div className={`card border-0 shadow-sm overflow-hidden ${opp.status === "active" ? "border-start border-4 border-mc" : "opacity-75"}`} key={opp.id}>
@@ -292,9 +223,9 @@ export default function VolunteerOpportunities() {
                   <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
                     <h5 className="fw-bold mb-0 text-dark">{opp.title}</h5>
                     <div>
-                      {opp.status === "active" && <span className="badge bg-success-subtle text-success border border-success-subtle">Active</span>}
-                      {opp.status === "filled" && <span className="badge bg-warning-subtle text-warning border border-warning-subtle text-dark">Filled</span>}
-                      {opp.status === "completed" && <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Completed</span>}
+                      {opp.status === "active" && !isFilled && <span className="badge bg-success-subtle text-success border border-success-subtle">Active</span>}
+                      {opp.status === "active" && isFilled && <span className="badge bg-warning-subtle text-warning border border-warning-subtle text-dark">Filled</span>}
+                      {isCompleted && <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Completed</span>}
                     </div>
                   </div>
                   <h6 className="text-mc fw-semibold mb-3 small d-flex align-items-center gap-1">
@@ -323,7 +254,7 @@ export default function VolunteerOpportunities() {
                     </div>
                     <div className="col-sm-6 col-md-4">
                       <div className="d-flex align-items-center gap-2 small fw-semibold text-dark">
-                        <Users size={16} /> <span>{opp.participants.length} / {opp.capacity} Volunteers</span>
+                        <Users size={16} /> <span>{opp.participantCount} / {opp.capacity} Volunteers</span>
                       </div>
                     </div>
                   </div>
@@ -332,9 +263,9 @@ export default function VolunteerOpportunities() {
 
                   <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <div>
-                      {isAdmin ? (
+                      {canManage ? (
                         <div className="small text-muted fw-semibold">
-                          Admin View: {opp.participants.length} Applications
+                          Admin View: {opp.participantCount} Applications
                         </div>
                       ) : (
                         <div className="small text-muted">
@@ -344,7 +275,7 @@ export default function VolunteerOpportunities() {
                     </div>
                     
                     <div className="d-flex gap-2">
-                      {isAdmin && opp.status === "active" && (
+                      {canManage && opp.status === "active" && (
                         <button 
                           className="btn btn-sm btn-outline-secondary"
                           onClick={() => handleCloseOpportunity(opp.id)}
@@ -354,7 +285,7 @@ export default function VolunteerOpportunities() {
                         </button>
                       )}
                       
-                      {!isAdmin && (
+                      {!canManage && (
                         <button 
                           className={`btn btn-sm d-flex align-items-center gap-2 fw-medium ${hasApplied ? "btn-success" : isDisabled ? "btn-light border text-muted" : "btn-mc"}`}
                           disabled={isDisabled || opp.isApplying}
@@ -367,7 +298,7 @@ export default function VolunteerOpportunities() {
                           ) : (
                             <HeartHandshake size={16} />
                           )}
-                          {hasApplied ? "You Applied" : isFilled ? "Spots Filled" : isCompleted ? "Completed" : "Volunteer Now"}
+                          {hasApplied ? "Cancel signup" : isFilled ? "Spots Filled" : isCompleted ? "Completed" : "Volunteer Now"}
                         </button>
                       )}
                     </div>

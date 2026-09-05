@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle, Clock, Save, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { MOSQUES } from "../data/mosques";
+
 import { fetchPrayerSchedule, updatePrayerSchedule } from "../services/prayerScheduleService";
 
 const PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah"];
@@ -10,6 +10,8 @@ const PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah"];
 export default function MosqueAdminPrayerSchedule() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const selectedMosque = user?.managed_mosques?.find((item) => String(item.id) === params.get("mosque")) || user?.managed_mosques?.[0];
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -33,20 +35,10 @@ export default function MosqueAdminPrayerSchedule() {
       return;
     }
 
-    const mockName = user.mosqueName || "My Mosque Profile";
-    const found = MOSQUES.find(
-      (m) => m.name.trim().toLowerCase() === mockName.trim().toLowerCase()
-    );
-
-    if (found) {
-      setMosque(found);
-      loadSchedule(found.id);
-    } else {
-      // Fallback
-      setMosque({ id: Date.now(), name: mockName });
-      loadSchedule(Date.now());
-    }
-  }, [user, navigate]);
+    const managed = selectedMosque;
+    if (managed) { setMosque(managed); loadSchedule(managed.id); }
+    else { setActionError("No mosque is assigned to your account."); setLoading(false); }
+  }, [user, navigate, selectedMosque?.id]);
 
   const loadSchedule = async (mosqueId) => {
     try {
@@ -55,7 +47,7 @@ export default function MosqueAdminPrayerSchedule() {
         setSchedule(data);
       }
     } catch (err) {
-      console.error(err);
+      setActionError(err.message || "Unable to load the prayer schedule.");
     } finally {
       setLoading(false);
     }
@@ -90,7 +82,7 @@ export default function MosqueAdminPrayerSchedule() {
       await updatePrayerSchedule(mosque.id, schedule);
       showSuccess("Prayer schedule updated successfully!");
     } catch (err) {
-      showError("An error occurred while saving the schedule.");
+      showError(err.message || "An error occurred while saving the schedule.");
     } finally {
       setSubmitting(false);
     }

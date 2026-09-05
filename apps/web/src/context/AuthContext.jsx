@@ -5,7 +5,7 @@
  * and user session management connecting to the Laravel REST API.
  * GET /api/auth/me is the source of truth for the authenticated user.
  */
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { apiUrl } from "../config";
 import {
   AUTH_TOKEN_KEY,
@@ -19,74 +19,40 @@ import {
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem(AUTH_USER_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => getStoredToken());
-  // If we already have a cached user, we can start with loading = false
-  // so the UI renders immediately without a spinner.
-  const [loading, setLoading] = useState(() => !localStorage.getItem(AUTH_USER_KEY));
+  const [loading, setLoading] = useState(true);
+  const sessionVersion = useRef(0);
 
   const clearSession = useCallback(() => {
+    sessionVersion.current += 1;
     setUser(null);
     setToken(null);
     clearAuthStorage();
   }, []);
 
   const restoreSession = useCallback(async () => {
-    // Only show the blocking spinner if we don't already have a cached user.
-    if (!localStorage.getItem(AUTH_USER_KEY)) {
-      setLoading(true);
-    }
-
+    const version = ++sessionVersion.current;
+    setLoading(true);
     try {
       const storedToken = getStoredToken();
-      if (!storedToken) {
-        clearSession();
-        setLoading(false);
-        return;
-      }
-
-      // If we already have a user from localStorage, we might not need to clear it 
-      // immediately if the API fetch fails (especially if backend is under development).
-      const res = await fetch(apiUrl("/api/auth/me"), {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
-
+      if (!storedToken) { clearSession(); return; }
+      const res = await fetch(apiUrl("/api/auth/me"), { headers: getAuthHeaders() });
+      if (version !== sessionVersion.current) return;
       if (res.ok) {
         const data = await res.json();
+        if (version !== sessionVersion.current) return;
         setUser(data.user ?? null);
         setToken(storedToken);
-        if (data.user) {
-          cacheUser(data.user);
-        }
-        return;
+        if (data.user) cacheUser(data.user);
+      } else {
+        setUser(null);
+        if (res.status === 401 || res.status === 403) clearSession();
       }
-
-      if (res.status === 401 || res.status === 403) {
-        clearSession();
-        return;
-      }
-
-      // If backend returns 404 or 500 (e.g. during development), 
-      // keep the localStorage user session active as a fallback.
-      if (!localStorage.getItem(AUTH_USER_KEY)) {
-        clearSession();
-      }
-    } catch (err) {
-      console.error("Failed to fetch current user:", err);
-      // Don't clear session on network error if we have a cached user
-      if (!localStorage.getItem(AUTH_USER_KEY)) {
-        clearSession();
-      }
+    } catch {
+      if (version === sessionVersion.current) setUser(null);
     } finally {
-      setLoading(false);
+      if (version === sessionVersion.current || !getStoredToken()) setLoading(false);
     }
   }, [clearSession]);
 
@@ -144,6 +110,8 @@ export function AuthProvider({ children }) {
         return { ok: false, error: errorMsg, data };
       }
 
+      sessionVersion.current += 1;
+      setLoading(false);
       if (data.token) {
         localStorage.setItem(AUTH_TOKEN_KEY, data.token);
         setToken(data.token);
@@ -170,6 +138,7 @@ export function AuthProvider({ children }) {
   // Revoke token and logout: POST /api/auth/logout
   async function logout() {
     const currentToken = token || getStoredToken();
+    clearSession();
 
     if (currentToken) {
       try {

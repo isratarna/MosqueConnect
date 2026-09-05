@@ -116,6 +116,37 @@ class Event extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(EventRegistration::class);
+    }
+
+    public function isRegistrationOpen(): bool
+    {
+        return $this->registration_required
+            && $this->status === self::STATUS_PUBLISHED
+            && $this->moderation_status === self::MODERATION_APPROVED
+            && ! $this->event_date->isBefore(today());
+    }
+
+    public function registrationClosedMessage(): string
+    {
+        if (! $this->registration_required) {
+            return 'Registration is not required for this event.';
+        }
+        if ($this->status === self::STATUS_CANCELLED) {
+            return 'Registration is closed because this event was cancelled.';
+        }
+        if ($this->status !== self::STATUS_PUBLISHED || $this->moderation_status !== self::MODERATION_APPROVED) {
+            return 'Registration is not available for this event.';
+        }
+        if ($this->event_date->isBefore(today())) {
+            return 'Registration is closed because this event has ended.';
+        }
+
+        return 'Registration is closed for this event.';
+    }
+
     public function contentReports(): HasMany
     {
         return $this->hasMany(ContentReport::class, 'reportable_id')

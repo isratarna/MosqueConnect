@@ -1,5 +1,5 @@
 import { apiUrl } from "../config.js";
-import { getAnnouncementById, getAnnouncementUrgency } from "../data/announcements";
+import { getAnnouncementUrgency } from "../data/announcements";
 
 export async function fetchAnnouncementById(id) {
   const announcementId = String(id ?? "").trim();
@@ -20,8 +20,6 @@ export async function fetchAnnouncementById(id) {
     throw new Error(payload.message || "Announcement details could not be loaded.");
   }
 
-  const local = getAnnouncementById(announcementId);
-  if (local) return local;
 
   throw new Error(payload.message || "Announcement not found.");
 }

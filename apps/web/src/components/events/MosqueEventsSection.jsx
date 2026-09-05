@@ -52,6 +52,7 @@ export default function MosqueEventsSection({ mosqueId }) {
           error={error}
           onRetry={retry}
           onRegister={registration.register}
+          onUnregister={registration.unregister}
           registeredEventIds={registration.registeredEventIds}
           registrationLoadingIds={registration.registrationLoadingIds}
           registrationEnabled={registration.registrationEnabled}

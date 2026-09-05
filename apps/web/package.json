@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-     "test": "node --test src/utils/campaignFormat.test.js src/utils/eventFilters.test.js src/utils/mosqueDiscovery.test.js src/utils/notificationUtils.test.js src/utils/prayerTime.test.js",
+    "test": "node --test src/utils/campaignFormat.test.js src/utils/eventFilters.test.js src/utils/mosqueDiscovery.test.js src/utils/notificationUtils.test.js src/utils/prayerTime.test.js",
+    "test:e2e": "playwright test",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,10 +18,12 @@
     "lucide-react": "^1.25.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.2",
-    "vite": "^5.4.8"
+    "@playwright/test": "^1.62.1",
+    "@vitejs/plugin-react": "^6.1.1",
+    "esbuild": "^0.28.2",
+    "vite": "^8.2.2"
   }
 }

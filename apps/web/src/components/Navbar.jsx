@@ -121,6 +121,7 @@ export default function Navbar() {
           </ul>
         </div>
       </div>
+      <span className="mc-navbar__progress" aria-hidden="true" />
     </nav>
   );
 }

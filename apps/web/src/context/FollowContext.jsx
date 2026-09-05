@@ -7,6 +7,8 @@ const FollowContext = createContext(null);
 export function FollowProvider({ children }) {
   const { user } = useAuth();
   const [followedIds, setFollowedIds] = useState(() => new Set());
+  const [followedMosques, setFollowedMosques] = useState([]);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
 
@@ -18,16 +20,20 @@ export function FollowProvider({ children }) {
   const refreshFollowedMosques = useCallback(async () => {
     if (!user) {
       setFollowedIds(new Set());
+      setFollowedMosques([]);
       return;
     }
 
     setLoading(true);
+    setError("");
     try {
       const data = await fetchFollowedMosques();
       const ids = new Set(data.map((m) => String(m.id)));
       setFollowedIds(ids);
+      setFollowedMosques(data);
     } catch (err) {
       console.error("Failed to load followed mosques:", err);
+      setError(err.message || "Could not load followed mosques.");
     } finally {
       setLoading(false);
     }
@@ -73,9 +79,11 @@ export function FollowProvider({ children }) {
       try {
         if (currentlyFollowing) {
           await unfollowMosque(mosqueId);
+          setFollowedMosques((items) => items.filter((item) => String(item.id) !== mosqueId));
           showToast(`Unfollowed ${mosqueName}.`, "success");
         } else {
           await followMosque(mosqueId);
+          await refreshFollowedMosques();
           showToast(`Following ${mosqueName}!`, "success");
         }
         return { ok: true, following: !currentlyFollowing };
@@ -94,13 +102,15 @@ export function FollowProvider({ children }) {
         return { ok: false, error: err.message };
       }
     },
-    [user, followedIds, showToast]
+    [user, followedIds, showToast, refreshFollowedMosques]
   );
 
   return (
     <FollowContext.Provider
       value={{
         followedIds,
+        followedMosques,
+        error,
         isFollowing,
         toggleFollow,
         refreshFollowedMosques,

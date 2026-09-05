@@ -79,15 +79,24 @@ class PrayerScheduleManagementTest extends TestCase
         $this->assertDatabaseHas('prayer_times', [
             'mosque_id' => $mosque->id,
             'prayer' => PrayerTime::PRAYER_FAJR,
-            'adhan_time' => '04:15:00',
-            'jamaat_time' => '04:45:00',
         ]);
+        $prayerTime = PrayerTime::query()
+            ->where('mosque_id', $mosque->id)
+            ->where('prayer', PrayerTime::PRAYER_FAJR)
+            ->firstOrFail();
+        $this->assertSame('04:15', substr($prayerTime->adhan_time, 0, 5));
+        $this->assertSame('04:45', substr($prayerTime->jamaat_time, 0, 5));
+
         $this->assertDatabaseHas('jumuah_sessions', [
             'mosque_id' => $mosque->id,
             'sequence' => 1,
             'label' => 'First Jumuah',
-            'jamaat_time' => '13:15:00',
         ]);
+        $jumuahSession = JumuahSession::query()
+            ->where('mosque_id', $mosque->id)
+            ->where('sequence', 1)
+            ->firstOrFail();
+        $this->assertSame('13:15', substr($jumuahSession->jamaat_time, 0, 5));
     }
 
     public function test_non_owner_admin_cannot_update_another_mosques_schedule(): void

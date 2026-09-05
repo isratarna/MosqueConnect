@@ -16,6 +16,7 @@ class EventController extends Controller
         $events = Event::query()
             ->published()
             ->with(['mosque', 'creator'])
+            ->withCount('registrations')
             ->filter($filters)
             ->orderByRaw('CASE WHEN event_date >= ? THEN 0 ELSE 1 END', [today()->toDateString()])
             ->orderBy('event_date')
@@ -29,8 +30,12 @@ class EventController extends Controller
 
     public function show(Event $event): EventResource
     {
-        abort_unless($event->status === Event::STATUS_PUBLISHED, 404);
+        abort_unless(
+            $event->status === Event::STATUS_PUBLISHED
+                && $event->moderation_status === Event::MODERATION_APPROVED,
+            404,
+        );
 
-        return new EventResource($event->load(['mosque', 'creator']));
+        return new EventResource($event->load(['mosque', 'creator'])->loadCount('registrations'));
     }
 }

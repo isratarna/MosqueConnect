@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
@@ -14,13 +14,15 @@ import {
   X
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { MOSQUES, saveMosqueToLocal } from "../data/mosques";
-import { createAnnouncementId } from "../data/announcements";
-import { getAnnouncements, saveAnnouncements } from "../services/announcementService";
+import { apiRequest } from "../utils/api";
+
+
 
 export default function MosqueAdminAnnouncements() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const selectedMosque = user?.managed_mosques?.find((item) => String(item.id) === params.get("mosque")) || user?.managed_mosques?.[0];
 
   const [loading, setLoading] = useState(true);
   const [mosque, setMosque] = useState(null);
@@ -38,40 +40,24 @@ export default function MosqueAdminAnnouncements() {
 
   // Feedback
   const [actionSuccess, setActionSuccess] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [revision, setRevision] = useState(0);
+  const [actionBusy, setActionBusy] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
-    if (!user || user.role !== "mosque_admin" || user.status !== "approved") {
-      navigate("/admin/dashboard");
-      return;
-    }
-
-    const mockName = user.mosqueName || "My Mosque Profile";
-    const found = MOSQUES.find(
-      (m) => m.name.trim().toLowerCase() === mockName.trim().toLowerCase()
-    );
-
-    if (found) {
-      setMosque(found);
-      const fetchedAnnouncements = getAnnouncements(found.id);
-      // Ensure all announcements have a status property for the UI (default to published if missing)
-      setAnnouncements(fetchedAnnouncements.map(a => ({
-        ...a,
-        status: a.status || "published"
-      })));
-    }
-    
-    // Simulate network delay for realism
-    const timer = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, [user, navigate]);
-
-  const handleSaveToStorage = (updatedList) => {
-    setAnnouncements(updatedList);
-    if (mosque) {
-      saveAnnouncements(mosque.id, updatedList);
-    }
-  };
+    const managed = selectedMosque;
+    if (!managed) { setActionError("No mosque is assigned to your account."); setLoading(false); return; }
+    const controller = new AbortController();
+    setMosque(managed);
+    setLoading(true);
+    setActionError("");
+    apiRequest(`/api/admin/mosques/${managed.id}/announcements`, { signal: controller.signal })
+      .then(({ data }) => setAnnouncements(data))
+      .catch((err) => { if (err.name !== "AbortError") setActionError(err.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [user?.id, selectedMosque?.id, revision]);
 
   const showSuccess = (msg) => {
     setActionSuccess(msg);
@@ -98,57 +84,45 @@ export default function MosqueAdminAnnouncements() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!mosque || submittingForm) return;
     setSubmittingForm(true);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    if (editingId) {
-      const updatedList = announcements.map(a => 
-        a.id === editingId 
-          ? { ...a, title, body, urgency, status, date: a.date } 
-          : a
-      );
-      handleSaveToStorage(updatedList);
-      showSuccess("Announcement updated successfully!");
-    } else {
-      const newAnnounce = {
-        id: createAnnouncementId(),
-        title,
-        body,
-        urgency,
-        status,
-        date: new Date().toISOString().split("T")[0],
-      };
-      handleSaveToStorage([newAnnounce, ...announcements]);
-      showSuccess("Announcement created successfully!");
-    }
-    
-    setSubmittingForm(false);
-    setShowForm(false);
+    setActionError("");
+    try {
+      const { data } = await apiRequest(`/api/admin/mosques/${mosque.id}/announcements${editingId ? "/" + editingId : ""}`, {
+        method: editingId ? "PATCH" : "POST", body: { title, body, urgency, status },
+      });
+      setAnnouncements((items) => editingId ? items.map((item) => item.id === editingId ? data : item) : [data, ...items]);
+      showSuccess(editingId ? "Announcement updated successfully!" : "Announcement created successfully!");
+      setShowForm(false);
+    } catch (err) { setActionError(err.message); }
+    finally { setSubmittingForm(false); }
   };
 
-  const handleToggleStatus = (id) => {
-    const updatedList = announcements.map(a => {
-      if (a.id === id) {
-        return { ...a, status: a.status === "published" ? "draft" : "published" };
-      }
-      return a;
-    });
-    handleSaveToStorage(updatedList);
-    showSuccess("Announcement status updated!");
+  const handleToggleStatus = async (id) => {
+    if (actionBusy) return;
+    setActionBusy(true);
+    setActionError("");
+    const item = announcements.find((entry) => entry.id === id);
+    try {
+      const { data } = await apiRequest(`/api/admin/mosques/${mosque.id}/announcements/${id}/${item.status === "published" ? "unpublish" : "publish"}`, { method: "PATCH" });
+      setAnnouncements((items) => items.map((entry) => entry.id === id ? data : entry));
+      showSuccess("Announcement status updated!");
+    } catch (err) { setActionError(err.message); }
+    finally { setActionBusy(false); }
   };
 
-  const confirmDelete = (id) => {
-    setDeletingId(id);
-  };
-
-  const executeDelete = () => {
-    if (!deletingId) return;
-    const updatedList = announcements.filter(a => a.id !== deletingId);
-    handleSaveToStorage(updatedList);
-    setDeletingId(null);
-    showSuccess("Announcement deleted successfully.");
+  const confirmDelete = (id) => setDeletingId(id);
+  const executeDelete = async () => {
+    if (!deletingId || actionBusy) return;
+    setActionBusy(true);
+    setActionError("");
+    try {
+      await apiRequest(`/api/admin/mosques/${mosque.id}/announcements/${deletingId}`, { method: "DELETE" });
+      setAnnouncements((items) => items.filter((item) => item.id !== deletingId));
+      setDeletingId(null);
+      showSuccess("Announcement deleted successfully.");
+    } catch (err) { setActionError(err.message); }
+    finally { setActionBusy(false); }
   };
 
   if (loading) {
@@ -184,6 +158,7 @@ export default function MosqueAdminAnnouncements() {
         </button>
       </div>
 
+      {actionError && <div className="alert alert-danger" role="alert">{actionError} <button className="btn btn-sm btn-outline-danger" onClick={() => setRevision((n) => n + 1)}>Retry</button></div>}
       {actionSuccess && (
         <div className="alert alert-success py-2 px-3 mb-4 d-flex align-items-center gap-2 shadow-sm animate-fade-in">
           <CheckCircle size={18} />

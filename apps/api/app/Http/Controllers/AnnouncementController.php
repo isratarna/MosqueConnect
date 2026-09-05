@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\Gate;
 
 class AnnouncementController extends Controller
 {
+    public function feed(): AnonymousResourceCollection
+    {
+        return AnnouncementResource::collection(Announcement::query()->published()
+            ->with(['mosque', 'creator'])->orderByDesc('published_at')->orderByDesc('id')->get());
+    }
+
     public function index(Mosque $mosque): AnonymousResourceCollection
     {
         $announcements = $mosque->announcements()
@@ -46,6 +52,7 @@ class AnnouncementController extends Controller
     public function show(Announcement $announcement): AnnouncementResource
     {
         abort_unless($announcement->status === Announcement::STATUS_PUBLISHED, 404);
+        abort_unless($announcement->moderation_status === Announcement::MODERATION_APPROVED, 404);
 
         return new AnnouncementResource($announcement->load(['mosque', 'creator']));
     }

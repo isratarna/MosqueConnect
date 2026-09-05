@@ -1,7 +1,8 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
   EVENT_REGISTRATION_ENABLED,
+  fetchMyEventRegistrations,
   registerForEvent,
   unregisterFromEvent,
 } from "../utils/eventApi";
@@ -12,6 +13,26 @@ export default function useEventRegistration() {
   const [registrationLoadingIds, setRegistrationLoadingIds] = useState(() => new Set());
   const [feedback, setFeedback] = useState(null);
   const inFlightEventIds = useRef(new Set());
+
+  useEffect(() => {
+    if (!user) {
+      setRegisteredEventIds(new Set());
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    fetchMyEventRegistrations({ signal: controller.signal })
+      .then((registrations) => {
+        setRegisteredEventIds(new Set(registrations.map((registration) => registration.event_id)));
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setFeedback({ type: "danger", message: error.message || "Your event registrations could not be loaded." });
+        }
+      });
+
+    return () => controller.abort();
+  }, [user]);
 
   const setLoading = useCallback((eventId, loading) => {
     setRegistrationLoadingIds((current) => {

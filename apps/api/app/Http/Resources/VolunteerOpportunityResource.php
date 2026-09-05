@@ -23,6 +23,7 @@ class VolunteerOpportunityResource extends JsonResource
             'end_time' => $this->end_time ? substr($this->end_time, 0, 5) : null,
             'location' => $this->location,
             'volunteers_required' => $this->volunteers_required,
+            'registrations_count' => (int) \Illuminate\Support\Facades\DB::table('volunteer_registrations')->where('volunteer_opportunity_id', $this->id)->count(),
             'requirements' => $this->requirements,
             'status' => $this->status,
             'mosque' => $this->whenLoaded('mosque', fn (): array => [

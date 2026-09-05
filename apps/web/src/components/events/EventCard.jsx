@@ -19,6 +19,7 @@ function capacityLabel(event) {
 export default function EventCard({
   event,
   onRegister,
+  onUnregister,
   isRegistered,
   registrationLoading,
   registrationEnabled,
@@ -60,6 +61,7 @@ export default function EventCard({
         <EventRegistrationButton
           event={event}
           onRegister={onRegister}
+          onUnregister={onUnregister}
           isRegistered={isRegistered}
           loading={registrationLoading}
           registrationEnabled={registrationEnabled}
