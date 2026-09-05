@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
@@ -12,6 +12,7 @@ import {
   Plus
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { apiRequest } from "../utils/api";
 
 export default function BloodDonation() {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ export default function BloodDonation() {
   const [error, setError] = useState(null);
   const [requests, setRequests] = useState([]);
   
+  const [actionError, setActionError] = useState("");
   // Form State
   const [showForm, setShowForm] = useState(false);
   const [submittingForm, setSubmittingForm] = useState(false);
@@ -34,96 +36,71 @@ export default function BloodDonation() {
   const [phone, setPhone] = useState("");
   const [details, setDetails] = useState("");
 
-  const fetchData = async () => {
+  const normalize = (item, responses = []) => ({
+    ...item, group: item.blood_group, hospital: item.hospital_or_location,
+    date: item.required_date, phone: item.contact_phone, details: item.notes,
+    urgent: item.urgency === "high" || item.urgency === "critical",
+    hasResponded: responses.some((response) => response.blood_request_id === item.id),
+  });
+
+  const fetchData = useCallback(async (signal) => {
     setLoading(true);
     setError(null);
     try {
-      // Simulate API network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      setRequests([
-        { id: "br-1", group: "O+", units: 2, hospital: "Square Hospital, Panthapath, Dhaka", date: "2026-08-27", phone: "01711000000", status: "active", urgent: true, details: "Patient is undergoing critical surgery.", respondedBy: [] },
-        { id: "br-2", group: "AB+", units: 1, hospital: "Labaid Cardiac Hospital, Dhanmondi", date: "2026-08-28", phone: "01811000000", status: "active", urgent: false, details: "Needed for dengue patient. Platelets required.", respondedBy: [] },
-        { id: "br-3", group: "B+", units: 3, hospital: "Evercare Hospital, Bashundhara", date: "2026-08-25", phone: "01911000000", status: "fulfilled", urgent: true, details: "Accident case, needed immediately.", respondedBy: ["user_mock_id"] },
+      const [data, responses] = await Promise.all([
+        apiRequest("/api/blood-requests", { signal }),
+        user ? apiRequest("/api/me/blood-responses", { signal }) : Promise.resolve({ data: [] }),
       ]);
+      setRequests(data.data.map((item) => normalize(item, responses.data)));
     } catch (err) {
-      setError("Failed to fetch blood donation requests. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (err.name !== "AbortError") setError(err.message);
+    } finally { if (!signal?.aborted) setLoading(false); }
+  }, [user?.id]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    const controller = new AbortController();
+    fetchData(controller.signal);
+    return () => controller.abort();
+  }, [fetchData]);
 
   const handleRespond = async (id) => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    
-    // Simulate API delay for marking response
-    setRequests(prev => prev.map(req => {
-      if (req.id === id) {
-        return { ...req, isResponding: true };
-      }
-      return req;
-    }));
+    if (!user) { navigate("/login", { state: { from: "/blood-donation" } }); return; }
+    setActionError("");
+    setRequests((items) => items.map((item) => item.id === id ? { ...item, isResponding: true } : item));
+    try {
+      await apiRequest(`/api/blood-requests/${id}/responses`, { method: "POST", body: {} });
+      setRequests((items) => items.map((item) => item.id === id ? { ...item, hasResponded: true } : item));
+    } catch (err) { setActionError(err.message); }
+    finally { setRequests((items) => items.map((item) => item.id === id ? { ...item, isResponding: false } : item)); }
+  };
 
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    setRequests(prev => prev.map(req => {
-      if (req.id === id) {
-        return { ...req, isResponding: false, respondedBy: [...req.respondedBy, user.id || "current-user"] };
-      }
-      return req;
-    }));
+  const handleClose = async (id) => {
+    setActionError("");
+    try {
+      await apiRequest(`/api/blood-requests/${id}/status`, { method: "PATCH", body: { status: "completed" } });
+      setRequests((items) => items.filter((item) => item.id !== id));
+    } catch (err) { setActionError(err.message); }
   };
 
   const handleCreateRequest = async (e) => {
     e.preventDefault();
-    if (!user) {
-      navigate("/login");
-      return;
-    }
+    if (!user || submittingForm) return;
     setSubmittingForm(true);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const newReq = {
-      id: `br-${Date.now()}`,
-      group: bloodGroup,
-      units: parseInt(units, 10),
-      hospital,
-      date: neededBy,
-      phone,
-      details,
-      status: "active",
-      urgent: true,
-      respondedBy: []
-    };
-
-    setRequests(prev => [newReq, ...prev]);
-    setSubmittingForm(false);
-    setFormSuccess(true);
-    
-    setTimeout(() => {
-      setFormSuccess(false);
-      setShowForm(false);
-      // Reset fields
-      setBloodGroup("");
-      setUnits("");
-      setHospital("");
-      setNeededBy("");
-      setPhone("");
-      setDetails("");
-    }, 2500);
+    setActionError("");
+    try {
+      const { data } = await apiRequest("/api/blood-requests", { method: "POST", body: {
+        blood_group: bloodGroup, units: Number(units), hospital_or_location: hospital,
+        required_date: neededBy, contact_phone: phone, notes: details, urgency: "high",
+      } });
+      setRequests((items) => [normalize(data), ...items]);
+      setFormSuccess(true);
+      setBloodGroup(""); setUnits(""); setHospital(""); setNeededBy(""); setPhone(""); setDetails("");
+    } catch (err) { setActionError(err.message); }
+    finally { setSubmittingForm(false); }
   };
 
   return (
-    <div className="container py-4 py-lg-5 mc-motion-section" style={{ maxWidth: "800px", minHeight: "80vh" }}>
+    <div className="container mc-page-narrow py-4 py-lg-5 mc-motion-section">
       <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3 border-bottom pb-3">
         <div>
           <h2 className="fw-bold mb-1 d-flex align-items-center gap-2">
@@ -135,14 +112,15 @@ export default function BloodDonation() {
         <button 
           className="btn btn-mc d-flex align-items-center gap-2"
           onClick={() => {
-            if (!user) navigate("/login");
-            else setShowForm(!showForm);
+            if (!user) navigate("/login", { state: { from: "/blood-donation" } });
+            else { setFormSuccess(false); setShowForm(!showForm); }
           }}
         >
           {showForm ? "Cancel Request" : <><Plus size={18} /> Request Blood</>}
         </button>
       </div>
 
+      {actionError && <div className="alert alert-danger" role="alert">{actionError}</div>}
       {showForm && (
         <div className="card border-0 shadow-sm mb-5 border-top border-4 border-mc">
           <div className="card-body p-4">
@@ -151,7 +129,7 @@ export default function BloodDonation() {
               <div className="alert alert-success text-center py-4 mb-0">
                 <CheckCircle size={40} className="mb-2 text-success mx-auto" />
                 <h6 className="fw-bold">Request Published Successfully!</h6>
-                <p className="small mb-0 text-dark">Your community has been notified.</p>
+                <p className="small mb-0 text-dark">Your request is now visible to the community.</p>
               </div>
             ) : (
               <form onSubmit={handleCreateRequest}>
@@ -219,7 +197,7 @@ export default function BloodDonation() {
           <AlertCircle size={32} className="text-warning mb-3 mx-auto" />
           <h5 className="fw-bold">Failed to load requests</h5>
           <p>{error}</p>
-          <button className="btn btn-warning mt-2" onClick={fetchData}>Try Again</button>
+          <button className="btn btn-warning mt-2" onClick={() => fetchData()}>Try Again</button>
         </div>
       ) : requests.length === 0 ? (
         <div className="text-center py-5 text-muted border rounded shadow-sm bg-white">
@@ -230,9 +208,10 @@ export default function BloodDonation() {
       ) : (
         <div className="d-flex flex-column gap-3">
           {requests.map(req => {
-            const hasResponded = req.respondedBy.includes(user?.id || "current-user");
-            const isFulfilled = req.status === "fulfilled";
-            const isDisabled = isFulfilled || hasResponded;
+            const hasResponded = req.hasResponded;
+            const isFulfilled = req.status !== "active";
+            const isOwn = req.created_by === user?.id;
+            const isDisabled = isFulfilled || hasResponded || isOwn;
 
             return (
               <div className={`card border-0 shadow-sm overflow-hidden ${req.urgent && req.status === "active" ? "border-start border-4 border-danger" : ""}`} key={req.id}>
@@ -283,8 +262,9 @@ export default function BloodDonation() {
                           ) : (
                             <Heart size={16} />
                           )}
-                          {hasResponded ? "You Responded" : isFulfilled ? "Completed" : "I Can Donate"}
+                          {hasResponded ? "You Responded" : isOwn ? "Your request" : isFulfilled ? "Completed" : "I Can Donate"}
                         </button>
+                        {isOwn && <button className="btn btn-sm btn-outline-mc" onClick={() => handleClose(req.id)}>Mark fulfilled</button>}
                       </div>
                     </div>
 

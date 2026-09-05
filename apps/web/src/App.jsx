@@ -1,32 +1,35 @@
+import { lazy, Suspense } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Compass } from "lucide-react";
 import Layout from "./components/Layout";
 import RouteErrorBoundary from "./components/RouteErrorBoundary";
-import Home from "./pages/Home";
-import Browse from "./pages/Browse";
-import MosqueProfile from "./pages/MosqueProfile";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Profile from "./pages/Profile";
-import AdminDashboard from "./pages/AdminDashboard";
-import SuperAdminDashboard from "./pages/SuperAdminDashboard";
-import MosqueAdminAnnouncements from "./pages/MosqueAdminAnnouncements";
-import MosqueAdminPrayerSchedule from "./pages/MosqueAdminPrayerSchedule";
-import VerificationRequests from "./pages/admin/VerificationRequests";
-import Support from "./pages/Support";
-import SupportContinue from "./pages/SupportContinue";
-import Community from "./pages/Community";
-import BloodDonation from "./pages/BloodDonation";
-import VolunteerOpportunities from "./pages/VolunteerOpportunities";
-import AnnouncementDetails from "./pages/AnnouncementDetails";
-import EventDetails from "./pages/EventDetails";
-import Notifications from "./pages/Notifications";
-import Campaigns from "./pages/Campaigns";
-import CampaignDetails from "./pages/CampaignDetails";
 import { useAuth } from "./context/AuthContext";
+
+const Home = lazy(() => import("./pages/Home"));
+const Browse = lazy(() => import("./pages/Browse"));
+const MosqueProfile = lazy(() => import("./pages/MosqueProfile"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Profile = lazy(() => import("./pages/Profile"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const SuperAdminDashboard = lazy(() => import("./pages/SuperAdminDashboard"));
+const MosqueAdminAnnouncements = lazy(() => import("./pages/MosqueAdminAnnouncements"));
+const MosqueAdminPrayerSchedule = lazy(() => import("./pages/MosqueAdminPrayerSchedule"));
+const VerificationRequests = lazy(() => import("./pages/admin/VerificationRequests"));
+const Support = lazy(() => import("./pages/Support"));
+const SupportContinue = lazy(() => import("./pages/SupportContinue"));
+const Community = lazy(() => import("./pages/Community"));
+const BloodDonation = lazy(() => import("./pages/BloodDonation"));
+const VolunteerOpportunities = lazy(() => import("./pages/VolunteerOpportunities"));
+const AnnouncementDetails = lazy(() => import("./pages/AnnouncementDetails"));
+const EventDetails = lazy(() => import("./pages/EventDetails"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Campaigns = lazy(() => import("./pages/Campaigns"));
+const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
 
 function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -39,7 +42,7 @@ function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
@@ -59,7 +62,8 @@ export default function App() {
   return (
     <Layout>
       <RouteErrorBoundary key={location.key}>
-        <Routes location={location}>
+        <Suspense fallback={<PageLoading />}>
+          <Routes location={location}>
           <Route path="/" element={<Home />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/support" element={<Support />} />
@@ -122,7 +126,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/super-admin" element={<SuperAdminDashboard />} />
+          <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
           <Route
             path="/admin/verification-requests"
             element={
@@ -132,9 +136,19 @@ export default function App() {
             }
           />
           <Route path="*" element={<NotFound />} />
-        </Routes>
+          </Routes>
+        </Suspense>
       </RouteErrorBoundary>
     </Layout>
+  );
+}
+
+function PageLoading() {
+  return (
+    <div className="d-flex justify-content-center align-items-center py-5" role="status">
+      <div className="spinner-border text-mc" aria-hidden="true" />
+      <span className="visually-hidden">Loading page...</span>
+    </div>
   );
 }
 

@@ -20,12 +20,14 @@ use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\CampaignDonationController;
 use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventRegistrationController;
 use App\Http\Controllers\MosqueClaimController;
 use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\VerificationRequestController;
 use App\Http\Controllers\VolunteerOpportunityController;
+use App\Http\Controllers\VolunteerRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -44,6 +46,7 @@ Route::prefix('auth')->group(function () {
     Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/logout', [PhoneOtpController::class, 'logout']);
         Route::get('/me', [PhoneOtpController::class, 'me']);
+        Route::patch('/me', [PhoneOtpController::class, 'updateProfile']);
     });
 });
 
@@ -54,6 +57,7 @@ Route::get('/volunteer-opportunities', [VolunteerOpportunityController::class, '
 Route::get('/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'show']);
 Route::get('/mosques/{mosque}/prayer-schedule', [MosqueController::class, 'prayerSchedule']);
 Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
+Route::get('/announcements', [AnnouncementController::class, 'feed']);
 Route::get('/blood-requests', [BloodRequestController::class, 'index']);
 Route::get('/blood-requests/me', [BloodRequestController::class, 'mine'])
     ->middleware(['auth:sanctum', 'active']);
@@ -64,6 +68,15 @@ Route::get('/campaigns', [CampaignController::class, 'index']);
 Route::get('/campaigns/{campaign}', [CampaignController::class, 'show']);
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
+
+    Route::get('/me/event-registrations', [EventRegistrationController::class, 'index']);
+    Route::get('/me/volunteer-registrations', [VolunteerRegistrationController::class, 'index']);
+    Route::post('/volunteer-opportunities/{volunteerOpportunity}/register', [VolunteerRegistrationController::class, 'store']);
+    Route::delete('/volunteer-opportunities/{volunteerOpportunity}/register', [VolunteerRegistrationController::class, 'destroy']);
+    Route::get('/me/donations', [CampaignDonationController::class, 'index']);
+    Route::get('/me/blood-responses', [BloodRequestController::class, 'responses']);
+    Route::post('/events/{event}/register', [EventRegistrationController::class, 'store']);
+    Route::delete('/events/{event}/register', [EventRegistrationController::class, 'destroy']);
 
     // Current user's notifications
     Route::get('/notifications', [NotificationController::class, 'index']);

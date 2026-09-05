@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, memo } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen,
@@ -104,7 +104,11 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
   const isLoadingMosques = origin.status === "success" && ["idle", "loading"].includes(apiStatus);
 
   return (
-    <section className="mc-auth-home-map" aria-labelledby="nearby-map-title">
+    <section
+      className="mc-auth-home-map"
+      aria-labelledby="nearby-map-title"
+      data-selected-mosque-id={selectedMosqueId ?? ""}
+    >
       <div className="container">
         <div className="mc-auth-home-map__map-wrap">
           <MapView
@@ -190,7 +194,7 @@ function MapFeedback({ icon, title, message, children }) {
 
 function Hero({ origin, nearby, nearest, onRequestLocation }) {
   return (
-    <header className="mc-hero mc-home-hero">
+    <header className="mc-hero mc-home-hero" data-mc-parallax="0.26">
       <div className="container mc-hero__inner">
         <div className="mc-hero__content">
           <h1>Find. Connect. Pray.</h1>
@@ -342,7 +346,11 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const activeMosqueId = nearby[activeIndex]?.id ?? selectedMosqueId ?? null;
 
   return (
-    <section id="map" className={`mc-explore-section mc-motion-section mc-atmospheric-section ${showMap ? "" : "mc-explore-section--cards-only"}`}>
+    <section
+      id="map"
+      className={`mc-explore-section mc-motion-section mc-atmospheric-section ${showMap ? "" : "mc-explore-section--cards-only"}`}
+      data-selected-mosque-id={activeMosqueId ?? ""}
+    >
       <div className="container">
         {showMap && (
           <div className="mc-section-heading">
@@ -490,7 +498,6 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                         </div>
                       </div>
                     </div>
-                    <NearbyCardContent mosque={mosque} />
                   </div>
                 );
               })}
@@ -511,7 +518,7 @@ function SupportSection() {
   ];
 
   return (
-    <section id="support" className="mc-support-section mc-motion-section mc-atmospheric-section">
+    <section id="support" className="mc-support-section mc-motion-section mc-atmospheric-section" data-mc-parallax="0.16">
       <div className="container">
         <div className="mc-support-intro">
           <p className="mc-kicker">Support</p>
@@ -548,7 +555,7 @@ function SupportSection() {
 function ImpactSection() {
   const impactIcons = [Landmark, UsersRound, Heart, HandHeart];
   return (
-    <section id="impact" className="mc-impact mc-motion-section mc-atmospheric-section">
+    <section id="impact" className="mc-impact mc-motion-section mc-atmospheric-section" data-mc-parallax="0.18">
       <div className="container">
         <div className="mc-impact__headline">
           <h2>Stronger together, for a better community</h2>
@@ -578,7 +585,7 @@ function AboutSection() {
     alert("Thanks! We will get back to you. (demo)");
   };
   return (
-    <section id="about" className="py-5 mc-motion-section mc-atmospheric-section">
+    <section id="about" className="py-5 mc-motion-section mc-atmospheric-section" data-mc-parallax="0.16">
       <div className="container">
         <div className="row g-5 align-items-center">
           <div className="col-lg-6">
@@ -653,70 +660,3 @@ function AnimatedStat({ value }) {
 
   return <span ref={nodeRef}>{display}</span>;
 }
-
-const NearbyCardContent = memo(({ mosque }) => {
-  return (
-    <div className="card mc-card mc-nearby-card">
-      <img
-        src={mosque.photo}
-        className="mc-nearby-card__image"
-        alt={mosque.name}
-        onError={(event) => {
-          event.currentTarget.onerror = null;
-          event.currentTarget.src = "/uiRef.jpeg";
-        }}
-      />
-      <div className="card-body mc-nearby-card__body">
-        <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
-          <div className="d-flex align-items-center gap-2 min-w-0">
-            <h5 className="mb-0 mc-nearby-card__title">{mosque.name}</h5>
-          </div>
-          <span className="badge mc-badge">{mosque.distance} km</span>
-        </div>
-
-        <div className="text-muted small mb-2 mc-nearby-card__meta">
-          <MapPin size={14} aria-hidden="true" />
-          <span>{mosque.address}</span>
-        </div>
-
-        <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2">
-          <span className="mc-distance">
-            <Navigation size={13} aria-hidden="true" />{mosque.distance} km away
-          </span>
-          <span className="d-flex align-items-center gap-1">
-            {mosque.verified && <VerifiedBadge />}
-            {mosque.rating !== null ? `${mosque.rating} rating` : "Not rated"}
-          </span>
-        </div>
-
-        <div className="mc-next-prayer mb-3">
-          <span>Next Jamat</span>
-          <strong>{dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}</strong>
-        </div>
-
-        <div className="d-flex gap-2">
-          <Link
-            to={`/mosque/${mosque.id}`}
-            className="btn btn-mc btn-sm flex-fill"
-            onClick={(event) => event.stopPropagation()}
-          >
-            View profile
-          </Link>
-          {directionsUrl(mosque) && (
-            <a
-              href={directionsUrl(mosque)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline-mc btn-sm mc-icon-button"
-              title="Get directions"
-              aria-label={`Get directions to ${mosque.name}`}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Navigation size={16} aria-hidden="true" />
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-});

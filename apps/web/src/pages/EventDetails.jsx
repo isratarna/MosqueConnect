@@ -100,6 +100,7 @@ export default function EventDetails() {
               <EventRegistrationButton
                 event={event}
                 onRegister={registration.register}
+                onUnregister={registration.unregister}
                 isRegistered={registered}
                 loading={registering}
                 registrationEnabled={registration.registrationEnabled}

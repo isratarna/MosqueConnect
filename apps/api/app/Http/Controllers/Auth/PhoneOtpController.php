@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Illuminate\Validation\Rule;
 
 class PhoneOtpController extends Controller
 {
@@ -82,6 +83,29 @@ class PhoneOtpController extends Controller
         return response()->json([
             'user' => $this->authenticatedUser($request->user()),
         ]);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users')->ignore($request->user()->id)],
+            'phone' => ['prohibited'],
+            'role' => ['prohibited'],
+            'account_status' => ['prohibited'],
+        ]);
+
+        $user = $request->user();
+        $user->name = $validated['name'];
+        if (array_key_exists('email', $validated)) {
+            if ($user->email !== $validated['email']) {
+                $user->email_verified_at = null;
+            }
+            $user->email = $validated['email'];
+        }
+        $user->save();
+
+        return response()->json(['message' => 'Profile saved.', 'user' => $this->authenticatedUser($user)]);
     }
 
     /** @return array<string, mixed> */

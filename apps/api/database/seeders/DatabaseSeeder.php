@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             VerificationRequestSeeder::class,
             FollowerSeeder::class,
             CampaignSeeder::class,
+            BloodRequestSeeder::class,
+            VolunteerOpportunitySeeder::class,
             DemoNotificationSeeder::class,
             DemoAuthenticationSeeder::class,
             DemoDataIntegritySeeder::class,

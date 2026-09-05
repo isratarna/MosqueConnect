@@ -5,10 +5,8 @@ import CommunityCard, { CommunityCategoryIcon } from "../components/CommunityCar
 import EventList from "../components/events/EventList";
 import EventRegistrationFeedback from "../components/events/EventRegistrationFeedback";
 import useEventRegistration from "../hooks/useEventRegistration";
-import {
-  COMMUNITY_UPDATES,
-  isCommunityCategory,
-} from "../data/community";
+import { isCommunityCategory } from "../data/community";
+import { apiRequest } from "../utils/api";
 import { fetchEventCollection } from "../utils/eventApi";
 import { filterEvents, getEventMosqueName } from "../utils/eventFilters";
 
@@ -17,12 +15,16 @@ const CATEGORY_FILTERS = [
   { key: "event", label: "Event" },
   { key: "blood", label: "Blood Request" },
   { key: "volunteer", label: "Volunteer" },
-  { key: "lost-found", label: "Lost & Found" },
-  { key: "complaint", label: "Complaint" },
-  { key: "suggestion", label: "Suggestion" },
-  { key: "notice", label: "Other Notices" },
 ];
 const INITIAL_VISIBLE_ITEMS = 5;
+
+// The API stores urgency as low/medium/high (plus critical for blood requests);
+// the feed card and the "urgent only" filter speak urgent/important/normal.
+function feedUrgency(urgency) {
+  if (urgency === "critical" || urgency === "high") return "urgent";
+  if (urgency === "medium") return "important";
+  return "normal";
+}
 
 export default function Community() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,6 +44,31 @@ export default function Community() {
   const [eventCategory, setEventCategory] = useState("");
   const [upcomingEventsOnly, setUpcomingEventsOnly] = useState(true);
   const registration = useEventRegistration();
+  const [communityUpdates, setCommunityUpdates] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [feedError, setFeedError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setFeedLoading(true); setFeedError("");
+    Promise.all([
+      apiRequest("/api/announcements", { signal: controller.signal }),
+      apiRequest("/api/blood-requests", { signal: controller.signal }),
+      apiRequest("/api/volunteer-opportunities", { signal: controller.signal }),
+    ]).then(([announcements, blood, volunteers]) => {
+      const updates = [
+        ...announcements.data.map((item) => ({ ...item, category: "announcement", summary: item.body, area: item.mosque?.address, mosqueId: item.mosque_id, mosqueName: item.mosque?.name, mosqueVerified: item.mosque?.verified, urgency: feedUrgency(item.urgency), publishedAt: item.published_at })),
+        ...blood.data.map((item) => ({ ...item, id: "blood-" + item.id, category: "blood", title: item.blood_group + " blood requested", summary: item.notes || "Contact the requester to help.", area: item.hospital_or_location, mosqueName: "Community blood request", urgency: feedUrgency(item.urgency), publishedAt: item.created_at, actionPath: "/blood-donation" })),
+        ...volunteers.data.map((item) => ({ ...item, id: "volunteer-" + item.id, category: "volunteer", summary: item.description, area: item.location, mosqueId: item.mosque_id, mosqueName: item.mosque?.name, publishedAt: item.created_at, actionPath: "/volunteers" })),
+      ].map((item) => {
+        const days = (Date.now() - new Date(item.publishedAt).getTime()) / 86400000;
+        return { ...item, publishedLabel: item.publishedAt?.slice(0, 10) || "", dateGroup: days < 1 ? "today" : days < 7 ? "this-week" : "older" };
+      }).sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+      setCommunityUpdates(updates);
+    }).catch((err) => { if (err.name !== "AbortError") setFeedError(err.message); })
+      .finally(() => { if (!controller.signal.aborted) setFeedLoading(false); });
+    return () => controller.abort();
+  }, [eventRequestKey]);
 
   const retryEvents = useCallback(() => {
     setEventRequestKey((current) => current + 1);
@@ -72,17 +99,17 @@ export default function Community() {
 
   const mosques = useMemo(
     () => [...new Set([
-      ...COMMUNITY_UPDATES.map((item) => item.mosqueName),
+      ...communityUpdates.map((item) => item.mosqueName),
       ...events.map(getEventMosqueName),
-    ])].sort(),
-    [events],
+    ].filter(Boolean))].sort(),
+    [events, communityUpdates],
   );
   const areas = useMemo(
     () => [...new Set([
-      ...COMMUNITY_UPDATES.map((item) => item.area),
+      ...communityUpdates.map((item) => item.area),
       ...events.map((event) => event.location),
     ].filter(Boolean))].sort(),
-    [events],
+    [events, communityUpdates],
   );
   const eventCategories = useMemo(
     () => [...new Set(events.map((event) => event.category).filter(Boolean))].sort(),
@@ -125,7 +152,7 @@ export default function Community() {
   const filteredUpdates = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    return COMMUNITY_UPDATES.filter((item) => {
+    return communityUpdates.filter((item) => {
       if (item.category === "event") return false;
 
       const matchesSearch = !normalizedSearch || [item.title, item.summary, item.mosqueName, item.area]
@@ -140,7 +167,7 @@ export default function Community() {
 
       return matchesSearch && matchesCategory && matchesMosque && matchesArea && matchesDate && matchesUrgency;
     });
-  }, [activeCategory, area, dateGroup, mosque, search, urgentOnly]);
+  }, [activeCategory, area, dateGroup, mosque, search, urgentOnly, communityUpdates]);
 
   const filteredEvents = useMemo(() => filterEvents(events, {
     search,
@@ -265,10 +292,12 @@ export default function Community() {
               error={eventsError}
               onRetry={retryEvents}
               onRegister={registration.register}
+              onUnregister={registration.unregister}
               registeredEventIds={registration.registeredEventIds}
               registrationLoadingIds={registration.registrationLoadingIds}
               registrationEnabled={registration.registrationEnabled}
               emptyMessage="No events match the current search and filters."
+              layout="rail"
             />
           </section>
         )}
@@ -281,7 +310,7 @@ export default function Community() {
             </div>
             <span className="mc-community-section__count" aria-live="polite">{filteredUpdates.length} updates</span>
           </div>
-          {feedItems.length ? (
+          {feedLoading ? <p role="status">Loading community updates...</p> : feedError ? <div className="alert alert-danger" role="alert">{feedError} <button className="btn btn-sm btn-outline-danger" onClick={retryEvents}>Retry</button></div> : feedItems.length ? (
             <>
               <div className="mc-community-feed-list mc-motion-stagger">
                 {feedItems.map((item) => (

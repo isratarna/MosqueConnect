@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\JumuahSession;
 use App\Models\Mosque;
+use App\Models\MosqueFacility;
 use App\Models\PrayerTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class MosqueManagementController extends Controller
         Gate::authorize('view', $mosque);
 
         return response()->json([
-            'mosque' => $mosque,
+            'mosque' => $mosque->load('facilities'),
         ]);
     }
 
@@ -34,13 +35,25 @@ class MosqueManagementController extends Controller
             'longitude' => ['sometimes', 'numeric', 'between:-180,180'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
+            'facilities' => ['sometimes', 'array'],
+            'facilities.*' => ['required', 'string', 'distinct', Rule::in(MosqueFacility::KEYS)],
         ]);
 
-        $mosque->fill($validated);
-        $mosque->save();
+        DB::transaction(function () use ($mosque, $validated): void {
+            $locked = Mosque::query()->lockForUpdate()->findOrFail($mosque->id);
+            $profile = $validated;
+            unset($profile['facilities']);
+            $locked->fill($profile)->save();
+            if (array_key_exists('facilities', $validated)) {
+                $locked->facilities()->whereNotIn('facility_key', $validated['facilities'])->delete();
+                foreach ($validated['facilities'] as $key) {
+                    $locked->facilities()->firstOrCreate(['facility_key' => $key]);
+                }
+            }
+        });
 
         return response()->json([
-            'mosque' => $mosque->refresh(),
+            'mosque' => $mosque->refresh()->load('facilities'),
         ]);
     }
 

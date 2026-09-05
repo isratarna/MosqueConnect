@@ -17,7 +17,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { urgencyClass } from "../data/mosques";
-import { getAnnouncementDetailsPath, getMosqueAnnouncementId } from "../data/announcements";
+import { getAnnouncementDetailsPath } from "../data/announcements";
 import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
@@ -27,6 +27,7 @@ import MosqueCampaignsSection from "../components/campaigns/MosqueCampaignsSecti
 import { directionsUrl, fetchMosqueById } from "../utils/mosqueDiscovery";
 import { formatClockTime } from "../utils/prayerTime";
 import { useFollow } from "../context/FollowContext";
+import MosqueClaimForm from "../components/MosqueClaimForm";
 
 export default function MosqueProfile() {
   const { id } = useParams();
@@ -41,7 +42,6 @@ export default function MosqueProfile() {
     setStatus("loading");
     setError("");
     setMosque(null);
-    setFollowing(false);
 
     fetchMosqueById(id)
       .then((result) => {
@@ -106,6 +106,7 @@ export default function MosqueProfile() {
           <li className="breadcrumb-item active">{mosque.name}</li>
         </ol>
       </nav>
+      <MosqueClaimForm key={id} mosqueId={id} />
 
       <div className="mc-profile-hero mb-4" style={{ backgroundImage: `url('${mosque.photo}')` }}>
         <div className="mc-profile-title">
@@ -192,8 +193,8 @@ export default function MosqueProfile() {
             <div className="card-body">
               <h5 className="fw-bold mb-3"><Megaphone size={18} className="text-mc me-2" aria-hidden="true" />Announcements</h5>
               {announcements.length ? (
-                announcements.map((announcement, index) => {
-                  const announcementId = announcement.id || getMosqueAnnouncementId(mosque.id, announcement, index);
+                announcements.map((announcement) => {
+                  const announcementId = announcement.id;
                   const publishedOn = announcement.date || (announcement.published_at || "").slice(0, 10);
 
                   return (

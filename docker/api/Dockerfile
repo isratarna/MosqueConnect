@@ -19,6 +19,9 @@ RUN apt-get update \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# OPcache/realpath tuning for the CLI SAPI that `artisan serve` runs under.
+COPY docker/api/php.ini /usr/local/etc/php/conf.d/zz-mosqueconnect.ini
+
 WORKDIR /var/www/html
 
 COPY apps/api/composer.json apps/api/composer.lock ./
@@ -32,4 +35,8 @@ RUN composer install --no-interaction --prefer-dist
 EXPOSE 8000
 
 ENTRYPOINT ["sh", "/usr/local/bin/mosqueconnect-entrypoint"]
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# --no-reload is required for PHP_CLI_SERVER_WORKERS to take effect, so the
+# server handles requests concurrently instead of one at a time. It only gives
+# up `artisan serve`'s automatic restart on .env changes; restart the
+# container by hand after editing .env.
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000", "--no-reload"]

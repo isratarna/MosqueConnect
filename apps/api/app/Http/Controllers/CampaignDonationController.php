@@ -10,6 +10,13 @@ use Illuminate\Http\JsonResponse;
 
 class CampaignDonationController extends Controller
 {
+    public function index(\Illuminate\Http\Request $request): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    {
+        return \App\Http\Resources\CampaignDonationResource::collection(
+            $request->user()->campaignDonations()->with('campaign.mosque')->latest()->get()
+        );
+    }
+
     public function store(StoreCampaignDonationRequest $request, Campaign $campaign): JsonResponse
     {
         $donation = $campaign->donations()->create([

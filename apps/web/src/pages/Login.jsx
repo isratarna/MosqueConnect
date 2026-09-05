@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -10,10 +10,12 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { internationalPhone, returnPath } from "../utils/api";
 
-export default function Login() {
+export default function Login({ registering = false }) {
   const { sendOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [step, setStep] = useState("phone"); // "phone" | "otp"
   const [countryCode, setCountryCode] = useState("+880");
@@ -34,7 +36,7 @@ export default function Login() {
       return;
     }
 
-    const fullPhone = countryCode + localPhone;
+    const fullPhone = internationalPhone(countryCode, localPhone);
 
     setLoading(true);
     const res = await sendOtp(fullPhone);
@@ -54,13 +56,13 @@ export default function Login() {
     setError("");
 
     const trimmedOtp = otp.trim();
-    if (!trimmedOtp) {
-      setError("Please enter the verification code.");
+    if (!/^\d{6}$/.test(trimmedOtp)) {
+      setError("Please enter the 6-digit verification code.");
       return;
     }
 
     const localPhone = phone.replace(/\D/g, "");
-    const fullPhone = countryCode + localPhone;
+    const fullPhone = internationalPhone(countryCode, localPhone);
 
     setLoading(true);
     const res = await verifyOtp(fullPhone, trimmedOtp);
@@ -71,7 +73,11 @@ export default function Login() {
       return;
     }
 
-    if (res.user?.role === "super_admin") {
+    if (location.state?.from) {
+      navigate(returnPath(location), { replace: true });
+    } else if (registering) {
+      navigate("/profile", { replace: true, state: { tab: "settings" } });
+    } else if (res.user?.role === "super_admin") {
       navigate("/super-admin/dashboard");
     } else if (res.user?.role === "mosque_admin" && res.user?.status === "approved") {
       navigate("/admin/dashboard");
@@ -85,7 +91,7 @@ export default function Login() {
     setError("");
     
     const localPhone = phone.replace(/\D/g, "");
-    const fullPhone = countryCode + localPhone;
+    const fullPhone = internationalPhone(countryCode, localPhone);
     
     setLoading(true);
     const res = await sendOtp(fullPhone);
@@ -116,12 +122,12 @@ export default function Login() {
                   <LogIn size={25} aria-hidden="true" />
                 </div>
                 <h3 className="fw-bold mb-1">
-                  {step === "phone" ? "Welcome back" : "Enter Verification Code"}
+                  {step === "phone" ? (registering ? "Create your account" : "Welcome back") : "Enter Verification Code"}
                 </h3>
                 <p className="text-muted mb-0">
                   {step === "phone"
-                    ? "Log in using your phone number and OTP."
-                    : `We sent a 6-digit code to ${countryCode}${phone.replace(/\D/g, '')}.`}
+                    ? (registering ? "Verify your phone to create an account, then complete your profile. Mosque administrators can apply from a mosque profile." : "Log in using your phone number and OTP.")
+                    : `We sent a 6-digit code to ${internationalPhone(countryCode, phone)}.`}
                 </p>
               </div>
 
@@ -142,7 +148,7 @@ export default function Login() {
               {step === "phone" ? (
                 <form onSubmit={handleSendOtp} noValidate>
                   <div className="mb-3">
-                    <label className="form-label">Phone Number</label>
+                    <label className="form-label" htmlFor="login-phone">Phone Number</label>
                     <div className="input-group">
                       <select 
                         className="form-select bg-light border-end-0" 
@@ -164,6 +170,8 @@ export default function Login() {
                         <option value="+60">🇲🇾 +60</option>
                       </select>
                       <input
+                        id="login-phone"
+                        autoComplete="tel-national"
                         type="tel"
                         className="form-control flex-grow-1"
                         placeholder="e.g. 1712345678"
@@ -198,21 +206,23 @@ export default function Login() {
                   </button>
 
                   <p className="text-center mb-0 small">
-                    Don't have an account?{" "}
-                    <Link to="/register" className="text-mc fw-semibold text-decoration-none">
-                      Register
+                    {registering ? "Already have an account? " : "Don't have an account? "}
+                    <Link to={registering ? "/login" : "/register"} state={location.state} className="text-mc fw-semibold text-decoration-none">
+                      {registering ? "Log in" : "Register"}
                     </Link>
                   </p>
                 </form>
               ) : (
                 <form onSubmit={handleVerifyOtp} noValidate>
                   <div className="mb-3">
-                    <label className="form-label">Verification Code (OTP)</label>
+                    <label className="form-label" htmlFor="login-otp">Verification Code (OTP)</label>
                     <div className="input-group">
                       <span className="input-group-text">
                         <KeyRound size={16} aria-hidden="true" />
                       </span>
                       <input
+                        id="login-otp"
+                        autoComplete="one-time-code"
                         type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
@@ -221,7 +231,7 @@ export default function Login() {
                         placeholder="Enter 6-digit OTP"
                         value={otp}
                         onChange={(e) => {
-                          setOtp(e.target.value);
+                          setOtp(e.target.value.replace(/\D/g, ""));
                           setError("");
                         }}
                         disabled={loading}

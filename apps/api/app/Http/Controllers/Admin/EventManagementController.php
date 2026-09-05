@@ -27,6 +27,7 @@ class EventManagementController extends Controller
 
         $events = $mosque->events()
             ->with(['mosque', 'creator'])
+            ->withCount('registrations')
             ->filter($filters)
             ->orderByDesc('event_date')
             ->orderByDesc('start_time')
@@ -49,7 +50,7 @@ class EventManagementController extends Controller
             $this->notifications->notifyEventPublished($event);
         }
 
-        return (new EventResource($event->load(['mosque', 'creator'])))
+        return (new EventResource($event->load(['mosque', 'creator'])->loadCount('registrations')))
             ->additional(['message' => 'Event created successfully.'])
             ->response()
             ->setStatusCode(201);
@@ -59,7 +60,7 @@ class EventManagementController extends Controller
     {
         Gate::authorize('view', $event);
 
-        return new EventResource($event->load(['mosque', 'creator']));
+        return new EventResource($event->load(['mosque', 'creator'])->loadCount('registrations'));
     }
 
     public function update(UpdateEventRequest $request, Mosque $mosque, Event $event): EventResource
@@ -80,7 +81,7 @@ class EventManagementController extends Controller
             $this->notifications->notifyEventPublished($event);
         }
 
-        return (new EventResource($event->refresh()->load(['mosque', 'creator'])))
+        return (new EventResource($event->refresh()->load(['mosque', 'creator'])->loadCount('registrations')))
             ->additional(['message' => 'Event updated successfully.']);
     }
 
@@ -122,7 +123,7 @@ class EventManagementController extends Controller
             $this->notifications->notifyEventPublished($event);
         }
 
-        return (new EventResource($event->refresh()->load(['mosque', 'creator'])))
+        return (new EventResource($event->refresh()->load(['mosque', 'creator'])->loadCount('registrations')))
             ->additional(['message' => $message]);
     }
 }

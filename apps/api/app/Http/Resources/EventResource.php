@@ -12,6 +12,11 @@ class EventResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $registrationsCount = (int) ($this->registrations_count ?? 0);
+        $remainingCapacity = $this->capacity === null
+            ? null
+            : max(0, $this->capacity - $registrationsCount);
+
         return [
             'id' => $this->id,
             'mosque_id' => $this->mosque_id,
@@ -25,6 +30,9 @@ class EventResource extends JsonResource
             'location' => $this->location,
             'capacity' => $this->capacity,
             'registration_required' => $this->registration_required,
+            'registrations_count' => $registrationsCount,
+            'remaining_capacity' => $remainingCapacity,
+            'is_full' => $remainingCapacity === 0,
             'status' => $this->status,
             'mosque' => $this->whenLoaded('mosque', fn (): array => [
                 'id' => $this->mosque->id,

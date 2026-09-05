@@ -12,6 +12,12 @@ class CampaignDonationResource extends JsonResource
         return [
             'id' => $this->id,
             'campaign_id' => $this->campaign_id,
+            'campaign' => $this->whenLoaded('campaign', fn () => [
+                'id' => $this->campaign?->id,
+                'title' => $this->campaign?->title,
+                'currency' => $this->campaign?->currency,
+                'mosque_name' => $this->campaign?->mosque?->name,
+            ]),
             'user_id' => $this->user_id,
             'donor_name' => $this->donor_name,
             'contact' => $this->contact,

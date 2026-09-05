@@ -80,6 +80,54 @@ class DonationCampaignSystemTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_campaign_creation_rejects_invalid_fields_without_writing_a_record(): void
+    {
+        [$admin, $mosque] = $this->verifiedAdminAndMosque();
+        Sanctum::actingAs($admin);
+
+        $this->postJson("/api/admin/mosques/{$mosque->id}/campaigns", [
+            'title' => '',
+            'summary' => ['not text'],
+            'description' => '',
+            'category' => 'Unsupported',
+            'target_amount' => 0,
+            'currency' => 'USD',
+            'starts_on' => 'not-a-date',
+            'ends_on' => 'also-not-a-date',
+            'image_url' => 'javascript:alert(1)',
+            'status' => Campaign::STATUS_COMPLETED,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'title', 'summary', 'description', 'category', 'target_amount',
+                'currency', 'starts_on', 'ends_on', 'image_url', 'status',
+            ]);
+
+        $this->assertDatabaseCount('campaigns', 0);
+    }
+
+    public function test_campaign_dates_and_donation_fields_are_validated(): void
+    {
+        [$admin, $mosque] = $this->verifiedAdminAndMosque();
+        Sanctum::actingAs($admin);
+
+        $this->postJson("/api/admin/mosques/{$mosque->id}/campaigns", $this->validPayload([
+            'starts_on' => today()->addWeek()->toDateString(),
+            'ends_on' => today()->toDateString(),
+        ]))->assertUnprocessable()->assertJsonValidationErrors('ends_on');
+
+        $campaign = Campaign::factory()->active()->create();
+        Sanctum::actingAs(User::factory()->create());
+        $this->postJson("/api/campaigns/{$campaign->id}/donations", [
+            'donor_name' => '',
+            'contact' => '',
+            'amount' => 0,
+            'payment_method' => 'cryptocurrency',
+            'is_anonymous' => false,
+            'status' => CampaignDonation::STATUS_CONFIRMED,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['donor_name', 'contact', 'amount', 'payment_method', 'status']);
+    }
+
     public function test_campaign_lifecycle_is_enforced_and_activation_notifies_followers_once(): void
     {
         [$admin, $mosque] = $this->verifiedAdminAndMosque();

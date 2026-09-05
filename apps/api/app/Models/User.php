@@ -104,6 +104,11 @@ class User extends Authenticatable
         return $this->hasMany(Event::class, 'created_by');
     }
 
+    public function eventRegistrations(): HasMany
+    {
+        return $this->hasMany(EventRegistration::class);
+    }
+
     public function createdCampaigns(): HasMany
     {
         return $this->hasMany(Campaign::class, 'created_by');

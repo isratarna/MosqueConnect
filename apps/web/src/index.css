@@ -391,6 +391,13 @@ body {
   justify-content: space-between;
 }
 
+/* Bootstrap has no min-w-0 utility, so flex children default to min-width: auto and
+   refuse to shrink below their content. Without this a long mosque name pushes the
+   distance badge past the card edge, where overflow: hidden clips it. */
+.min-w-0 {
+  min-width: 0;
+}
+
 .mc-nearby-card__title {
   font-size: 0.82rem;
   font-weight: 700;
@@ -399,6 +406,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .mc-nearby-card__meta {
@@ -407,6 +415,7 @@ body {
   gap: 0.3rem;
   font-size: 0.68rem;
   color: var(--mc-muted);
+  min-width: 0;
 }
 
 .mc-nearby-card__meta span {
@@ -416,6 +425,7 @@ body {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   font-size: 0.65rem;
+  min-width: 0;
 }
 
 .mc-nearby-card .mc-next-prayer {
@@ -1423,15 +1433,12 @@ main {
   border: 1px solid rgba(124, 102, 83, 0.18);
   border-radius: 10px;
   box-shadow: 0 5px 16px rgba(53, 39, 29, 0.11);
-}
-
-.mc-auth-home-map__heading {
-  align-items: end;
   display: flex;
   position: absolute;
   top: clamp(0.75rem, 1.5vw, 1.25rem);
   z-index: 4;
 }
+
 .mc-auth-home-map__label {
   color: var(--mc-ink);
   gap: 0.4rem;
@@ -1448,21 +1455,6 @@ main {
   text-decoration: none;
 }
 .mc-auth-home-map__browse:hover { background: rgba(255, 248, 241, 0.98); color: #8f360f; }
-
-.mc-auth-home-map__heading .mc-kicker {
-  margin-bottom: 0.35rem;
-}
-
-.mc-auth-home-map__heading h1 {
-  font-size: clamp(1.9rem, 3vw, 2.8rem);
-  margin: 0 0 0.35rem;
-}
-
-.mc-auth-home-map__heading p:last-child {
-  color: var(--mc-muted);
-  font-size: 0.8rem;
-  margin: 0;
-}
 
 .mc-auth-home-map__map-wrap {
   min-width: 0;
@@ -1509,9 +1501,9 @@ main {
   padding-bottom: 2.2rem;
 }
 .mc-explore-section:not(.mc-explore-section--cards-only) > .container {
-  max-width: none;
-  padding-left: clamp(0.75rem, 2vw, 1.75rem);
-  padding-right: clamp(0.75rem, 2vw, 1.75rem);
+  /* Shares the page measure with every other section so the heading, map and
+     carousel line up with the hero and the sections below. */
+  max-width: var(--mc-measure);
 }
 .mc-explore-section:not(.mc-explore-section--cards-only) .mc-section-heading {
   margin-bottom: 0.8rem;
@@ -1526,14 +1518,14 @@ main {
 }
 .mc-explore-section--cards-only { margin-top: 0; padding: 0 0 1.5rem; }
 .mc-explore-section--cards-only .mc-nearby-showcase { border-bottom: 0; margin-top: 0; padding-top: 0; }
-.mc-explore-section .mc-nearby-showcase__viewport { height: 232px; }
+.mc-explore-section .mc-nearby-showcase__viewport { height: 264px; }
 .mc-explore-section .mc-nearby-slide { width: min(76vw, 268px); }
 .mc-explore-section .mc-nearby-slide:not(.is-active) {
   filter: saturate(0.82);
 }
-.mc-nearby-card--compact { height: 212px; }
+.mc-nearby-card--compact { height: auto; min-height: 212px; }
 .mc-nearby-card--compact .mc-nearby-card__image { height: 62px; }
-.mc-nearby-card--compact .mc-nearby-card__body { padding: 0.55rem 0.7rem 0.6rem; }
+.mc-nearby-card--compact .mc-nearby-card__body { padding: 0.55rem 0.7rem 0.75rem; }
 .mc-nearby-card--compact .mc-nearby-card__title { font-size: 0.9rem; line-height: 1.2; }
 .mc-nearby-card--compact .mc-nearby-card__meta,
 .mc-nearby-card--compact .mc-nearby-card__meta span { font-size: 0.73rem; }
@@ -1680,7 +1672,7 @@ main {
   .mc-auth-nearby-experience .mc-explore-section--cards-only {
     margin-top: -20px;
   }
-  .mc-explore-section .mc-nearby-showcase__viewport { height: 224px; }
+  .mc-explore-section .mc-nearby-showcase__viewport { height: 256px; }
   .mc-explore-section .mc-nearby-slide { width: min(78vw, 252px); }
   .mc-auth-nearby-experience .mc-explore-section--cards-only .mc-nearby-showcase__controls {
     margin: 0 auto;
@@ -4062,16 +4054,6 @@ main {
     padding: 1.5rem 0 0;
   }
 
-  .mc-auth-home-map__heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.85rem;
-  }
-
-  .mc-auth-home-map__heading .btn {
-    width: 100%;
-  }
-
   .mc-auth-home-map__map {
     height: 360px;
     min-height: 360px;
@@ -4256,7 +4238,7 @@ main {
 }
 
 .mc-browse-hero .container {
-  max-width: 1140px;
+  max-width: var(--mc-measure);
   position: relative;
   z-index: 1;
 }
@@ -4820,3 +4802,612 @@ main {
 .font-semibold { font-weight: 600 !important; }
 .uppercase { text-transform: uppercase !important; }
 .tracking-wider { letter-spacing: 0.05em !important; }
+
+/* ---------- interface polish: shared scales, micro-motion, depth ---------- */
+/*
+  This layer settles differences that had accumulated across pages: three
+  different page widths, fourteen different corner radii, and transitions that
+  were defined per component. Everything below is expressed as tokens so a new
+  component inherits the same rhythm instead of inventing its own.
+*/
+
+:root {
+  /* One page measure. Bootstrap's .container resolves to 1320px at the widest
+     breakpoint, so sections that opt out of it still land on the same grid. */
+  --mc-measure: 1320px;
+  --mc-measure-narrow: 900px;
+
+  /* Corner radii, named for the role a surface plays rather than by pixel
+     guesswork at each call site. */
+  --mc-radius-xs: 5px;
+  --mc-radius-sm: 8px;
+  --mc-radius-md: 12px;
+  --mc-radius-lg: 16px;
+  --mc-radius-pill: 999px;
+
+  /* Motion. Every transition should pull from these so speeds stay related. */
+  --mc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --mc-ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --mc-dur-fast: 140ms;
+  --mc-dur-base: 220ms;
+
+  --mc-ring: 0 0 0 3px rgba(182, 69, 18, 0.22);
+}
+
+/* ---------- page measure ---------- */
+
+/* Reading-width pages (volunteer listings, blood requests) each set their own
+   inline max-width, so content jumped horizontally between routes. */
+.mc-page-narrow {
+  max-width: var(--mc-measure-narrow);
+}
+
+/* ---------- corner radii ---------- */
+
+.mc-card,
+.mc-auth-card,
+.mc-nearby-card,
+.mc-community-card,
+.mc-support-tile,
+.mc-custom-support,
+.mc-community-filter,
+.mc-notif-menu,
+.mc-modal,
+.mc-impact .container,
+.mc-event-details__registration,
+.mc-event-details__sidebar,
+.mc-announcement-details__layout,
+.mc-support-availability__menu,
+.dropdown-menu {
+  border-radius: var(--mc-radius-md);
+}
+
+.mc-map,
+.mc-map-wrap,
+.mc-map-wrap .mc-map,
+.mc-profile-hero,
+.mc-auth-home-map__map-wrap,
+.mc-auth-home-map__map {
+  border-radius: var(--mc-radius-lg);
+}
+
+.btn,
+.form-control,
+.form-select,
+.input-group-text,
+.mc-hero__search-input,
+.mc-hero__nearby,
+.mc-social,
+.mc-community-filter__search,
+.mc-auth-home-map__browse {
+  border-radius: var(--mc-radius-sm);
+}
+
+.mc-community-filter__category,
+.mc-event-state,
+.mc-auth-home-map__label,
+.badge {
+  border-radius: var(--mc-radius-xs);
+}
+
+/* ---------- focus ---------- */
+
+/* A single focus treatment, so keyboard navigation reads the same everywhere
+   instead of inheriting Bootstrap's blue ring on some controls. */
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+.nav-link:focus-visible,
+.dropdown-item:focus-visible,
+.mc-social:focus-visible,
+.mc-hero__search-input:focus-visible,
+.mc-hero__nearby:focus-visible {
+  border-color: var(--mc-rust);
+  box-shadow: var(--mc-ring);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--mc-rust);
+  box-shadow: var(--mc-ring);
+}
+
+/* ---------- micro-transitions ---------- */
+
+.btn,
+.form-control,
+.form-select,
+.nav-link,
+.dropdown-item,
+.mc-social,
+.mc-card,
+.mc-nearby-card,
+.mc-community-card,
+.mc-support-tile,
+.mc-community-filter__category,
+.mc-event-card__details-link,
+.mc-footer a {
+  transition:
+    background-color var(--mc-dur-base) var(--mc-ease-out),
+    border-color var(--mc-dur-base) var(--mc-ease-out),
+    box-shadow var(--mc-dur-base) var(--mc-ease-out),
+    color var(--mc-dur-fast) var(--mc-ease-out),
+    transform var(--mc-dur-base) var(--mc-ease);
+}
+
+/* Navigation: the active state was a hard border that appeared instantly and
+   nudged the link by 2px. It now grows in place, and hover previews it. */
+.mc-navbar .navbar-nav > .nav-item > .nav-link {
+  position: relative;
+}
+
+.mc-navbar .navbar-nav > .nav-item > .nav-link::after {
+  background: var(--mc-rust);
+  border-radius: var(--mc-radius-pill);
+  bottom: 0.15rem;
+  content: "";
+  height: 2px;
+  left: 0.5rem;
+  opacity: 0;
+  position: absolute;
+  right: 0.5rem;
+  transform: scaleX(0.35);
+  transition: opacity var(--mc-dur-base) var(--mc-ease-out), transform var(--mc-dur-base) var(--mc-ease);
+}
+
+.mc-navbar .navbar-nav > .nav-item > .nav-link:hover::after {
+  opacity: 0.45;
+  transform: scaleX(1);
+}
+
+.mc-navbar .navbar-nav > .nav-item > .nav-link.active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.mc-navbar .navbar-nav > .nav-item > .nav-link.active {
+  border-bottom: 0;
+}
+
+/* Footer text links travel a little on hover so the columns feel responsive.
+   Scoped to the link lists: `.mc-footer a` would also match `.mc-social`, whose
+   icons are centred with `display: grid`. */
+.mc-foot-links a,
+.mc-foot-contact a {
+  display: inline-block;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mc-foot-links a:hover,
+  .mc-foot-contact a:hover {
+    transform: translateX(3px);
+  }
+
+  .mc-nearby-card:hover,
+  .mc-community-card:hover {
+    box-shadow: var(--mc-shadow-lift);
+    transform: translateY(-2px);
+  }
+
+  .mc-community-filter__category:hover {
+    border-color: var(--mc-rust);
+    color: var(--mc-rust);
+  }
+
+  .mc-event-card__details-link:hover {
+    transform: translateX(2px);
+  }
+}
+
+/* ---------- reading progress ---------- */
+
+/* Driven by --mc-scroll-progress, which the app shell writes on scroll. */
+.mc-navbar__progress {
+  background: linear-gradient(90deg, var(--mc-rust), var(--mc-gold));
+  bottom: -1px;
+  height: 2px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  transform: scaleX(var(--mc-scroll-progress, 0));
+  transform-origin: left center;
+  z-index: 3;
+}
+
+/* ---------- parallax ---------- */
+
+/*
+  Layers opt in with data-mc-parallax="<speed>"; the app shell writes the
+  resulting offset to --mc-parallax-y. The ambient glows use the standalone
+  `translate` property so their drift keyframes keep ownership of `transform`.
+*/
+.mc-hero[data-mc-parallax] .mc-hero__inner {
+  translate: 0 calc(var(--mc-parallax-y, 0px) * -0.45);
+}
+
+.mc-home-hero[data-mc-parallax]::before {
+  translate: 0 calc(var(--mc-parallax-y, 0px) * 0.8);
+}
+
+.mc-atmospheric-section[data-mc-parallax]::before {
+  translate: 0 calc(var(--mc-parallax-y, 0px) * 1.6);
+}
+
+/* The impact panel paints its card directly onto the .container box, so its
+   edges sat 12px outside the content edge every other section aligns to.
+   Trimming the measure by the container gutter puts it back on the grid. */
+.mc-impact .container {
+  max-width: calc(var(--mc-measure) - 1.5rem);
+}
+
+/* ---------- nearby carousel ---------- */
+
+/*
+  The carousel shares the map's measure so the cards line up with the panel
+  above them. The mask fades slides out at those edges rather than letting the
+  overflow clip chop one off mid-card.
+*/
+.mc-nearby-showcase__viewport {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
+}
+
+/* ---------- alignment within card grids ---------- */
+
+/*
+  Cards in a row bottom-align their footers, but a footer holding a Register
+  button is 15px taller than one holding only "No registration needed", so the
+  "View details" links across a row sat on different baselines. Reserving the
+  button's height in every footer puts them back on one line.
+*/
+:root {
+  --mc-control-height-sm: 2.0625rem;
+  /* .btn-sm */
+}
+
+.mc-event-card__footer {
+  min-height: calc(1rem + var(--mc-control-height-sm));
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-hero::after {
+    background-position: center center, center 30%;
+  }
+
+  .mc-hero[data-mc-parallax] .mc-hero__inner,
+  .mc-home-hero[data-mc-parallax]::before,
+  .mc-atmospheric-section[data-mc-parallax]::before {
+    translate: none;
+  }
+
+  .mc-navbar .navbar-nav > .nav-item > .nav-link::after,
+  .btn,
+  .form-control,
+  .form-select,
+  .nav-link,
+  .dropdown-item,
+  .mc-social,
+  .mc-card,
+  .mc-nearby-card,
+  .mc-community-card,
+  .mc-support-tile,
+  .mc-community-filter__category,
+  .mc-event-card__details-link,
+  .mc-footer a {
+    transition: none;
+  }
+
+  .form-control:focus,
+  .form-select:focus,
+  .mc-foot-links a:hover,
+  .mc-foot-contact a:hover,
+  .mc-event-card__details-link:hover {
+    transform: none;
+  }
+}
+
+/* ---------- hero: dissolve, don't slice ---------- */
+
+/*
+  The hero photo used to be a background on .mc-hero itself, so the section's
+  bottom edge cut straight through the mosque with a hard seam, and the section
+  below was pulled up over the photo to try to hide it. Moving the photo onto a
+  masked layer lets it fade into the page texture instead, which means nothing
+  has to overlap it.
+*/
+.mc-hero {
+  background: none;
+  isolation: isolate;
+}
+
+.mc-hero::after {
+  background:
+    linear-gradient(90deg, rgba(251, 248, 242, 0.99) 0%, rgba(251, 248, 242, 0.88) 38%, rgba(251, 248, 242, 0.06) 72%),
+    url("/uiRef.jpeg") center calc(30% + var(--mc-parallax-y, 0px)) / cover;
+  content: "";
+  height: auto;
+  inset: 0;
+  /* An earlier rule used this pseudo-element as a 6%-opacity icon watermark. */
+  opacity: 1;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+}
+
+/* The ambient glow sits over the photo but under the copy. */
+.mc-home-hero::before {
+  z-index: 1;
+}
+
+.mc-hero__inner {
+  z-index: 2;
+}
+
+/* With the photo fading out on its own, the section below no longer needs to
+   be dragged up over it. */
+.mc-explore-section,
+.mc-explore-section:not(.mc-explore-section--cards-only) {
+  margin-top: 0;
+}
+
+.mc-explore-section:not(.mc-explore-section--cards-only) {
+  padding-top: 0.25rem;
+}
+
+/* Its top-down wash re-drew the very horizontal edge the hero fade removes. */
+.mc-explore-section {
+  background: none;
+}
+
+/* The browse hero is short, so the same photo was cropped to a floating,
+   hard-cut minaret. A shorter fade keeps it as a light texture instead. */
+.mc-browse-hero::after {
+  -webkit-mask-image: linear-gradient(to bottom, #000 20%, transparent 96%);
+  mask-image: linear-gradient(to bottom, #000 20%, transparent 96%);
+}
+
+/* ---------- browse: give the results column a real header ---------- */
+
+/*
+  The toolbar sat as bare text beside the filter panel, so the two columns
+  looked like they started at different heights even though their boxes align.
+  Matching the panel's surface makes the row read as one header line.
+*/
+.mc-browse-results-toolbar {
+  background-color: var(--mc-glass);
+  border: 1px solid var(--mc-glass-line);
+  border-radius: var(--mc-radius-md);
+  box-shadow: var(--mc-shadow-soft);
+  margin-bottom: 1.25rem;
+  min-height: 0;
+  padding: 0.7rem 1rem;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mc-browse-results-toolbar {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+.mc-browse-results-count {
+  font-weight: 600;
+}
+
+/* ---------- links keep the warm palette ---------- */
+
+/*
+  .btn-link and Bootstrap's default anchor colour were rendering in #0d6efd,
+  which reads as a foreign blue next to the rust and gold used everywhere else.
+*/
+.btn-link {
+  color: var(--mc-rust);
+}
+
+.btn-link:hover,
+.btn-link:focus-visible {
+  color: var(--mc-rust-dark);
+}
+
+.mc-browse-filters .btn-link {
+  font-weight: 700;
+}
+
+/* ---------- reading progress, foregrounded ---------- */
+
+.mc-navbar__progress {
+  background: linear-gradient(90deg, var(--mc-rust), var(--mc-gold) 65%, #e9b46b);
+  border-radius: 0 var(--mc-radius-pill) var(--mc-radius-pill) 0;
+  bottom: -2px;
+  box-shadow: 0 0 10px rgba(182, 69, 18, 0.45);
+  height: 3px;
+}
+
+/* ---------- back to top ---------- */
+
+/*
+  The ring traces --mc-scroll-progress, the same value the navbar bar uses, so
+  the control doubles as a position indicator once the reader is past the fold.
+*/
+.mc-to-top {
+  align-items: center;
+  background: var(--mc-glass-strong);
+  border: 1px solid var(--mc-glass-line);
+  border-radius: 50%;
+  bottom: 1.5rem;
+  box-shadow: var(--mc-shadow-lift);
+  color: var(--mc-rust);
+  display: grid;
+  height: 46px;
+  opacity: 0;
+  place-items: center;
+  pointer-events: none;
+  position: fixed;
+  right: 1.5rem;
+  transform: translateY(12px) scale(0.9);
+  transition: opacity var(--mc-dur-base) var(--mc-ease-out), transform var(--mc-dur-base) var(--mc-ease);
+  width: 46px;
+  z-index: 1030;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mc-to-top {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+:root[data-mc-scrolled="true"] .mc-to-top {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.mc-to-top:hover {
+  color: var(--mc-rust-dark);
+  transform: translateY(-2px) scale(1.04);
+}
+
+.mc-to-top:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.mc-to-top__ring {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  transform: rotate(-90deg);
+  width: 100%;
+}
+
+.mc-to-top__ring circle {
+  fill: none;
+  stroke-width: 2;
+}
+
+.mc-to-top__track {
+  stroke: rgba(137, 111, 86, 0.2);
+}
+
+.mc-to-top__value {
+  stroke: var(--mc-rust);
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - 100 * var(--mc-scroll-progress, 0));
+  stroke-linecap: round;
+}
+
+/* ---------- horizontal scroll rail ---------- */
+
+.mc-rail {
+  position: relative;
+}
+
+.mc-rail__controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-bottom: 0.65rem;
+}
+
+.mc-rail__controls .btn {
+  align-items: center;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  width: 32px;
+}
+
+.mc-rail__controls .btn:disabled {
+  opacity: 0.35;
+}
+
+.mc-rail__track {
+  display: grid;
+  gap: 1rem;
+  /* A fixed comfortable card width rather than 1fr: with `1fr` the columns
+     collapse to their minimum and the rail ends up with almost nothing to
+     travel. This shows roughly three and a half cards at desktop widths. */
+  grid-auto-columns: clamp(258px, 29%, 340px);
+  grid-auto-flow: column;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 0.9rem;
+  scroll-behavior: smooth;
+  scroll-padding: 0 0.25rem;
+  scroll-snap-type: x mandatory;
+  /* The rail draws its own indicator below, so the native bar is redundant. */
+  scrollbar-width: none;
+}
+
+.mc-rail__track::-webkit-scrollbar {
+  display: none;
+}
+
+.mc-rail__track > * {
+  scroll-snap-align: start;
+}
+
+/* Fade whichever end still has content beyond it, so the rail always shows
+   where it can be taken. Both attributes are written by the component. */
+.mc-rail__track[data-at-start="false"][data-at-end="false"] {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 4%, #000 96%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 4%, #000 96%, transparent 100%);
+}
+
+.mc-rail__track[data-at-start="false"][data-at-end="true"] {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 4%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 4%);
+}
+
+.mc-rail__track[data-at-start="true"][data-at-end="false"] {
+  -webkit-mask-image: linear-gradient(90deg, #000 96%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 96%, transparent 100%);
+}
+
+.mc-rail__track:focus-visible {
+  border-radius: var(--mc-radius-md);
+  box-shadow: var(--mc-ring);
+  outline: 2px solid transparent;
+}
+
+.mc-rail__scrollbar {
+  background: rgba(137, 111, 86, 0.16);
+  border-radius: var(--mc-radius-pill);
+  height: 4px;
+  margin: 0 auto;
+  max-width: 260px;
+  overflow: hidden;
+}
+
+/* The thumb is a third of the track and slides across the remaining two. */
+.mc-rail__thumb {
+  background: linear-gradient(90deg, var(--mc-rust), var(--mc-gold));
+  border-radius: var(--mc-radius-pill);
+  display: block;
+  height: 100%;
+  transform: translateX(calc(var(--mc-rail-progress, 0) * 200%));
+  width: 33.333%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-rail__track {
+    scroll-behavior: auto;
+  }
+
+  .mc-to-top {
+    transition: none;
+  }
+
+  .mc-to-top:hover,
+  .mc-to-top:active {
+    transform: none;
+  }
+}

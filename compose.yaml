@@ -29,7 +29,15 @@ services:
       APP_DEBUG: "true"
       APP_URL: http://localhost:${API_PORT:-8000}
       FRONTEND_URL: http://localhost:${WEB_PORT:-5173}
-      LOG_CHANNEL: stderr
+      # `php artisan serve` uses PHP's built-in server, which handles one request
+      # at a time unless it forks workers. The SPA fires several requests per page,
+      # so without this they queue and pages take ~10s to load instead of ~0.3s.
+      PHP_CLI_SERVER_WORKERS: "8"
+      # Log to both: stderr so `docker logs` shows it, and the single-file
+      # channel so it also lands in apps/api/storage/logs/laravel.log, which is
+      # where the local OTP codes are read from during development.
+      LOG_CHANNEL: stack
+      LOG_STACK: single,stderr
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -40,6 +48,13 @@ services:
       - "${API_PORT:-8000}:8000"
     volumes:
       - ./apps/api:/var/www/html
+      # vendor/ is 8000+ PHP files that never change while developing. Keeping
+      # it on a named volume instead of the host bind mount takes it off Docker
+      # Desktop's slow filesystem bridge, which is what made every request --
+      # even ones returning an empty list -- take seconds. Run
+      # `docker compose run --rm api composer install` after changing
+      # composer.json/lock; the entrypoint also refreshes it automatically.
+      - api_vendor:/var/www/html/vendor
     depends_on:
       mysql:
         condition: service_healthy
@@ -76,4 +91,6 @@ services:
 
 volumes:
   mysql_data:
+  web_node_modules:
+  api_vendor:
   web_node_modules:
