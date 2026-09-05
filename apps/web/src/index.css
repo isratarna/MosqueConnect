@@ -3539,19 +3539,71 @@ main {
   position: absolute;
   transform: translate3d(-1.5%, 0, 0) scale(1.04);
   animation: mc-dawn-drift 30s ease-in-out infinite alternate;
+  /* .mc-hero is overflow:hidden, so this -10% inset glow gets cut off flat at
+     the section's bottom edge -- a hard line across the full width, right where
+     the masked photo above it is busy dissolving. Fading it out on the same
+     curve means nothing in the hero has a visible bottom. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 46%,
+    rgba(0, 0, 0, 0.78) 68%,
+    rgba(0, 0, 0, 0.3) 86%,
+    transparent 97%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 46%,
+    rgba(0, 0, 0, 0.78) 68%,
+    rgba(0, 0, 0, 0.3) 86%,
+    transparent 97%
+  );
 }
 
-.mc-home-hero .mc-hero__content,
-.mc-home-hero .mc-location-card {
-  animation: mc-content-settle 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+/*
+  The hero used to arrive as two blocks: the whole left column on one curve and
+  the location card on another, which meant nothing inside it read as
+  individually alive. Every element now rises on its own instead, ordered by the
+  --mc-hero-step it carries from Home.jsx, so the motion follows the same path
+  the eye takes -- headline, copy, search, card, card rows.
+
+  The card and its rows both rise; the overlap is deliberate, because the rows
+  finishing after their container is what makes the card look assembled rather
+  than stamped.
+*/
+.mc-home-hero .mc-hero__rise {
+  animation: mc-hero-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--mc-hero-step, 0) * 90ms);
 }
 
-.mc-home-hero .mc-location-card {
-  animation-delay: 100ms;
+/*
+  The locate button is the only control on the page waiting on the reader, so
+  while no location is set it carries a slow halo. The ring is a separate
+  pseudo-element so the pulse never touches the button's own hover transform.
+*/
+.mc-home-hero .mc-hero__nearby[data-mc-waiting] {
+  position: relative;
 }
 
-.mc-home-hero .mc-hero__search {
-  animation: mc-content-settle 380ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.mc-home-hero .mc-hero__nearby[data-mc-waiting]::after {
+  animation: mc-locate-halo 2.6s ease-out 1.4s infinite;
+  border: 1px solid var(--mc-rust);
+  border-radius: inherit;
+  content: "";
+  inset: -1px;
+  pointer-events: none;
+  position: absolute;
+}
+
+/* A newly closest mosque replaces the previous name in place, so it fades in
+   rather than swapping under the reader mid-glance. */
+.mc-location-card__nearest {
+  animation: mc-content-settle 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* The count is animating digit by digit; tabular figures stop the line from
+   reflowing as the number widens. */
+.mc-location-card__count {
+  font-variant-numeric: tabular-nums;
 }
 
 .mc-card,
@@ -3764,6 +3816,33 @@ main {
   }
 }
 
+/* A slightly longer travel than mc-content-settle: each hero element moves on
+   its own now, so the individual arrivals have to be legible rather than a
+   collective nudge. */
+@keyframes mc-hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mc-locate-halo {
+  from {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+}
+
 @keyframes mc-dawn-drift {
   from {
     transform: translate3d(-1.5%, -0.5%, 0) scale(1.04);
@@ -3873,9 +3952,8 @@ main {
 
   .mc-page-shell,
   .mc-home-hero::before,
-  .mc-home-hero .mc-hero__content,
-  .mc-home-hero .mc-location-card,
-  .mc-home-hero .mc-hero__search,
+  .mc-home-hero .mc-hero__rise,
+  .mc-location-card__nearest,
   .mc-tab-panel,
   .mc-view-panel,
   .mc-profile-hero,
@@ -5075,6 +5153,12 @@ main {
 /* ---------- reduced motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
+  /* The halo is a pulse and nothing else, so it leaves rather than
+     freezing into a permanent ring around the button. */
+  .mc-home-hero .mc-hero__nearby[data-mc-waiting]::after {
+    display: none;
+  }
+
   .mc-hero::after {
     background-position: center center, center 30%;
   }
@@ -5137,8 +5221,27 @@ main {
   pointer-events: none;
   position: absolute;
   z-index: 0;
-  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+  /* A short linear ramp still reads as a seam: the eye picks up the sudden
+     change in slope where the fade starts. A longer run with eased stops
+     dissolves the photo into the page texture with no visible boundary. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 46%,
+    rgba(0, 0, 0, 0.94) 60%,
+    rgba(0, 0, 0, 0.78) 71%,
+    rgba(0, 0, 0, 0.5) 82%,
+    rgba(0, 0, 0, 0.2) 92%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 46%,
+    rgba(0, 0, 0, 0.94) 60%,
+    rgba(0, 0, 0, 0.78) 71%,
+    rgba(0, 0, 0, 0.5) 82%,
+    rgba(0, 0, 0, 0.2) 92%,
+    transparent 100%
+  );
 }
 
 /* The ambient glow sits over the photo but under the copy. */
@@ -5164,6 +5267,28 @@ main {
 /* Its top-down wash re-drew the very horizontal edge the hero fade removes. */
 .mc-explore-section {
   background: none;
+}
+
+/* The home hero runs an animated loop instead of the still photo; the same
+   left-to-right wash keeps the headline and search readable over it.
+
+   hero.gif is 640x360, so it must cover the full layer in one piece -- sizing
+   it to its own aspect leaves hard vertical seams where it stops. Vertically
+   centred rather than the still photo's `30%`, because the wider crop this
+   layer takes out of a 16:9 source was cutting the bottom of the frame. */
+.mc-home-hero::after {
+  background:
+    linear-gradient(90deg, rgba(251, 248, 242, 0.99) 0%, rgba(251, 248, 242, 0.88) 38%, rgba(251, 248, 242, 0.06) 72%),
+    url("/hero.gif") center calc(50% + var(--mc-parallax-y, 0px)) / cover no-repeat;
+}
+
+/* A GIF can't be paused from CSS, so reduced motion falls back to the still. */
+@media (prefers-reduced-motion: reduce) {
+  .mc-home-hero::after {
+    background:
+      linear-gradient(90deg, rgba(251, 248, 242, 0.99) 0%, rgba(251, 248, 242, 0.88) 38%, rgba(251, 248, 242, 0.06) 72%),
+      url("/uiRef.jpeg") center 30% / cover;
+  }
 }
 
 /* The browse hero is short, so the same photo was cropped to a floating,
@@ -5409,5 +5534,69 @@ main {
   .mc-to-top:hover,
   .mc-to-top:active {
     transform: none;
+  }
+}
+
+/* ---------- navbar: transparent until the reader scrolls ---------- */
+
+/*
+  The bar used to be a translucent cream panel sitting in flow, so every page
+  opened with a horizontal band above the content and the hero photo started
+  below it. It is now out of flow and fully transparent at rest: the hero
+  paints its whole height behind the bar, and the solid surface comes back with
+  .is-scrolled, which is where it is actually needed -- over ordinary page
+  content, the links have nothing else to sit on.
+*/
+:root {
+  /* Fallback only. Navbar.jsx publishes the measured height, which is what
+     keeps the reservation below exact across breakpoints. */
+  --mc-nav-height: 66px;
+}
+
+.mc-navbar.sticky-top {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: transparent;
+  border-bottom-color: transparent;
+  box-shadow: none;
+  inset: 0 0 auto;
+  position: fixed;
+  z-index: 1030;
+}
+
+.mc-navbar.sticky-top.is-scrolled {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(251, 248, 242, 0.92);
+  border-bottom-color: rgba(130, 111, 91, 0.3);
+  box-shadow: 0 5px 18px rgba(53, 39, 29, 0.09);
+}
+
+/* Out of flow, the bar no longer pushes the page down, so the page reserves
+   its height instead. */
+.mc-page-shell {
+  padding-top: var(--mc-nav-height);
+}
+
+/* A page that opens on a hero is the exception, and the reason for all of
+   this: the hero fills the space behind the bar and insets its own content by
+   the same amount, so nothing lands underneath the links. */
+.mc-page-shell:has(> .mc-hero:first-child) {
+  padding-top: 0;
+}
+
+.mc-page-shell > .mc-hero:first-child {
+  padding-top: var(--mc-nav-height);
+}
+
+/*
+  Under lg the collapse is part of the bar, so an open menu would otherwise
+  hang transparently over the page. It keeps its own opaque surface whether or
+  not the bar behind it has one.
+*/
+@media (max-width: 991.98px) {
+  .mc-navbar.sticky-top .navbar-collapse.show,
+  .mc-navbar.sticky-top .navbar-collapse.collapsing {
+    background: rgba(251, 248, 242, 0.98);
   }
 }

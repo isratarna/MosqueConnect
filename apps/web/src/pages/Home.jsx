@@ -30,6 +30,7 @@ import { DEFAULT_CENTER } from "../config";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
 import { directionsUrl } from "../utils/mosqueDiscovery";
 import { dhuhrJamaatLabel } from "../utils/prayerTime";
+import useCountUp from "../hooks/useCountUp";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -194,34 +195,61 @@ function MapFeedback({ icon, title, message, children }) {
   );
 }
 
+/*
+ * Hero elements arrive one at a time rather than as two settling blocks.
+ * `--mc-hero-step` is the position in that entrance queue -- headline, copy,
+ * search, then the location card and its rows -- and index.css turns it into
+ * the animation delay, so the reading order and the motion order stay one
+ * definition apart.
+ */
 function Hero({ origin, nearby, nearest, onRequestLocation }) {
   return (
     <header className="mc-hero mc-home-hero" data-mc-parallax="0.26">
       <div className="container mc-hero__inner">
         <div className="mc-hero__content">
-          <h1>Find. Connect. Pray.</h1>
-          <p className="mc-hero__copy">
+          <h1 className="mc-hero__rise" style={{ "--mc-hero-step": 0 }}>Find. Connect. Pray.</h1>
+          <p className="mc-hero__copy mc-hero__rise" style={{ "--mc-hero-step": 1 }}>
             Discover mosques near you and stay connected to your faith and community.
           </p>
           <div className="mc-hero__search">
-            <Link to="/browse" className="mc-hero__search-input" aria-label="Browse mosques">
+            <Link
+              to="/browse"
+              className="mc-hero__search-input mc-hero__rise"
+              style={{ "--mc-hero-step": 2 }}
+              aria-label="Browse mosques"
+            >
               <Search size={17} aria-hidden="true" />
               <span>Search by mosque name, area, or city</span>
               <SlidersHorizontal size={17} aria-hidden="true" />
             </Link>
-            <a href="#map" className="mc-hero__nearby" title="Find nearby" aria-label="Find nearby">
+            <a
+              href="#map"
+              className="mc-hero__nearby mc-hero__rise"
+              style={{ "--mc-hero-step": 3 }}
+              /* Until a location is set the button is the one thing on the page
+                 waiting on the reader, so it keeps a slow halo while it waits. */
+              data-mc-waiting={origin.status === "success" ? undefined : "true"}
+              title="Find nearby"
+              aria-label="Find nearby"
+            >
               <LocateFixed size={17} aria-hidden="true" />
             </a>
           </div>
         </div>
-        <div className="mc-location-card">
-          <div className="mc-location-card__icon"><MapPin size={22} aria-hidden="true" /></div>
-          <div>
+        <div className="mc-location-card mc-hero__rise" style={{ "--mc-hero-step": 2 }}>
+          <div className="mc-location-card__icon mc-hero__rise" style={{ "--mc-hero-step": 3 }}>
+            <MapPin size={22} aria-hidden="true" />
+          </div>
+          <div className="mc-hero__rise" style={{ "--mc-hero-step": 4 }}>
             <h2>Enable your location</h2>
             <p>Find mosques, prayer times, and nearby Islamic facilities around you.</p>
           </div>
           <LocationControls origin={origin} nearby={nearby} nearest={nearest} onRequest={onRequestLocation} />
-          <Link to="/browse" className="btn btn-light mc-location-card__secondary w-100">
+          <Link
+            to="/browse"
+            className="btn btn-light mc-location-card__secondary w-100 mc-hero__rise"
+            style={{ "--mc-hero-step": 6 }}
+          >
             Enter location manually
           </Link>
         </div>
@@ -231,21 +259,31 @@ function Hero({ origin, nearby, nearest, onRequestLocation }) {
 }
 
 function LocationControls({ origin, nearby, nearest, onRequest }) {
+  // The count lands as the result of a search, so it counts up to its value
+  // instead of appearing already settled.
+  const nearbyCount = useCountUp(nearby.length);
+
   const handleClick = (e) => {
     e.preventDefault();
     onRequest();
   };
 
   return (
-    <div>
-      <div className="mb-2" aria-live="polite">
+    <div className="mc-hero__rise" style={{ "--mc-hero-step": 5 }}>
+      <div className="mb-2 mc-location-card__status" aria-live="polite">
         {origin.status === "idle" && <small className="text-muted">Location not set</small>}
         {origin.status === "requesting" && <small className="text-muted">Requesting permission…</small>}
         {origin.status === "locating" && <small className="text-muted">Locating…</small>}
         {origin.status === "success" && (
-          <div>
-            <div className="fw-semibold">{nearby.length} mosques nearby</div>
-            <div className="small text-muted">Closest: {nearest ? nearest.name : "—"}</div>
+          <div className="mc-location-card__result">
+            <div className="fw-semibold">
+              <span className="mc-location-card__count">{nearbyCount}</span> mosques nearby
+            </div>
+            {/* Keyed on the name so a new closest mosque cross-fades in place
+                rather than swapping text under the reader. */}
+            <div className="small text-muted mc-location-card__nearest" key={nearest ? nearest.name : "none"}>
+              Closest: {nearest ? nearest.name : "—"}
+            </div>
           </div>
         )}
         {origin.status === "failure" && <small className="text-danger">Location unavailable — try manual search</small>}

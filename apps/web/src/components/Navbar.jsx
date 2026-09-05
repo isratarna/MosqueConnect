@@ -16,6 +16,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false); // mobile collapse
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const navRef = useRef(null);
 
   const close = () => setOpen(false);
   const closeDropdowns = () => setActiveDropdown(null);
@@ -30,6 +31,27 @@ export default function Navbar() {
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [activeDropdown]);
+
+  // The bar is transparent and out of flow, so the page underneath has to
+  // reserve its height. Publishing the measured height as --mc-nav-height
+  // keeps that reservation exact across breakpoints instead of hardcoding a
+  // number that drifts whenever the bar's padding or logo size changes.
+  useEffect(() => {
+    const bar = navRef.current;
+    if (!bar || typeof ResizeObserver === "undefined") return undefined;
+
+    const publish = () => {
+      // Under lg the open collapse is part of this element, so measuring
+      // while it is expanded would reserve the whole menu's height.
+      if (open) return;
+      document.documentElement.style.setProperty("--mc-nav-height", `${bar.offsetHeight}px`);
+    };
+
+    publish();
+    const resizeObserver = new ResizeObserver(publish);
+    resizeObserver.observe(bar);
+    return () => resizeObserver.disconnect();
+  }, [open]);
 
   useEffect(() => {
     const updateScrollState = () => setIsScrolled(window.scrollY > 24);
@@ -48,7 +70,7 @@ export default function Navbar() {
   const navLinkClass = ({ isActive }) => "nav-link" + (isActive ? " active" : "");
 
   return (
-    <nav className={`navbar navbar-expand-lg navbar-dark mc-navbar sticky-top${isScrolled ? " is-scrolled" : ""}`}>
+    <nav ref={navRef} className={`navbar navbar-expand-lg navbar-dark mc-navbar sticky-top${isScrolled ? " is-scrolled" : ""}`}>
       <div className="container px-3 px-lg-0">
         <Link className="navbar-brand mc-brand me-2 me-lg-0" to="/" onClick={close}>
           <img src={logo} alt="MosqueConnect logo" className="mc-brand-logo me-2" />
