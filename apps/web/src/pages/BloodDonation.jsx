@@ -34,6 +34,7 @@ export default function BloodDonation() {
   const [hospital, setHospital] = useState("");
   const [neededBy, setNeededBy] = useState("");
   const [phone, setPhone] = useState("");
+  const [urgency, setUrgency] = useState("normal");
   const [details, setDetails] = useState("");
 
   const normalize = (item, responses = []) => ({
@@ -90,11 +91,11 @@ export default function BloodDonation() {
     try {
       const { data } = await apiRequest("/api/blood-requests", { method: "POST", body: {
         blood_group: bloodGroup, units: Number(units), hospital_or_location: hospital,
-        required_date: neededBy, contact_phone: phone, notes: details, urgency: "high",
+        required_date: neededBy, contact_phone: phone, notes: details, urgency,
       } });
       setRequests((items) => [normalize(data), ...items]);
       setFormSuccess(true);
-      setBloodGroup(""); setUnits(""); setHospital(""); setNeededBy(""); setPhone(""); setDetails("");
+      setBloodGroup(""); setUnits(""); setHospital(""); setNeededBy(""); setPhone(""); setUrgency("normal"); setDetails("");
     } catch (err) { setActionError(err.message); }
     finally { setSubmittingForm(false); }
   };
@@ -151,13 +152,21 @@ export default function BloodDonation() {
                     <label className="form-label fw-semibold small">Hospital Name & Area <span className="text-danger">*</span></label>
                     <input type="text" className="form-control" placeholder="e.g. Labaid Hospital, Dhanmondi" value={hospital} onChange={(e) => setHospital(e.target.value)} required />
                   </div>
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label fw-semibold small">Needed By Date <span className="text-danger">*</span></label>
                     <input type="date" className="form-control" value={neededBy} onChange={(e) => setNeededBy(e.target.value)} required />
                   </div>
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label fw-semibold small">Contact Phone <span className="text-danger">*</span></label>
                     <input type="tel" className="form-control" placeholder="e.g. 01711223344" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                  </div>
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label fw-semibold small">Urgency Level <span className="text-danger">*</span></label>
+                    <select className="form-select" value={urgency} onChange={(e) => setUrgency(e.target.value)} required>
+                      <option value="normal">Normal</option>
+                      <option value="high">High (Urgent)</option>
+                      <option value="critical">Critical</option>
+                    </select>
                   </div>
                   <div className="col-12 mb-4">
                     <label className="form-label fw-semibold small">Additional Details (Optional)</label>

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('units')->nullable();
             $table->string('hospital_or_location');
             $table->date('required_date');
-            $table->enum('urgency', ['low', 'medium', 'high', 'critical'])->default('medium')->index();
+            $table->enum('urgency', ['low', 'normal', 'medium', 'high', 'critical'])->default('medium')->index();
             $table->string('contact_name')->nullable();
             $table->string('contact_phone');
             $table->text('notes')->nullable();

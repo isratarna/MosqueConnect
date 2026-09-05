@@ -41,6 +41,8 @@ class BloodRequest extends Model
 
     public const URGENCY_LOW = 'low';
 
+    public const URGENCY_NORMAL = 'normal';
+
     public const URGENCY_MEDIUM = 'medium';
 
     public const URGENCY_HIGH = 'high';
@@ -49,6 +51,7 @@ class BloodRequest extends Model
 
     public const URGENCIES = [
         self::URGENCY_LOW,
+        self::URGENCY_NORMAL,
         self::URGENCY_MEDIUM,
         self::URGENCY_HIGH,
         self::URGENCY_CRITICAL,
