@@ -50,7 +50,7 @@ class VolunteerOpportunityController extends Controller
     {
         Gate::authorize('view', $volunteerOpportunity);
 
-        return new VolunteerOpportunityResource($volunteerOpportunity->load(['mosque', 'creator']));
+        return new VolunteerOpportunityResource($volunteerOpportunity->load(['mosque', 'creator', 'registeredUsers']));
     }
 
     public function store(Mosque $mosque): JsonResponse
