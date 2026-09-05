@@ -23,6 +23,7 @@ services:
     build:
       context: .
       dockerfile: docker/api/Dockerfile
+    command: php artisan serve --host=0.0.0.0 --port=8000
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
