@@ -40,6 +40,16 @@ export default function VolunteerOpportunities() {
   const [capacity, setCapacity] = useState("");
   const [instructions, setInstructions] = useState("");
 
+  const [editingOpp, setEditingOpp] = useState(null);
+  const [submittingEdit, setSubmittingEdit] = useState(false);
+  const [editSuccess, setEditSuccess] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const [viewingApplicantsOpp, setViewingApplicantsOpp] = useState(null);
+  const [applicants, setApplicants] = useState([]);
+  const [applicantsLoading, setApplicantsLoading] = useState(false);
+  const [applicantsError, setApplicantsError] = useState("");
+
   const normalize = (item, registrations = []) => ({
     ...item, mosqueName: item.mosque?.name, date: item.opportunity_date,
     time: [item.start_time, item.end_time].filter(Boolean).join(" - ") || "Contact the mosque",
@@ -107,6 +117,63 @@ export default function VolunteerOpportunities() {
       setTitle(""); setDescription(""); setDate(""); setTime(""); setLocation(""); setCapacity(""); setInstructions("");
     } catch (err) { setActionError(err.message); }
     finally { setSubmittingForm(false); }
+  };
+
+  const handleEditClick = (opp) => {
+    setEditingOpp({
+      ...opp,
+      title: opp.title,
+      description: opp.description,
+      opportunity_date: opp.opportunity_date,
+      start_time: opp.start_time || "",
+      end_time: opp.end_time || "",
+      location: opp.location,
+      volunteers_required: opp.capacity,
+      requirements: opp.instructions || "",
+    });
+    setEditSuccess(false);
+    setEditError("");
+  };
+
+  const handleUpdateOpportunity = async (e) => {
+    e.preventDefault();
+    if (!isAdmin || submittingEdit) return;
+    setSubmittingEdit(true);
+    setEditError("");
+    try {
+      const { data } = await apiRequest(`/api/admin/mosques/${managedMosqueId}/volunteer-opportunities/${editingOpp.id}`, { 
+        method: "PATCH", 
+        body: {
+          title: editingOpp.title, 
+          description: editingOpp.description, 
+          opportunity_date: editingOpp.opportunity_date, 
+          start_time: editingOpp.start_time || null, 
+          end_time: editingOpp.end_time || null, 
+          location: editingOpp.location,
+          volunteers_required: Number(editingOpp.volunteers_required), 
+          requirements: editingOpp.requirements,
+        } 
+      });
+      setOpportunities((items) => items.map((item) => item.id === editingOpp.id ? { ...item, ...normalize(data) } : item));
+      setEditSuccess(true);
+      setTimeout(() => setEditingOpp(null), 1500);
+    } catch (err) { setEditError(err.message); }
+    finally { setSubmittingEdit(false); }
+  };
+
+  const handleViewApplicants = async (opp) => {
+    setViewingApplicantsOpp(opp);
+    setApplicantsLoading(true);
+    setApplicantsError("");
+    setApplicants([]);
+    try {
+      const { data } = await apiRequest(`/api/admin/mosques/${managedMosqueId}/volunteer-opportunities/${opp.id}`);
+      setApplicants(data.registrations || []);
+    } catch (err) {
+      setApplicantsError(err.message);
+    } finally {
+      setApplicantsLoading(false);
+    }
   };
 
   return (
@@ -276,13 +343,27 @@ export default function VolunteerOpportunities() {
                     
                     <div className="d-flex gap-2">
                       {canManage && opp.status === "active" && (
-                        <button 
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => handleCloseOpportunity(opp.id)}
-                          disabled={opp.isUpdating}
-                        >
-                          {opp.isUpdating ? "Closing..." : "Mark as Completed"}
-                        </button>
+                        <div className="d-flex flex-wrap gap-2">
+                          <button 
+                            className="btn btn-sm btn-outline-mc"
+                            onClick={() => handleViewApplicants(opp)}
+                          >
+                            View Applicants
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-outline-mc"
+                            onClick={() => handleEditClick(opp)}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => handleCloseOpportunity(opp.id)}
+                            disabled={opp.isUpdating}
+                          >
+                            {opp.isUpdating ? "Closing..." : "Close"}
+                          </button>
+                        </div>
                       )}
                       
                       {!canManage && (
@@ -308,6 +389,109 @@ export default function VolunteerOpportunities() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingOpp && (
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Edit Opportunity</h5>
+                <button type="button" className="btn-close" onClick={() => setEditingOpp(null)}></button>
+              </div>
+              <div className="modal-body">
+                {editSuccess ? (
+                  <div className="alert alert-success text-center py-4 mb-0">
+                    <CheckCircle size={40} className="mb-2 text-success mx-auto" />
+                    <h6 className="fw-bold">Opportunity updated successfully!</h6>
+                  </div>
+                ) : (
+                  <form onSubmit={handleUpdateOpportunity}>
+                    {editError && <div className="alert alert-danger">{editError}</div>}
+                    <div className="row g-3">
+                      <div className="col-md-8">
+                        <label className="form-label small fw-semibold">Title <span className="text-danger">*</span></label>
+                        <input type="text" className="form-control" value={editingOpp.title} onChange={(e) => setEditingOpp({...editingOpp, title: e.target.value})} required />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label small fw-semibold">Volunteers Needed <span className="text-danger">*</span></label>
+                        <input type="number" className="form-control" value={editingOpp.volunteers_required} onChange={(e) => setEditingOpp({...editingOpp, volunteers_required: e.target.value})} required />
+                      </div>
+                      <div className="col-12">
+                        <label className="form-label small fw-semibold">Detailed Description <span className="text-danger">*</span></label>
+                        <textarea className="form-control" rows="2" value={editingOpp.description} onChange={(e) => setEditingOpp({...editingOpp, description: e.target.value})} required></textarea>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label small fw-semibold">Date <span className="text-danger">*</span></label>
+                        <input type="date" className="form-control" value={editingOpp.opportunity_date} onChange={(e) => setEditingOpp({...editingOpp, opportunity_date: e.target.value})} required />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label small fw-semibold">Start Time</label>
+                        <input type="time" className="form-control" value={editingOpp.start_time} onChange={(e) => setEditingOpp({...editingOpp, start_time: e.target.value})} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label small fw-semibold">Specific Location <span className="text-danger">*</span></label>
+                        <input type="text" className="form-control" value={editingOpp.location} onChange={(e) => setEditingOpp({...editingOpp, location: e.target.value})} required />
+                      </div>
+                      <div className="col-12">
+                        <label className="form-label small fw-semibold">Instructions / Requirements</label>
+                        <textarea className="form-control" rows="2" value={editingOpp.requirements} onChange={(e) => setEditingOpp({...editingOpp, requirements: e.target.value})}></textarea>
+                      </div>
+                    </div>
+                    <div className="d-flex justify-content-end gap-2 mt-4">
+                      <button type="button" className="btn btn-light border" onClick={() => setEditingOpp(null)} disabled={submittingEdit}>Cancel</button>
+                      <button type="submit" className="btn btn-mc d-flex align-items-center gap-2" disabled={submittingEdit}>
+                        {submittingEdit ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> : null}
+                        {submittingEdit ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Applicants Modal */}
+      {viewingApplicantsOpp && (
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header border-bottom-0 pb-0">
+                <h5 className="modal-title fw-bold">Applicants for {viewingApplicantsOpp.title}</h5>
+                <button type="button" className="btn-close" onClick={() => setViewingApplicantsOpp(null)}></button>
+              </div>
+              <div className="modal-body">
+                {applicantsLoading ? (
+                  <div className="d-flex flex-column gap-2">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="placeholder-glow">
+                        <div className="placeholder bg-secondary rounded w-100" style={{ height: "60px" }}></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : applicantsError ? (
+                  <div className="alert alert-danger">{applicantsError}</div>
+                ) : applicants.length === 0 ? (
+                  <div className="text-center text-muted py-4">No applicants yet.</div>
+                ) : (
+                  <div className="list-group list-group-flush">
+                    {applicants.map(app => (
+                      <div key={app.id} className="list-group-item px-0 py-3">
+                        <div className="fw-semibold text-dark">{app.user.name}</div>
+                        <div className="small text-muted mt-1">
+                          Phone: {app.user.phone} &bull; Applied: {new Date(app.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -34,6 +34,15 @@ class VolunteerOpportunityResource extends JsonResource
                 'id' => $this->creator->id,
                 'name' => $this->creator->name,
             ]),
+            'registrations' => $this->whenLoaded('registeredUsers', fn () => $this->registeredUsers->map(fn ($user) => [
+                'id' => $user->pivot->id ?? $user->id,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'phone' => $user->phone,
+                ],
+                'created_at' => $user->pivot->created_at?->toJSON(),
+            ])),
             'created_at' => $this->created_at?->toJSON(),
             'updated_at' => $this->updated_at?->toJSON(),
         ];
