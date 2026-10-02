@@ -59,6 +59,8 @@ Route::prefix('auth')->group(function () {
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
 Route::get('/eid-season', [EidJamaatController::class, 'season']);
 Route::get('/eid-jamaats/nearby', [EidJamaatController::class, 'nearby']);
+Route::get('/mosques/filters', [MosqueController::class, 'filters']);
+Route::get('/mosques', [MosqueController::class, 'index']);
 Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'index']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
 Route::get('/mosques/{mosque}/photo', [MosquePhotoController::class, 'show']);

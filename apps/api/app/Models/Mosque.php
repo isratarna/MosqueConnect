@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\MosqueFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
     'address',
     'district',
     'area',
+    'photo_path',
     'latitude',
     'longitude',
     'phone',
@@ -44,6 +46,39 @@ class Mosque extends Model
 
     /** @var list<string> */
     protected $appends = ['photo_url'];
+
+    public function scopeWithFacilities(Builder $query, array $keys): Builder
+    {
+        foreach (array_unique($keys) as $key) {
+            $query->whereHas('facilities', fn (Builder $facilities) => $facilities->where('facility_key', $key));
+        }
+
+        return $query;
+    }
+
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        if (filled($term)) {
+            $like = '%'.$term.'%';
+            $query->where(fn (Builder $search) => $search
+                ->where('name', 'like', $like)
+                ->orWhere('address', 'like', $like)
+                ->orWhere('area', 'like', $like)
+                ->orWhere('district', 'like', $like));
+        }
+
+        return $query;
+    }
+
+    public function scopeInDistrict(Builder $query, ?string $district): Builder
+    {
+        return filled($district) ? $query->where('district', $district) : $query;
+    }
+
+    public function scopeInArea(Builder $query, ?string $area): Builder
+    {
+        return filled($area) ? $query->where('area', $area) : $query;
+    }
 
     /**
      * Get the user assigned to administer this mosque.
@@ -206,6 +241,8 @@ class Mosque extends Model
         return [
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'rating_avg' => 'decimal:1',
+            'reviews_count' => 'integer',
         ];
     }
 }

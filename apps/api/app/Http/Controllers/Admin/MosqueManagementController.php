@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\JumuahSession;
+use App\Http\Resources\PrayerScheduleResource;
 use App\Models\Mosque;
 use App\Models\MosqueFacility;
 use App\Models\PrayerTime;
@@ -66,30 +66,7 @@ class MosqueManagementController extends Controller
         $mosque->load(['prayerTimes', 'jumuahSessions']);
 
         return response()->json([
-            'data' => [
-                'mosque_id' => $mosque->id,
-                'prayer_schedule' => $mosque->prayerTimes
-                    ->map(fn ($time): array => [
-                        'id' => $time->id,
-                        'prayer' => $time->prayer,
-                        'label' => $time->label(),
-                        'adhan_time' => $time->adhan_time ? substr($time->adhan_time, 0, 5) : null,
-                        'jamaat_time' => $time->jamaat_time ? substr($time->jamaat_time, 0, 5) : null,
-                    ])
-                    ->values()
-                    ->all(),
-                'jumuah_sessions' => $mosque->jumuahSessions
-                    ->map(fn ($session): array => [
-                        'id' => $session->id,
-                        'sequence' => $session->sequence,
-                        'label' => $session->label,
-                        'khutbah_time' => $session->khutbah_time ? substr($session->khutbah_time, 0, 5) : null,
-                        'jamaat_time' => $session->jamaat_time ? substr($session->jamaat_time, 0, 5) : null,
-                        'notes' => $session->notes,
-                    ])
-                    ->values()
-                    ->all(),
-            ],
+            'data' => (new PrayerScheduleResource($mosque))->resolve(),
         ]);
     }
 
@@ -142,30 +119,7 @@ class MosqueManagementController extends Controller
 
         return response()->json([
             'message' => 'Prayer schedule updated successfully.',
-            'data' => [
-                'mosque_id' => $mosque->id,
-                'prayer_schedule' => $mosque->prayerTimes
-                    ->map(fn ($time): array => [
-                        'id' => $time->id,
-                        'prayer' => $time->prayer,
-                        'label' => $time->label(),
-                        'adhan_time' => $time->adhan_time ? substr($time->adhan_time, 0, 5) : null,
-                        'jamaat_time' => $time->jamaat_time ? substr($time->jamaat_time, 0, 5) : null,
-                    ])
-                    ->values()
-                    ->all(),
-                'jumuah_sessions' => $mosque->jumuahSessions
-                    ->map(fn ($session): array => [
-                        'id' => $session->id,
-                        'sequence' => $session->sequence,
-                        'label' => $session->label,
-                        'khutbah_time' => $session->khutbah_time ? substr($session->khutbah_time, 0, 5) : null,
-                        'jamaat_time' => $session->jamaat_time ? substr($session->jamaat_time, 0, 5) : null,
-                        'notes' => $session->notes,
-                    ])
-                    ->values()
-                    ->all(),
-            ],
+            'data' => (new PrayerScheduleResource($mosque))->resolve(),
         ]);
     }
 }
