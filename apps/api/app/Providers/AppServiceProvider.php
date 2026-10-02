@@ -10,6 +10,7 @@ use App\Models\Event;
 use App\Models\JumuahSession;
 use App\Models\Mosque;
 use App\Models\PrayerTime;
+use App\Models\VolunteerApplication;
 use App\Models\VolunteerOpportunity;
 use App\Observers\AdminActivityObserver;
 use App\Policies\AnnouncementPolicy;
@@ -56,7 +57,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Mosque::class, MosquePolicy::class);
         Gate::policy(VolunteerOpportunity::class, VolunteerOpportunityPolicy::class);
 
-        foreach ([Mosque::class, PrayerTime::class, JumuahSession::class, Announcement::class, Event::class, Campaign::class, CampaignDonation::class, VolunteerOpportunity::class] as $model) {
+        foreach ([Mosque::class, PrayerTime::class, JumuahSession::class, Announcement::class, Event::class, Campaign::class, CampaignDonation::class, VolunteerOpportunity::class, VolunteerApplication::class] as $model) {
             $model::observe(AdminActivityObserver::class);
         }
 

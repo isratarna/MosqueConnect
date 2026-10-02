@@ -22,7 +22,7 @@ export default function VolunteerOpportunities() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
-  
+
   const [actionError, setActionError] = useState("");
   // Admins manage their own opportunities in the mosque dashboard.
   const managedMosqueIds = (user?.managed_mosques || []).map((item) => item.id);
@@ -32,7 +32,8 @@ export default function VolunteerOpportunities() {
     time: [item.start_time, item.end_time].filter(Boolean).join(" - ") || "Contact the mosque",
     capacity: item.volunteers_required, instructions: item.requirements,
     participantCount: item.registrations_count || 0,
-    hasApplied: registrations.some((entry) => entry.volunteer_opportunity_id === item.id),
+    acceptedCount: item.accepted_count || 0,
+    hasApplied: registrations.some((entry) => entry.volunteer_opportunity_id === item.id && ["pending", "accepted"].includes(entry.status)),
   });
 
   const fetchData = useCallback(async (signal) => {
@@ -111,7 +112,7 @@ export default function VolunteerOpportunities() {
         <div className="d-flex flex-column gap-3">
           {opportunities.map(opp => {
             const hasApplied = opp.hasApplied;
-            const isFilled = opp.participantCount >= opp.capacity;
+            const isFilled = opp.acceptedCount >= opp.capacity;
             const isCompleted = opp.status === "completed";
             const isDisabled = !hasApplied && (isFilled || opp.status !== "active");
             const canManage = isAdmin && managedMosqueIds.includes(opp.mosque_id);
@@ -130,9 +131,9 @@ export default function VolunteerOpportunities() {
                   <h6 className="text-mc fw-semibold mb-3 small d-flex align-items-center gap-1">
                     <MapPin size={14} /> {opp.mosqueName}
                   </h6>
-                  
+
                   <p className="text-secondary small mb-3">{opp.description}</p>
-                  
+
                   {opp.instructions && (
                     <div className="bg-light p-3 rounded mb-3 small text-muted border-start border-3 border-secondary">
                       <strong className="d-block mb-1 text-dark">Requirements/Instructions:</strong>
@@ -172,16 +173,16 @@ export default function VolunteerOpportunities() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="d-flex gap-2">
                       {canManage && (
                         <Link to={`/admin/dashboard?section=volunteers&mosque=${opp.mosque_id}`} className="btn btn-sm btn-outline-mc">
                           Manage in dashboard
                         </Link>
                       )}
-                      
+
                       {!canManage && (
-                        <button 
+                        <button
                           className={`btn btn-sm d-flex align-items-center gap-2 fw-medium ${hasApplied ? "btn-success" : isDisabled ? "btn-light border text-muted" : "btn-mc"}`}
                           disabled={isDisabled || opp.isApplying}
                           onClick={() => handleApply(opp.id)}

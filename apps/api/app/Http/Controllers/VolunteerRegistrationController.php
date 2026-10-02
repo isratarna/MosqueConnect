@@ -2,44 +2,41 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\VolunteerApplication;
 use App\Models\VolunteerOpportunity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class VolunteerRegistrationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        return response()->json(['data' => DB::table('volunteer_registrations')
-            ->where('user_id', $request->user()->id)->get()]);
+        $applications = $request->user()
+            ->volunteerApplications()
+            ->latest()
+            ->get(['id', 'volunteer_opportunity_id', 'status', 'created_at']);
+
+        return response()->json([
+            'data' => $applications->map(fn (VolunteerApplication $application) => [
+                'id' => $application->id,
+                'volunteer_opportunity_id' => $application->volunteer_opportunity_id,
+                'status' => $application->status,
+                'created_at' => $application->created_at?->toJSON(),
+            ]),
+        ]);
     }
 
     public function store(Request $request, VolunteerOpportunity $volunteerOpportunity): JsonResponse
     {
-        return DB::transaction(function () use ($request, $volunteerOpportunity) {
-            $opportunity = VolunteerOpportunity::query()->lockForUpdate()->findOrFail($volunteerOpportunity->id);
-            abort_unless($opportunity->status === VolunteerOpportunity::STATUS_ACTIVE && $opportunity->opportunity_date >= today(), 409, 'This opportunity is no longer accepting volunteers.');
-            $registrations = DB::table('volunteer_registrations')->where('volunteer_opportunity_id', $opportunity->id);
-            abort_if((clone $registrations)->where('user_id', $request->user()->id)->exists(), 409, 'You have already signed up.');
-            abort_if($registrations->count() >= $opportunity->volunteers_required, 409, 'This opportunity is full.');
-            DB::table('volunteer_registrations')->insert([
-                'volunteer_opportunity_id' => $opportunity->id,
-                'user_id' => $request->user()->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            return response()->json(['message' => 'Your volunteer signup has been saved.'], 201);
-        });
+        return app(VolunteerApplicationController::class)->store($request, $volunteerOpportunity);
     }
 
     public function destroy(Request $request, VolunteerOpportunity $volunteerOpportunity): JsonResponse
     {
-        DB::transaction(function () use ($request, $volunteerOpportunity) {
-            VolunteerOpportunity::query()->lockForUpdate()->findOrFail($volunteerOpportunity->id);
-            DB::table('volunteer_registrations')->where('volunteer_opportunity_id', $volunteerOpportunity->id)
-                ->where('user_id', $request->user()->id)->delete();
-        });
-        return response()->json(['message' => 'Your signup was cancelled.']);
+        $application = $volunteerOpportunity->applications()->where('user_id', $request->user()->id)->first();
+
+        abort_if(! $application, 404, 'You have not applied for this opportunity.');
+
+        return app(VolunteerApplicationController::class)->cancel($request, $application);
     }
 }
