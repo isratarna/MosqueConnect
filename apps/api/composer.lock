@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "575c0eae0192da3296ab92e8d749c8be",
+    "content-hash": "4367eee1164ca94ba5b87476d8fb8283",
     "packages": [
         {
             "name": "brick/math",
@@ -1058,6 +1058,63 @@
             "time": "2026-07-17T13:53:03+00:00"
         },
         {
+            "name": "islamic-network/prayer-times",
+            "version": "1.0.29",
+            "source": {
+                "type": "git",
+                "url": "https://1x.ax/islamic-network/libraries/prayer-times.git",
+                "reference": "f7ed3a2467fbced252a0914c8b202c8b61ca58b9"
+            },
+            "require": {
+                "islamic-network/prayer-times-moonsighting": "^1.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "IslamicNetwork\\PrayerTimes\\": "src/PrayerTimes/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-or-later"
+            ],
+            "description": "Precise and Powerful PHP Prayer Times Library",
+            "time": "2024-03-17T08:24:32+00:00"
+        },
+        {
+            "name": "islamic-network/prayer-times-moonsighting",
+            "version": "1.1",
+            "source": {
+                "type": "git",
+                "url": "https://1x.ax/islamic-network/libraries/prayer-times-moonsighting",
+                "reference": "73f2b0ee9d41fa145f262d372a06cb9a9dae353e"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "IslamicNetwork\\MoonSighting\\": "src/MoonSighting/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-or-later"
+            ],
+            "description": "PHP Prayer Times Library to Calculate Fajr and Isha times per moonsighting.com",
+            "homepage": "https://flarum.org/",
+            "keywords": [
+                "islam",
+                "moonsighting.com",
+                "prayer times"
+            ],
+            "time": "2020-07-22T06:16:24+00:00"
+        },
+        {
             "name": "laravel/framework",
             "version": "v13.25.0",
             "source": {
@@ -1344,67 +1401,6 @@
             "time": "2026-08-04T14:50:50+00:00"
         },
         {
-            "name": "laravel/serializable-closure",
-            "version": "v2.0.15",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/serializable-closure.git",
-                "reference": "dccd8bcb851bb03fcc005df650b708b57cc52661"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/dccd8bcb851bb03fcc005df650b708b57cc52661",
-                "reference": "dccd8bcb851bb03fcc005df650b708b57cc52661",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.1"
-            },
-            "require-dev": {
-                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
-                "nesbot/carbon": "^2.67|^3.0",
-                "pestphp/pest": "^2.36|^3.0|^4.0",
-                "phpstan/phpstan": "^2.0",
-                "symfony/var-dumper": "^6.2.0|^7.0.0|^8.0.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "2.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laravel\\SerializableClosure\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Taylor Otwell",
-                    "email": "taylor@laravel.com"
-                },
-                {
-                    "name": "Nuno Maduro",
-                    "email": "nuno@laravel.com"
-                }
-            ],
-            "description": "Laravel Serializable Closure provides an easy and secure way to serialize closures in PHP.",
-            "keywords": [
-                "closure",
-                "laravel",
-                "serializable"
-            ],
-            "support": {
-                "issues": "https://github.com/laravel/serializable-closure/issues",
-                "source": "https://github.com/laravel/serializable-closure"
-            },
-            "time": "2026-07-21T16:49:22+00:00"
-        },
-        {
             "name": "laravel/sanctum",
             "version": "v4.3.3",
             "source": {
@@ -1466,6 +1462,67 @@
                 "source": "https://github.com/laravel/sanctum"
             },
             "time": "2026-06-23T18:26:55+00:00"
+        },
+        {
+            "name": "laravel/serializable-closure",
+            "version": "v2.0.15",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/serializable-closure.git",
+                "reference": "dccd8bcb851bb03fcc005df650b708b57cc52661"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/dccd8bcb851bb03fcc005df650b708b57cc52661",
+                "reference": "dccd8bcb851bb03fcc005df650b708b57cc52661",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+                "nesbot/carbon": "^2.67|^3.0",
+                "pestphp/pest": "^2.36|^3.0|^4.0",
+                "phpstan/phpstan": "^2.0",
+                "symfony/var-dumper": "^6.2.0|^7.0.0|^8.0.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Laravel\\SerializableClosure\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                },
+                {
+                    "name": "Nuno Maduro",
+                    "email": "nuno@laravel.com"
+                }
+            ],
+            "description": "Laravel Serializable Closure provides an easy and secure way to serialize closures in PHP.",
+            "keywords": [
+                "closure",
+                "laravel",
+                "serializable"
+            ],
+            "support": {
+                "issues": "https://github.com/laravel/serializable-closure/issues",
+                "source": "https://github.com/laravel/serializable-closure"
+            },
+            "time": "2026-07-21T16:49:22+00:00"
         },
         {
             "name": "laravel/tinker",

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\EidJamaat;
 use App\Models\Event;
 use App\Models\Mosque;
 use App\Models\Notification;
@@ -84,6 +85,40 @@ class NotificationService
             'message' => Str::limit("{$mosque->name} launched a new donation campaign: {$title}.", 10000, ''),
             'reference_type' => Notification::REFERENCE_CAMPAIGN,
             'reference_id' => $campaignId,
+        ]);
+    }
+
+    /**
+     * Notify followers that a mosque published its Eid jamaat times.
+     *
+     * The reference is the season's earliest-created jamaat, so publishing
+     * more jamaats for the same Eid later does not notify followers again.
+     *
+     * @param  iterable<EidJamaat>  $jamaats  The mosque's published jamaats for one Eid.
+     */
+    public function notifyEidJamaatsPublished(Mosque $mosque, string $eid, int $year, iterable $jamaats): int
+    {
+        $jamaats = collect($jamaats)->sortBy(['date', 'jamaat_time', 'sequence'])->values();
+
+        if ($jamaats->isEmpty()) {
+            return 0;
+        }
+
+        $label = EidJamaat::EID_LABELS[$eid] ?? 'Eid';
+        $times = $jamaats
+            ->map(function (EidJamaat $jamaat): string {
+                $time = date('g:i A', strtotime($jamaat->jamaat_time));
+
+                return $jamaat->location_name ? "{$time} ({$jamaat->location_name})" : $time;
+            })
+            ->implode(', ');
+
+        return $this->notifyMosqueFollowers($mosque, [
+            'type' => Notification::TYPE_EID,
+            'title' => 'Eid jamaat times published',
+            'message' => Str::limit("{$mosque->name} published its {$label} {$year} jamaat times: {$times}.", 10000, ''),
+            'reference_type' => Notification::REFERENCE_EID_JAMAAT,
+            'reference_id' => $jamaats->min('id'),
         ]);
     }
 

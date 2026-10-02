@@ -5047,12 +5047,12 @@ main {
 
 /*
   The carousel shares the map's measure so the cards line up with the panel
-  above them. The mask fades slides out at those edges rather than letting the
-  overflow clip chop one off mid-card.
+  above them. Home.jsx sizes the slides so a whole number of cards spans that
+  measure exactly, so the outer cards sit flush with the map edges.
 */
 .mc-nearby-showcase__viewport {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 /* ---------- alignment within card grids ---------- */
@@ -5409,5 +5409,115 @@ main {
   .mc-to-top:hover,
   .mc-to-top:active {
     transform: none;
+  }
+}
+
+/* ---------- calculated prayer times ---------- */
+.mc-estimated {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border: 1px dashed var(--mc-gold);
+  border-radius: 999px;
+  color: #8a6416;
+  background: #fff8e8;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  text-transform: lowercase;
+  vertical-align: middle;
+  cursor: help;
+}
+
+/* ---------- Eid ---------- */
+.mc-eid-banner {
+  padding: 0.65rem 0;
+  background: linear-gradient(90deg, var(--mc-green-dark), var(--mc-green));
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.mc-eid-banner svg {
+  color: var(--mc-gold);
+  flex-shrink: 0;
+}
+
+.mc-eid-jamaat {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(18, 119, 92, 0.15);
+  border-radius: 0.75rem;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mc-eid-jamaat.is-selectable {
+  cursor: pointer;
+}
+
+.mc-eid-jamaat.is-active {
+  border-color: var(--mc-green);
+  box-shadow: 0 0 0 3px rgba(18, 119, 92, 0.12);
+}
+
+.mc-eid-jamaat__time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 5.5rem;
+  padding: 0.5rem;
+  border-radius: 0.6rem;
+  background: var(--mc-soft);
+  color: var(--mc-green-dark);
+  text-align: center;
+}
+
+.mc-eid-jamaat__time strong {
+  font-size: 1.1rem;
+  white-space: nowrap;
+}
+
+.mc-eid-jamaat__time span {
+  font-size: 0.78rem;
+  color: #5c6b67;
+}
+
+.mc-eid-jamaat__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mc-eid-card {
+  border-top: 3px solid var(--mc-gold);
+}
+
+.mc-eid-map {
+  min-height: 420px;
+  position: sticky;
+  top: 1rem;
+}
+
+.mc-location-picker {
+  height: 280px;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+@media (max-width: 575.98px) {
+  .mc-eid-jamaat {
+    flex-direction: column;
+  }
+
+  .mc-eid-jamaat__time {
+    flex-direction: row;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .mc-eid-map {
+    min-height: 300px;
+    position: static;
   }
 }

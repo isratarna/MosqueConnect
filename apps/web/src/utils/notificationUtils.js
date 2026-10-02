@@ -3,6 +3,7 @@ export const NOTIFICATION_TYPES = {
   announcement: { label: "Announcement" },
   prayer_schedule: { label: "Prayer schedule" },
   campaign: { label: "Campaign" },
+  eid: { label: "Eid" },
   system: { label: "System" },
 };
 
@@ -42,6 +43,8 @@ export function getNotificationPath(notification) {
       return referenceId ? `/campaigns/${encodeURIComponent(referenceId)}` : null;
     case "prayer_schedule":
       return mosqueId ? `/mosque/${encodeURIComponent(mosqueId)}#prayer-schedule` : null;
+    case "eid":
+      return mosqueId ? `/mosque/${encodeURIComponent(mosqueId)}#eid-jamaat` : null;
     default:
       return null;
   }

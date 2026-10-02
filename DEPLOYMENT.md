@@ -27,14 +27,12 @@ The first successful login for a phone number creates that account.
 
 ### Retrieving the code — with the terminal
 
-From this project folder, in PowerShell:
+    az containerapp logs show --name mc-api --resource-group mosqueconnect-rg --tail 200
 
-    .\get-otp.ps1
-
-The script locates the Azure CLI on its own and prints the most recent code. It
-requires the Azure CLI to be installed and `az login` to have been completed as
-`isratjahanarna@gmail.com`. That sign-in persists across reboots, so it normally
-only has to be done once per machine.
+Look for the most recent `Local phone OTP generated.` line. This requires the
+Azure CLI to be installed and `az login` to have been completed as
+`isratjahanarna@gmail.com`. (`get-otp.ps1` in this folder reads the *local*
+`laravel.log`, not the deployed API.)
 
 If the Azure CLI is missing on a new machine:
 

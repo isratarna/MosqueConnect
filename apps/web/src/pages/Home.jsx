@@ -29,7 +29,12 @@ import { useAuth } from "../context/AuthContext";
 import { DEFAULT_CENTER } from "../config";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
 import { directionsUrl } from "../utils/mosqueDiscovery";
-import { dhuhrJamaatLabel } from "../utils/prayerTime";
+import { dhuhrJamaatLabel, isEstimatedPrayer } from "../utils/prayerTime";
+import EstimatedBadge from "../components/EstimatedBadge";
+import EidBanner from "../components/EidBanner";
+
+const MIN_CARD_WIDTH = 240;
+const CARD_GAP = 16;
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -59,6 +64,7 @@ export default function Home() {
 
   return (
     <>
+      <EidBanner />
       {user ? (
         <div className="mc-auth-nearby-experience">
           <AuthenticatedNearbySection
@@ -264,14 +270,37 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const [isInteracting, setIsInteracting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const pointerStartX = useRef(0);
-  const [cardWidth, setCardWidth] = useState(260);
+  const viewportRef = useRef(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
 
   useEffect(() => {
-    const handleResize = () => setCardWidth(window.innerWidth < 768 ? 235 : 260);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const viewport = viewportRef.current;
+    if (!viewport) return undefined;
+
+    const measure = () => setViewportWidth(viewport.clientWidth);
+    measure();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    return () => observer.disconnect();
   }, []);
+
+  // As many cards as fit at their minimum width, kept odd so the active card
+  // stays centred, then stretched so the row spans the viewport edge to edge.
+  const fittingCards = Math.max(1, Math.floor((viewportWidth + CARD_GAP) / (MIN_CARD_WIDTH + CARD_GAP)));
+  const visibleCount = Math.max(1, Math.min(
+    fittingCards % 2 ? fittingCards : fittingCards - 1,
+    nearby.length % 2 ? nearby.length : nearby.length - 1,
+  ));
+  const maxOffset = (visibleCount - 1) / 2;
+  const slideWidth = viewportWidth
+    ? (viewportWidth - (visibleCount - 1) * CARD_GAP) / visibleCount
+    : MIN_CARD_WIDTH;
 
   useEffect(() => {
     if (!nearby.length) {
@@ -405,6 +434,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
             </div>
 
             <div
+              ref={viewportRef}
               className={`mc-nearby-showcase__viewport ${isInteracting ? "is-dragging" : ""}`}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -423,12 +453,11 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                 const absOffset = Math.abs(normalizedOffset);
                 const isActive = normalizedOffset === 0;
-                const isVisible = absOffset <= 2;
+                const isVisible = absOffset <= maxOffset;
 
                 if (!isVisible) return null;
 
-                const offsetX = normalizedOffset * 278 + dragOffset * 0.55;
-                const opacity = isActive ? 1 : 0.68;
+                const offsetX = (normalizedOffset + maxOffset) * (slideWidth + CARD_GAP) + dragOffset * 0.55;
                 const zIndex = isActive ? 10 : 5 - absOffset;
 
                 return (
@@ -436,8 +465,10 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                     key={mosque.id}
                     className={`mc-nearby-slide ${isActive ? "is-active" : ""}`}
                     style={{
-                      transform: `translate(calc(-50% + ${offsetX}px), -50%) scale(${isActive ? 1.03 : 0.94})`,
-                      opacity,
+                      left: 0,
+                      width: `${slideWidth}px`,
+                      transform: `translate(${offsetX}px, -50%)`,
+                      opacity: 1,
                       zIndex,
                       transition: isInteracting ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
                       cursor: isActive ? undefined : "pointer",
@@ -483,7 +514,10 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                           <div className="mc-next-prayer mb-2">
                             <span>Next Jamat</span>
-                            <strong>{dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}</strong>
+                            <strong>
+                              {dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}
+                              {isEstimatedPrayer(mosque.prayer_sources, "Dhuhr") && <EstimatedBadge className="ms-1" />}
+                            </strong>
                           </div>
                         </div>
 

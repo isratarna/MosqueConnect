@@ -8,6 +8,7 @@ import {
   Heart,
   LoaderCircle,
   Map as MapIcon,
+  Moon,
   MapPin,
   Megaphone,
   Navigation,
@@ -28,6 +29,7 @@ import { directionsUrl, fetchMosqueById } from "../utils/mosqueDiscovery";
 import { formatClockTime } from "../utils/prayerTime";
 import { useFollow } from "../context/FollowContext";
 import MosqueClaimForm from "../components/MosqueClaimForm";
+import EidJamaatCard from "../components/eid/EidJamaatCard";
 
 export default function MosqueProfile() {
   const { id } = useParams();
@@ -94,6 +96,7 @@ export default function MosqueProfile() {
   const facilities = Array.isArray(mosque.facilities) ? mosque.facilities : [];
   const jumuahSessions = Array.isArray(mosque.jumuah_sessions) ? mosque.jumuah_sessions : [];
   const prayerSchedule = Array.isArray(mosque.prayer_schedule) ? mosque.prayer_schedule : [];
+  const eidJamaats = Array.isArray(mosque.eid_jamaats) ? mosque.eid_jamaats : [];
   const hasDailyPrayer = Object.values(prayer).some(Boolean) || prayerSchedule.length > 0;
   const directions = directionsUrl(mosque);
 
@@ -152,6 +155,21 @@ export default function MosqueProfile() {
 
       <div className="row g-4">
         <div className="col-lg-8">
+          {eidJamaats.length > 0 && (
+            <div className="card mc-card mc-eid-card mb-4" id="eid-jamaat">
+              <div className="card-body">
+                <h5 className="fw-bold mb-3">
+                  <Moon size={18} className="text-mc me-2" aria-hidden="true" />
+                  {eidJamaats[0].eid_label} {eidJamaats[0].year} jamaat{eidJamaats.length > 1 ? "s" : ""}
+                </h5>
+                <div className="d-grid gap-3">
+                  {eidJamaats.map((jamaat) => <EidJamaatCard key={jamaat.id} jamaat={jamaat} />)}
+                </div>
+                <Link to="/eid" className="small text-mc text-decoration-none d-inline-block mt-3">Find other Eid jamaats near you</Link>
+              </div>
+            </div>
+          )}
+
           <div className="card mc-card mb-4" id="prayer-schedule">
             <div className="card-body">
               <h5 className="fw-bold mb-3"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />Prayer &amp; Jamat Times</h5>

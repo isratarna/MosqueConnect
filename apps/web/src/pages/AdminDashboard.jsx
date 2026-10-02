@@ -5,8 +5,9 @@ import { apiRequest } from "../utils/api";
 import { FACILITY_META } from "../data/mosques";
 import CampaignManager from "../components/admin/CampaignManager";
 import EventManager from "../components/admin/EventManager";
+import EidJamaatManager from "../components/admin/EidJamaatManager";
 
-const tabs = { overview: "Dashboard Overview", profile: "Manage Mosque Profile", prayer: "Manage Prayer & Jamat", jummah: "Manage Jummah", announce: "Manage Announcements", events: "Manage Events", facilities: "Manage Facilities", donations: "Donation Campaigns", volunteers: "Volunteer Work" };
+const tabs = { overview: "Dashboard Overview", profile: "Manage Mosque Profile", prayer: "Manage Prayer & Jamat", jummah: "Manage Jummah", eid: "Manage Eid Jamaat", announce: "Manage Announcements", events: "Manage Events", facilities: "Manage Facilities", donations: "Donation Campaigns", volunteers: "Volunteer Work" };
 const metrics = { followers_count: "Followers", active_announcements_count: "Active announcements", upcoming_events_count: "Upcoming events", active_campaigns_count: "Active campaigns", pending_content_reports_count: "Pending reports" };
 
 export default function AdminDashboard() {
@@ -83,6 +84,7 @@ export default function AdminDashboard() {
         </form>}
         {["prayer", "jummah"].includes(activeTab) && <><h2 className="h4">{tabs[activeTab]}</h2><p>Update the prayer schedule and first Jumuah session displayed on your mosque profile.</p><Link to={`/mosque-admin/prayer-schedule?mosque=${mosqueId}`} className="btn btn-mc">Open prayer schedule</Link></>}
         {activeTab === "announce" && <><h2 className="h4">Manage Announcements</h2><p>Publish mosque updates, including requests for goods and community support.</p><Link to={`/mosque-admin/announcements?mosque=${mosqueId}`} className="btn btn-mc">Open announcements</Link></>}
+        {activeTab === "eid" && <EidJamaatManager mosqueId={mosqueId} mosque={mosque} />}
         {activeTab === "events" && <EventManager mosqueId={mosqueId} />}
         {activeTab === "donations" && <CampaignManager mosqueId={mosqueId} />}
         {activeTab === "volunteers" && <><h2 className="h4">Volunteer Work</h2><p>Create opportunities and manage your mosque's volunteering activities.</p><Link to={`/volunteers?mosque=${mosqueId}`} className="btn btn-mc">Open volunteer opportunities</Link></>}

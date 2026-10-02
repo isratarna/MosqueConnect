@@ -53,8 +53,13 @@ class MosqueProfileInformationTest extends TestCase
             [MosqueFacility::AC, MosqueFacility::PARKING, MosqueFacility::WOMEN_AREA, MosqueFacility::WUDU],
             $response->json('data.facilities'),
         );
-        $this->assertCount(4, $response->json('data.prayer_schedule'));
+        // Four published prayers plus Isha, which is filled from the calculator.
+        $this->assertCount(5, $response->json('data.prayer_schedule'));
         $this->assertSame('04:22', $response->json('data.prayer_schedule.0.adhan_time'));
+        $this->assertSame('mosque', $response->json('data.prayer_schedule.0.source'));
+        $this->assertSame('isha', $response->json('data.prayer_schedule.4.prayer'));
+        $this->assertSame('calculated', $response->json('data.prayer_schedule.4.source'));
+        $this->assertSame('calculated', $response->json('data.prayer_sources.Isha'));
         $this->assertCount(2, $response->json('data.jumuah_sessions'));
         $this->assertCount(1, $response->json('data.announcements'));
     }
@@ -65,16 +70,20 @@ class MosqueProfileInformationTest extends TestCase
             'name' => 'Nasirabad Jame Mosque',
             'description' => null,
             'phone' => null,
+            'latitude' => 22.3569,
+            'longitude' => 91.7832,
         ]);
 
-        $this->getJson("/api/mosques/{$mosque->id}")
+        $response = $this->getJson("/api/mosques/{$mosque->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $mosque->id)
-            ->assertJsonPath('data.prayer', [])
-            ->assertJsonPath('data.prayer_schedule', [])
             ->assertJsonPath('data.jumuah_sessions', [])
             ->assertJsonPath('data.announcements', [])
             ->assertJsonPath('data.facilities', []);
+
+        // Unpublished prayer times fall back to calculated ones.
+        $this->assertCount(5, $response->json('data.prayer_schedule'));
+        $this->assertSame(['calculated'], array_values(array_unique($response->json('data.prayer_sources'))));
     }
 
     public function test_draft_announcements_are_hidden_from_the_public_mosque_profile(): void

@@ -8,6 +8,7 @@ import {
   Info,
   LoaderCircle,
   Megaphone,
+  Moon,
 } from "lucide-react";
 import {
   formatNotificationTime,
@@ -20,6 +21,7 @@ const TYPE_ICONS = {
   announcement: Megaphone,
   prayer_schedule: Clock3,
   campaign: CircleDollarSign,
+  eid: Moon,
   system: Info,
 };
 

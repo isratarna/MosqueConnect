@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CampaignManagementController;
 use App\Http\Controllers\Admin\ContentModerationController;
+use App\Http\Controllers\Admin\EidJamaatManagementController;
 use App\Http\Controllers\Admin\EventManagementController;
 use App\Http\Controllers\Admin\MosqueDashboardController;
 use App\Http\Controllers\Admin\MosqueManagementController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\BloodRequestController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\CampaignDonationController;
 use App\Http\Controllers\ContentReportController;
+use App\Http\Controllers\EidJamaatController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventRegistrationController;
 use App\Http\Controllers\MosqueClaimController;
@@ -51,6 +53,8 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
+Route::get('/eid-season', [EidJamaatController::class, 'season']);
+Route::get('/eid-jamaats/nearby', [EidJamaatController::class, 'nearby']);
 Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'index']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
 Route::get('/volunteer-opportunities', [VolunteerOpportunityController::class, 'index']);
@@ -125,6 +129,12 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
                 Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'update']);
                 Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/status', [VolunteerOpportunityController::class, 'updateStatus']);
                 Route::delete('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'destroy']);
+
+                Route::get('/mosques/{mosque}/eid-jamaats', [EidJamaatManagementController::class, 'index']);
+                Route::post('/mosques/{mosque}/eid-jamaats', [EidJamaatManagementController::class, 'store']);
+                Route::post('/mosques/{mosque}/eid-jamaats/publish', [EidJamaatManagementController::class, 'publish']);
+                Route::patch('/mosques/{mosque}/eid-jamaats/{eidJamaat}', [EidJamaatManagementController::class, 'update']);
+                Route::delete('/mosques/{mosque}/eid-jamaats/{eidJamaat}', [EidJamaatManagementController::class, 'destroy']);
 
                 Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'adminIndex']);
                 Route::post('/mosques/{mosque}/announcements', [AnnouncementController::class, 'store']);
