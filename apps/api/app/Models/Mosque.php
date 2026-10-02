@@ -4,8 +4,8 @@ namespace App\Models;
 
 use App\Support\TextSearch;
 use Database\Factories\MosqueFactory;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
     'address',
     'district',
     'area',
+    'photo_path',
     'latitude',
     'longitude',
     'phone',
@@ -71,6 +72,36 @@ class Mosque extends Model
                 'accepted_at' => $member->accepted_at ?? now(),
             ])->save();
         });
+    }
+
+    public function scopeWithFacilities(Builder $query, array $keys): Builder
+    {
+        foreach (array_unique($keys) as $key) {
+            $query->whereHas('facilities', fn (Builder $facilities) => $facilities->where('facility_key', $key));
+        }
+
+        return $query;
+    }
+
+    /**
+     * Match a search term against the name, address, area and district:
+     * FULLTEXT on MySQL, LIKE on SQLite. A blank term leaves the query as is.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        return filled($term)
+            ? TextSearch::apply($query, ['name', 'address'], $term, ['area', 'district'])
+            : $query;
+    }
+
+    public function scopeInDistrict(Builder $query, ?string $district): Builder
+    {
+        return filled($district) ? $query->where('district', $district) : $query;
+    }
+
+    public function scopeInArea(Builder $query, ?string $area): Builder
+    {
+        return filled($area) ? $query->where('area', $area) : $query;
     }
 
     /**
@@ -221,14 +252,6 @@ class Mosque extends Model
     }
 
     /**
-     * Match a search term against the name, address, area and district.
-     */
-    public function scopeSearch(Builder $query, string $term): Builder
-    {
-        return TextSearch::apply($query, ['name', 'address'], $term, ['area', 'district']);
-    }
-
-    /**
      * Get published announcements for public mosque profiles.
      */
     public function publishedAnnouncements(): HasMany
@@ -282,6 +305,8 @@ class Mosque extends Model
         return [
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'rating_avg' => 'decimal:1',
+            'reviews_count' => 'integer',
         ];
     }
 }

@@ -31,6 +31,9 @@ class MosqueResource extends JsonResource
             'district' => $this->district,
             'area' => $this->area,
             'photo_url' => $this->photo_url,
+            'rating' => $this->rating_avg === null ? null : (float) $this->rating_avg,
+            'reviews_count' => (int) ($this->reviews_count ?? 0),
+            'has_admin' => $this->owner_id !== null,
             'latitude' => (float) $this->latitude,
             'longitude' => (float) $this->longitude,
             'phone' => $this->phone,
@@ -60,8 +63,9 @@ class MosqueResource extends JsonResource
             'updated_at' => $this->updated_at?->toJSON(),
         ];
 
-        if ($this->distanceKm !== null) {
-            $payload['distance_km'] = round($this->distanceKm, 3);
+        $distanceKm = $this->distanceKm ?? $this->resource->getAttribute('distance_km');
+        if ($distanceKm !== null) {
+            $payload['distance_km'] = round((float) $distanceKm, 3);
         }
 
         if ($this->detailed) {

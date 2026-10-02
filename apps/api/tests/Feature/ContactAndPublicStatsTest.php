@@ -8,10 +8,10 @@ use App\Models\ContactMessage;
 use App\Models\Event;
 use App\Models\Mosque;
 use App\Models\User;
+use App\Models\VolunteerApplication;
 use App\Models\VolunteerOpportunity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -97,9 +97,9 @@ class ContactAndPublicStatsTest extends TestCase
         CampaignDonation::factory()->create(['campaign_id' => $campaign->id, 'amount' => 9999, 'status' => CampaignDonation::STATUS_PENDING]);
 
         $opportunity = VolunteerOpportunity::factory()->create(['mosque_id' => $verified->id]);
-        DB::table('volunteer_registrations')->insert([
-            ['volunteer_opportunity_id' => $opportunity->id, 'user_id' => User::factory()->create()->id, 'created_at' => now(), 'updated_at' => now()],
-        ]);
+        foreach ([VolunteerApplication::STATUS_ACCEPTED, VolunteerApplication::STATUS_PENDING, VolunteerApplication::STATUS_CANCELLED] as $status) {
+            VolunteerApplication::query()->create(['volunteer_opportunity_id' => $opportunity->id, 'user_id' => User::factory()->create()->id, 'status' => $status]);
+        }
 
         Event::factory()->create(['mosque_id' => $verified->id, 'status' => Event::STATUS_PUBLISHED, 'event_date' => today()->subWeek()]);
         Event::factory()->create(['mosque_id' => $verified->id, 'status' => Event::STATUS_PUBLISHED, 'event_date' => today()->addWeek()]);
@@ -113,7 +113,7 @@ class ContactAndPublicStatsTest extends TestCase
             ->assertJsonPath('data.verified_mosques_count', 1)
             ->assertJsonPath('data.members_count', $normalUsers)
             ->assertJsonPath('data.donations_confirmed_total', 2000.5)
-            ->assertJsonPath('data.volunteer_signups_count', 1)
+            ->assertJsonPath('data.volunteer_signups_count', 2)
             ->assertJsonPath('data.events_held_count', 1);
     }
 

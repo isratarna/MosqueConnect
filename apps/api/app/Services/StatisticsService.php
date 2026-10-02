@@ -6,8 +6,8 @@ use App\Models\CampaignDonation;
 use App\Models\Event;
 use App\Models\Mosque;
 use App\Models\User;
+use App\Models\VolunteerApplication;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Platform-wide numbers, such as the impact stats on the home page.
@@ -33,7 +33,8 @@ class StatisticsService
             'donations_confirmed_total' => (float) CampaignDonation::query()
                 ->where('status', CampaignDonation::STATUS_CONFIRMED)
                 ->sum('amount'),
-            'volunteer_signups_count' => DB::table('volunteer_registrations')->count(),
+            // Pending and accepted applications; rejected and cancelled ones are left out.
+            'volunteer_signups_count' => VolunteerApplication::query()->whereIn('status', VolunteerApplication::ACTIVE_STATUSES)->count(),
             'events_held_count' => Event::query()->published()->whereDate('event_date', '<', today())->count(),
         ]);
     }
