@@ -264,13 +264,6 @@ export function saveMosqueToLocal(updatedMosque) {
   }
 }
 
-export const IMPACT_STATS = [
-  { value: "120+",  label: "Mosques Connected" },
-  { value: "8,400", label: "Community Members" },
-  { value: "৳2.1M", label: "Donations Facilitated" },
-  { value: "560",   label: "Active Volunteers" },
-];
-
 /* ---------- helpers ---------- */
 
 // Haversine distance in km between two {lat,lng} points.

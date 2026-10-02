@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\TextSearch;
 use Database\Factories\MosqueFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -186,6 +188,38 @@ class Mosque extends Model
     public function volunteerOpportunities(): HasMany
     {
         return $this->hasMany(VolunteerOpportunity::class);
+    }
+
+    /**
+     * Lost and found items posted at this mosque.
+     */
+    public function lostFoundItems(): HasMany
+    {
+        return $this->hasMany(LostFoundItem::class);
+    }
+
+    /**
+     * Private feedback sent to this mosque.
+     */
+    public function complaints(): HasMany
+    {
+        return $this->hasMany(Complaint::class);
+    }
+
+    /**
+     * Pledges of goods made to this mosque.
+     */
+    public function goodsDonations(): HasMany
+    {
+        return $this->hasMany(GoodsDonation::class);
+    }
+
+    /**
+     * Match a search term against the name, address, area and district.
+     */
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        return TextSearch::apply($query, ['name', 'address'], $term, ['area', 'district']);
     }
 
     /**

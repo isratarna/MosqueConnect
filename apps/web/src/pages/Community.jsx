@@ -3,6 +3,7 @@ import { FilterX, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import CommunityCard, { CommunityCategoryIcon } from "../components/CommunityCard";
 import EventList from "../components/events/EventList";
+import LostFoundSection from "../components/community/LostFoundSection";
 import EventRegistrationFeedback from "../components/events/EventRegistrationFeedback";
 import useEventRegistration from "../hooks/useEventRegistration";
 import { isCommunityCategory } from "../data/community";
@@ -15,6 +16,7 @@ const CATEGORY_FILTERS = [
   { key: "event", label: "Event" },
   { key: "blood", label: "Blood Request" },
   { key: "volunteer", label: "Volunteer" },
+  { key: "lost_found", label: "Lost & Found" },
 ];
 const INITIAL_VISIBLE_ITEMS = 5;
 
@@ -179,8 +181,9 @@ export default function Community() {
   }), [area, dateGroup, eventCategory, events, mosque, search, upcomingEventsOnly]);
 
   const feedItems = filteredUpdates.slice(0, visibleItems);
+  const showLostFound = activeCategory === "lost_found";
   const showEvents = activeCategory === "all" || activeCategory === "event";
-  const showCommunityFeed = activeCategory !== "event";
+  const showCommunityFeed = activeCategory !== "event" && !showLostFound;
 
   return (
     <section className="mc-community-page mc-atmospheric-section">
@@ -191,7 +194,12 @@ export default function Community() {
           <p>Find official mosque announcements, prayer updates, events, support requests, and community notices in one place.</p>
         </header>
 
-        <section className="mc-community-filter mc-card mc-motion-section" aria-label="Search and filter community updates">
+        {showLostFound && (
+          <div className="mc-community-filter__categories mb-3" role="group" aria-label="Community sections">
+            <button type="button" className="btn btn-sm btn-outline-mc" onClick={() => setCategory("all")}>Back to all updates</button>
+          </div>
+        )}
+        <section className={`mc-community-filter mc-card mc-motion-section${showLostFound ? " d-none" : ""}`} aria-label="Search and filter community updates">
           <div className="mc-community-filter__search">
             <Search size={18} aria-hidden="true" />
             <input
@@ -259,6 +267,8 @@ export default function Community() {
             )}
           </div>
         </section>
+
+        {showLostFound && <LostFoundSection />}
 
         {showEvents && (
           <section className="mc-community-section mc-motion-section" aria-labelledby="upcoming-events-heading">

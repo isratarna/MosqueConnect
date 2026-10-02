@@ -9,9 +9,12 @@ export const DASHBOARD_SECTIONS = [
   { id: "events", label: "Events" },
   { id: "donations", label: "Donation Campaigns" },
   { id: "volunteers", label: "Volunteer Work" },
+  { id: "goods", label: "Goods Donations" },
+  { id: "lostfound", label: "Lost & Found" },
   { id: "profile", label: "Mosque Profile" },
   { id: "facilities", label: "Facilities" },
   { id: "corrections", label: "Suggested corrections" },
+  { id: "feedback", label: "Feedback inbox" },
   { id: "team", label: "Team" },
 ];
 

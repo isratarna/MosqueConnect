@@ -631,3 +631,161 @@ Both parts are finished. Part 2 uses **Google Document AI** instead of Claude, b
 | `apps/web/package.json` | adds `adminConsole.test.js` to `npm test` |
 
 **Deploy note:** run the migrations, run a queue worker (the pre-screen job and broadcasts are queued), and add the Google settings as Azure secrets before setting `CLAIM_AI_REVIEW_ENABLED=true`.
+
+---
+
+## Issue 5 – Community hub: lost & found, feedback, search, contact, impact stats and goods pledges (12 pts)
+
+All four parts are finished and working.
+
+- **Backend:** 418 of 423 tests pass, including the 40 new ones. The 5 failures are the same date-based tests listed under Issue 1. They also fail on `main`. The full suite was run twice, with the same result both times.
+- **Frontend:** all 57 tests pass (4 new), and `npm run build` succeeds.
+- **Manual check:** the migrations were run on local MySQL, including the FULLTEXT indexes. Search and the stats were checked against real seeded data. The new pages were opened in Chrome on desktop and at phone width, with no console errors and no sideways scrolling.
+
+### Part 1 – Lost & Found and Complaints / Feedback (6 pts, originally #196)
+
+**What was asked:** the community hub needed lost & found and private feedback to a mosque. Items get photos and a "returned" status, and close themselves after 30 days. Feedback stays private to its author, that mosque's admin and the super admin, and the author is told when the admin replies.
+
+**What was done:**
+- **Lost & found:**
+  - New `lost_found_items` table, with moderation in the same style as announcements.
+  - Public list with `type`, `mosque_id`, `category` and `status` filters, paginated, plus a detail route.
+  - Logged-in users can post an item, with an optional photo. Only the owner can edit it.
+  - The owner, that mosque's admin or the super admin can mark an item returned, closed or open again.
+  - Photos are stored and served the same way as mosque cover photos.
+  - A daily scheduled command, `lost-found:close-stale`, closes items that have been open for more than 30 days.
+  - `lost_found` was added to `ContentReport::TYPES` and to super-admin moderation. Reports about items at a mosque show on that mosque's dashboard.
+- **Feedback (complaints):**
+  - New `complaints` table and `ComplaintPolicy`.
+  - Only the author, the mosque's owners and managers, and the super admin can read a complaint. Other users, admins of other mosques, and editor or prayer-times team members get 403.
+  - When a complaint is anonymous, the mosque admin doesn't see the name. The super admin does.
+  - When the admin writes a reply, the author gets a notification. Changing only the status doesn't send one.
+  - The open-complaints count was added to the dashboard.
+- **Frontend:**
+  - **Community page:** a **Lost & Found** tab (the box icon, or `/community?category=lost_found`). It has filters, cards (photo, lost/found badge, mosque, date) and a **Report a lost / found item** form. Each item has a detail page at `/community/lost-found/:id` with **Mark as returned**.
+  - **Mosque profile:** a "Lost & found at this mosque" card showing the latest 3 items. A **Send feedback to this mosque** button opens the feedback form, which explains the anonymous option.
+  - **Admin dashboard:** new **Feedback inbox** (status filter and reply box) and **Lost & Found** sections, and a feedback count in "Needs your attention".
+  - **Profile:** **My Feedback** (with the mosque's responses) and **My Lost & Found** tabs.
+
+### Part 2 – Global search API (2 pts, originally #209)
+
+**What was asked:** a public `GET /api/search?q=&types[]=` that searches mosques, upcoming events, active campaigns, announcements from the last 90 days and open volunteer opportunities. Each group returns up to 5 results and a total, and every result has the same shape. It needed FULLTEXT indexes on MySQL and a LIKE fallback on SQLite.
+
+**What was done:**
+- `SearchService` returns every group as `{ total, items }`. Each item is `{ type, id, title, subtitle, url }`, and `url` is the frontend page.
+- The endpoint is limited to 60 requests a minute, and `q` must be at least 2 characters.
+- New `Mosque::scopeSearch` matches name, address, area and district.
+- FULLTEXT indexes were added on `mosques(name, address)`, `events(title, description)`, `campaigns(title, summary)` and `announcements(title, body)`. The migration does nothing on SQLite.
+- `TextSearch` uses MySQL's boolean FULLTEXT search, so prefixes match: `baitul` finds "Baitul Mukarram". It falls back to LIKE on SQLite and for 2-letter terms, which are shorter than MySQL's minimum indexed word length.
+- Only public content is returned: no drafts, no past events, and nothing rejected by moderation.
+- The `/search` page is #252 (Part 2). The lost & found form already uses this API to pick a mosque.
+
+### Part 3 – Contact-message API and public impact-stats API (2 pts, originally #170)
+
+**What was asked:** store the home page "Get in touch" messages and show them to the super admin, and replace the made-up home page numbers with real ones.
+
+**What was done:**
+- **Contact form:**
+  - New `contact_messages` table.
+  - `POST /api/contact` is limited to 3 messages per 10 minutes per IP. It validates the name (up to 100 characters), the email and the message (10–3000 characters). A hidden `website` honeypot field must be empty, which stops bots.
+  - Super admin: `GET /api/super-admin/contact-messages?status=` and `PATCH .../{message}` (status). The super-admin panel for these is #252 (Part 4).
+- **Impact stats:**
+  - `GET /api/stats/public` returns `mosques_count`, `verified_mosques_count`, `members_count`, `donations_confirmed_total`, `volunteer_signups_count` and `events_held_count`.
+  - The queries are in the new `StatisticsService`, cached for 10 minutes under `public-stats`.
+- **Home page:**
+  - The contact form now sends to the API and shows success or error messages in place of the old `alert()`.
+  - The impact section shows the real numbers. The hardcoded `IMPACT_STATS` were removed.
+
+### Part 4 – Goods donation pledge API (2 pts, originally #169)
+
+**What was asked:** a backend for goods pledges, matching the SupportForm options. Users create and list their pledges, and the mosque admin accepts, receives or declines them. The admin is notified when a pledge arrives, and the donor when its status changes.
+
+**What was done:**
+- New `goods_donations` table, plus a model, factory, `GoodsDonationResource`, `StoreGoodsDonationRequest` and `GoodsDonationPolicy`. The policy is modelled on `CampaignPolicy`: only the mosque's own admin or the super admin can manage pledges.
+- **Allowed values:** they follow the selects in `SupportForm.jsx`. **Please confirm these with @urmee111.**
+  - `condition`: `new`, `gently_used`, `used`
+  - `delivery_method`: `drop_off` ("I will deliver to the mosque"), `pickup` ("Request pickup from my location"), `discuss` ("Need to discuss with the mosque")
+  - The label-to-value mapping is exported from `communityHubFormat.js`, so the `/support` flow can use it.
+- **Routes:**
+  - User: `POST /api/mosques/{mosque}/goods-donations`, `GET /api/me/goods-donations`.
+  - Admin, inside `scopeBindings()`: list, and `PATCH .../{goodsDonation}`. A pledge can go pending → accepted → received, or be declined. Received and declined are final.
+  - An optional `announcement_id` must belong to the same mosque.
+- **Notifications:** the mosque's content team is notified of a new pledge. The donor is notified once for each new status.
+- **Dashboard:** `pending_goods_donations_count` was added to `DashboardQueryService` and the dashboard response.
+- **Frontend:**
+  - Each mosque page has a small **Donate goods to this mosque** form, so the API can be tried today.
+  - The admin dashboard has a **Goods Donations** section.
+  - The donor's pledges show under **Profile → Donations**.
+  - The `/support` goods step is still the frontend placeholder. Connecting it is frontend work.
+
+### Fixed while testing
+- `content_reports.reportable_type` is a database enum, so reporting a lost & found item failed until a migration added `lost_found` to it.
+
+### Seeing it yourself
+
+First run the six new migrations. This is needed once on every database, including Azure:
+
+```powershell
+cd apps/api
+php artisan migrate
+```
+
+Use the demo accounts from Issue 3 (OTP `123456` after `php artisan db:seed --class=DemoAuthenticationSeeder`).
+
+| What to check | How |
+|---|---|
+| Real stats | Open the Home page. The impact numbers now match the database. They are cached for 10 minutes. |
+| Contact form | Home → **Get in touch** → send a message. The success message appears under the form. The 4th message within 10 minutes is refused. |
+| Lost & found | As Ayesha (`+8801812000201`): **Community → box icon (Lost & Found) → Report a lost / found item**. Pick Baitul Mukarram and add a photo. Then open the item and click **Mark as returned**. |
+| On the mosque page | Open Baitul Mukarram. The item shows under **Lost & found at this mosque**. |
+| Feedback | On Baitul Mukarram, click **Send feedback to this mosque**, tick **Send anonymously** and send. |
+| Inbox | As the owner (`+8801711000101`): **Dashboard → Feedback inbox**. The message shows as "Anonymous". Write a reply, set **Resolved** and save. |
+| Reply reaches the author | As Ayesha: the bell shows the reply. **Profile → My Feedback** shows the mosque's response. |
+| Privacy | As the super admin (`+8801700000001`), open `/api/admin/mosques/<id>/complaints`: the author's name is visible. As Tanvir (`+8801812000202`), the same URL returns 403. |
+| Goods pledge | As Ayesha, on Baitul Mukarram: **Donate goods to this mosque**. As the owner: the bell and Overview show it. **Dashboard → Goods Donations → Accept**, then **Mark received**. Ayesha gets a notification each time, and **Profile → Donations** shows the status. |
+| Search API | `http://localhost:8000/api/search?q=baitul` (all groups) or `...?q=bait&types[]=mosques`. `q=b` returns 422. |
+| Contact messages | There is no panel yet (#252). Read them with `php artisan tinker --execute="dump(App\Models\ContactMessage::latest()->get(['name','email','message','status'])->toArray());"`. |
+| Auto-close | `php artisan lost-found:close-stale` closes items open for more than 30 days. On a server, `php artisan schedule:run` must run every minute. |
+
+### Files
+
+| File | Change |
+|---|---|
+| `apps/api/database/migrations/2026_10_06_000000_create_lost_found_items_table.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000050_add_lost_found_to_content_report_types.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000100_create_complaints_table.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000200_create_contact_messages_table.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000300_create_goods_donations_table.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000400_add_search_fulltext_indexes.php` | new file (MySQL only) |
+| `apps/api/app/Models/LostFoundItem.php`, `Complaint.php`, `ContactMessage.php`, `GoodsDonation.php` | new files |
+| `apps/api/database/factories/LostFoundItemFactory.php`, `ComplaintFactory.php`, `GoodsDonationFactory.php` | new files |
+| `apps/api/app/Policies/LostFoundItemPolicy.php`, `ComplaintPolicy.php`, `GoodsDonationPolicy.php` | new files |
+| `apps/api/app/Http/Controllers/LostFoundController.php`, `ComplaintController.php`, `GoodsDonationController.php`, `SearchController.php`, `StatsController.php`, `ContactMessageController.php` | new files |
+| `apps/api/app/Http/Controllers/Admin/ComplaintManagementController.php`, `GoodsDonationManagementController.php`, `ContactMessageManagementController.php` | new files |
+| `apps/api/app/Http/Resources/LostFoundItemResource.php`, `ComplaintResource.php`, `GoodsDonationResource.php` | new files |
+| `apps/api/app/Http/Requests/StoreGoodsDonationRequest.php` | new file |
+| `apps/api/app/Services/SearchService.php`, `StatisticsService.php`, `app/Support/TextSearch.php` | new files |
+| `apps/api/app/Console/Commands/CloseStaleLostFoundItems.php` | new file |
+| `apps/api/routes/api.php` | 21 new routes |
+| `apps/api/routes/console.php` | daily `lost-found:close-stale` |
+| `apps/api/app/Models/Mosque.php` | `lostFoundItems`, `complaints`, `goodsDonations`, `scopeSearch` |
+| `apps/api/app/Models/Notification.php`, `app/Services/NotificationService.php` | `complaint` and `goods_donation` types; `notifyUser` accepts a `link` |
+| `apps/api/app/Models/ContentReport.php`, `ContentReportController.php`, `Admin/ReportManagementController.php`, `Admin/ContentModerationController.php` | `lost_found` type |
+| `apps/api/app/Services/DashboardQueryService.php`, `Admin/MosqueDashboardController.php`, `Resources/Admin/MosqueDashboardResource.php` | `open_complaints_count`, `pending_goods_donations_count`, lost & found reports |
+| `apps/api/app/Providers/AppServiceProvider.php` | registers the three policies |
+| `apps/api/tests/Feature/LostFoundAndComplaintTest.php`, `GlobalSearchTest.php`, `ContactAndPublicStatsTest.php`, `GoodsDonationTest.php` | new files (40 tests) |
+| `apps/web/src/utils/communityHubApi.js`, `communityHubFormat.js` (+ `communityHubApi.test.js`) | new: API calls, labels, stats formatting |
+| `apps/web/src/components/community/LostFoundSection.jsx`, `LostFoundCard.jsx`, `LostFoundForm.jsx`, `MosqueLostFoundCard.jsx`, `ComplaintForm.jsx`, `GoodsPledgeForm.jsx` | new files |
+| `apps/web/src/components/admin/CommunityHubManagers.jsx` | new: feedback inbox, lost & found and goods sections |
+| `apps/web/src/pages/LostFoundDetails.jsx` | new file |
+| `apps/web/src/App.jsx` | `/community/lost-found/:id` route |
+| `apps/web/src/pages/Community.jsx`, `data/community.js`, `components/CommunityCard.jsx` | Lost & Found tab |
+| `apps/web/src/pages/MosqueProfile.jsx` | lost & found card, feedback and goods buttons |
+| `apps/web/src/pages/AdminDashboard.jsx`, `utils/dashboardFormat.js`, `utils/teamRoles.js` (+ test), `components/admin/dashboard/AttentionCard.jsx` | 3 new sections and the counts |
+| `apps/web/src/pages/Profile.jsx` | My Feedback and My Lost & Found tabs, goods pledges under Donations |
+| `apps/web/src/pages/Home.jsx`, `data/mosques.js` | real stats; contact form sends to the API; `IMPACT_STATS` removed |
+| `apps/web/src/utils/notificationUtils.js` (+ test) | the two new notification types open the right page |
+| `apps/web/src/index.css` | lost & found cards, honeypot |
+| `apps/web/package.json` | adds `communityHubApi.test.js` to `npm test` |
+
+**Deploy note:** run the migrations, and make sure the scheduler (`php artisan schedule:run` every minute) runs on Azure so old lost & found items close. Lost & found photos are stored on the `local` disk, like mosque photos.

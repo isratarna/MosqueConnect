@@ -28,9 +28,12 @@ export const SECTION_ABILITIES = {
   events: ["content"],
   donations: ["content"],
   volunteers: ["content"],
+  goods: ["content"],
+  lostfound: ["content"],
   profile: ["settings"],
   facilities: ["settings"],
   corrections: ["prayer_times", "settings"],
+  feedback: ["settings"],
   team: ["view"],
 };
 

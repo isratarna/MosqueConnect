@@ -7,6 +7,7 @@ use App\Models\AdminAuditLog;
 use App\Models\Announcement;
 use App\Models\Campaign;
 use App\Models\Event;
+use App\Models\LostFoundItem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +16,7 @@ use Illuminate\Validation\Rule;
 
 class ContentModerationController extends Controller
 {
-    private const TYPES = ['announcement', 'event', 'campaign'];
+    private const TYPES = ['announcement', 'event', 'campaign', 'lost_found'];
 
     private const STATUSES = ['pending', 'approved', 'rejected'];
 
@@ -74,6 +75,7 @@ class ContentModerationController extends Controller
             'announcement' => Announcement::class,
             'event' => Event::class,
             'campaign' => Campaign::class,
+            'lost_found' => LostFoundItem::class,
         };
     }
 }

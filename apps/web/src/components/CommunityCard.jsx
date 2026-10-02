@@ -6,8 +6,7 @@ import {
   Droplets,
   MapPin,
   Megaphone,
-  UsersRound,
-} from "lucide-react";
+  UsersRound, PackageSearch } from "lucide-react";
 import { getCommunityCategoryLabel } from "../data/community";
 import { getAnnouncementDetailsPath, isAnnouncementItem } from "../data/announcements";
 import VerifiedBadge from "./VerifiedBadge";
@@ -17,6 +16,7 @@ const CATEGORY_ICONS = {
   event: CalendarDays,
   blood: Droplets,
   volunteer: UsersRound,
+  lost_found: PackageSearch,
 };
 
 const URGENCY_LABELS = {

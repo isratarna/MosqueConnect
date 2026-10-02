@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Check, CheckCircle2, Circle, PencilLine, X } from "lucide-react";
+import { Bell, Check, CheckCircle2, Circle, Inbox, PackageOpen, PencilLine, X } from "lucide-react";
 import DashboardCard from "./DashboardCard";
 import { reviewPledge } from "../../../utils/dashboardApi";
 import { formatCampaignMoney } from "../../../utils/campaignFormat";
@@ -41,6 +41,8 @@ export default function AttentionCard({ data, abilities = [], loading, error: lo
   const settings = can(abilities, "settings");
   const corrections = canUseSection(abilities, "corrections");
   const suggestionCount = data?.summary?.pending_suggestions_count || 0;
+  const complaintCount = data?.summary?.open_complaints_count || 0;
+  const goodsCount = data?.summary?.pending_goods_donations_count || 0;
 
   return (
     <DashboardCard title="Needs your attention" icon={Bell} loading={loading} error={loadError} onRetry={onRetry} skeletonLines={6}>
@@ -57,6 +59,23 @@ export default function AttentionCard({ data, abilities = [], loading, error: lo
             <p className="text-muted small">No corrections from visitors waiting.</p>
           )}
         </>
+      )}
+      {settings && (
+        <>
+          <h3 className="mc-dash-subhead">Feedback {complaintCount > 0 && <span className="badge bg-warning text-dark">{complaintCount}</span>}</h3>
+          {complaintCount > 0 ? (
+            <button type="button" className="btn btn-sm btn-outline-mc mb-3" onClick={() => onNavigate("feedback")}>
+              <Inbox size={14} aria-hidden="true" /> Answer {complaintCount} open {complaintCount === 1 ? "message" : "messages"} from visitors
+            </button>
+          ) : (
+            <p className="text-muted small">No open feedback from visitors.</p>
+          )}
+        </>
+      )}
+      {content && goodsCount > 0 && (
+        <button type="button" className="btn btn-sm btn-outline-mc mb-3" onClick={() => onNavigate("goods")}>
+          <PackageOpen size={14} aria-hidden="true" /> {goodsCount} goods {goodsCount === 1 ? "pledge" : "pledges"} waiting
+        </button>
       )}
       {content && <>
       <h3 className="mc-dash-subhead">Pending pledges {pledgeCount > 0 && <span className="badge bg-warning text-dark">{pledgeCount}</span>}</h3>

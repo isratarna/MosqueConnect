@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Campaign;
 use App\Models\CampaignDonation;
 use App\Models\Event;
+use App\Models\GoodsDonation;
 use App\Models\Mosque;
 use App\Models\PrayerTime;
 use App\Support\ClockTime;
@@ -119,6 +120,22 @@ class DashboardQueryService
     public function pendingPledgesCount(Mosque $mosque): int
     {
         return $this->pendingPledgesQuery($mosque)->count();
+    }
+
+    /**
+     * Number of goods pledges the admin still has to accept or decline.
+     */
+    public function pendingGoodsDonationsCount(Mosque $mosque): int
+    {
+        return $mosque->goodsDonations()->where('status', GoodsDonation::STATUS_PENDING)->count();
+    }
+
+    /**
+     * Number of complaints that are open or being worked on.
+     */
+    public function openComplaintsCount(Mosque $mosque): int
+    {
+        return $mosque->complaints()->open()->count();
     }
 
     /**

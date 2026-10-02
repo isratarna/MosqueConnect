@@ -6,6 +6,8 @@ export const NOTIFICATION_TYPES = {
   eid: { label: "Eid" },
   team: { label: "Mosque team" },
   suggestion: { label: "Your correction" },
+  complaint: { label: "Your feedback" },
+  goods_donation: { label: "Goods donation" },
   system: { label: "System" },
 };
 
@@ -59,6 +61,10 @@ export function getNotificationPath(notification) {
       return "/profile?tab=invites";
     case "suggestion":
       return "/profile?tab=suggestions";
+    case "complaint":
+      return "/profile?tab=feedback";
+    case "goods_donation":
+      return safeNotificationLink(notification.link) || "/profile?tab=donations";
     case "system":
       return safeNotificationLink(notification.link);
     default:

@@ -6,6 +6,7 @@ export const COMMUNITY_CATEGORIES = [
   { key: "event", label: "Events" },
   { key: "blood", label: "Blood requests" },
   { key: "volunteer", label: "Volunteer" },
+  { key: "lost_found", label: "Lost & Found" },
 ];
 
 export function getCommunityCategory(category) {
