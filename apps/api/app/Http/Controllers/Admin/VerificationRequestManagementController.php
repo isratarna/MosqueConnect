@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\PrescreenClaimDocument;
 use App\Models\AdminAuditLog;
 use App\Models\Mosque;
 use App\Models\User;
@@ -32,7 +33,14 @@ class VerificationRequestManagementController extends Controller
                 'mosque:id,owner_id,name,address,verification_status',
                 'reviewer:id,name',
             ])
+            ->select('verification_requests.*')
             ->withCount('applicantClaims')
+            // Other open claims on the same mosque.
+            ->selectSub(DB::table('verification_requests as other')
+                ->selectRaw('count(*)')
+                ->whereColumn('other.mosque_id', 'verification_requests.mosque_id')
+                ->whereColumn('other.id', '!=', 'verification_requests.id')
+                ->whereIn('other.status', VerificationRequest::ACTIVE_STATUSES), 'competing_claims_count')
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where(function (Builder $query) use ($search): void {
@@ -51,14 +59,32 @@ class VerificationRequestManagementController extends Controller
     {
         return response()->json([
             'data' => $verificationRequest->load(['user', 'mosque', 'reviewer', 'applicantClaims.mosque:id,name']),
+            'competing_claims' => VerificationRequest::query()
+                ->with('user:id,name')
+                ->where('mosque_id', $verificationRequest->mosque_id)
+                ->whereKeyNot($verificationRequest->id)
+                ->latest('submitted_at')
+                ->get(['id', 'user_id', 'mosque_id', 'status', 'role_at_mosque', 'ai_score', 'submitted_at']),
         ]);
     }
 
-    public function document(VerificationRequest $verificationRequest)
+    public function document(Request $request, VerificationRequest $verificationRequest)
     {
-        abort_unless(Storage::disk('local')->exists($verificationRequest->document_path), 404, 'Verification document was not found.');
+        $path = $verificationRequest->document_path;
+        abort_unless(Storage::disk('local')->exists($path), 404, 'Verification document was not found.');
 
-        return Storage::disk('local')->download($verificationRequest->document_path);
+        $mimeType = PrescreenClaimDocument::MIME_TYPES[strtolower(pathinfo($path, PATHINFO_EXTENSION))] ?? null;
+
+        // Only known document types are shown in the browser; anything else downloads.
+        if ($request->boolean('inline') && $mimeType !== null) {
+            return Storage::disk('local')->response($path, basename($path), [
+                'Content-Type' => $mimeType,
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'private, no-store',
+            ], 'inline');
+        }
+
+        return Storage::disk('local')->download($path);
     }
 
     public function approve(Request $request, VerificationRequest $verificationRequest): JsonResponse

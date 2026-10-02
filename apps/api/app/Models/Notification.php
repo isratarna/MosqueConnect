@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'message',
     'reference_type',
     'reference_id',
+    'link',
     'is_read',
 ])]
 class Notification extends Model
@@ -52,6 +53,8 @@ class Notification extends Model
     public const REFERENCE_MOSQUE_MEMBER = 'mosque_member';
 
     public const REFERENCE_SUGGESTION = 'mosque_edit_suggestion';
+
+    public const REFERENCE_BROADCAST = 'broadcast';
 
     public const TYPES = [
         self::TYPE_EVENT,

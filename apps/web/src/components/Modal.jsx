@@ -16,7 +16,13 @@ export default function Modal({ title, onClose, children, footer, size = "", bus
     const opener = document.activeElement;
     const first = dialogRef.current?.querySelector("input, select, textarea, button:not(.btn-close-modal)");
     (first || dialogRef.current)?.focus();
-    const onKey = (event) => { if (event.key === "Escape" && !busy) onClose(); };
+    const onKey = (event) => {
+      if (event.key !== "Escape" || busy) return;
+      // With dialogs stacked, Escape closes only the top one.
+      const open = document.querySelectorAll(".modal[aria-modal='true']");
+      if (open[open.length - 1] !== dialogRef.current?.closest(".modal")) return;
+      onClose();
+    };
     window.addEventListener("keydown", onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
