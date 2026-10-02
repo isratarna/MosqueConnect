@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ContentModerationController;
 use App\Http\Controllers\Admin\EidJamaatManagementController;
 use App\Http\Controllers\Admin\EventManagementController;
 use App\Http\Controllers\Admin\MosqueDashboardController;
+use App\Http\Controllers\Admin\MosqueInsightsController;
 use App\Http\Controllers\Admin\MosqueManagementController;
 use App\Http\Controllers\Admin\MosqueSystemManagementController;
 use App\Http\Controllers\Admin\ReportManagementController;
@@ -26,6 +27,8 @@ use App\Http\Controllers\EventRegistrationController;
 use App\Http\Controllers\MosqueClaimController;
 use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
+use App\Http\Controllers\MosquePhotoController;
+use App\Http\Controllers\MosqueTrackingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\VerificationRequestController;
 use App\Http\Controllers\VolunteerOpportunityController;
@@ -57,6 +60,9 @@ Route::get('/eid-season', [EidJamaatController::class, 'season']);
 Route::get('/eid-jamaats/nearby', [EidJamaatController::class, 'nearby']);
 Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'index']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
+Route::get('/mosques/{mosque}/photo', [MosquePhotoController::class, 'show']);
+Route::post('/mosques/{mosque}/track', [MosqueTrackingController::class, 'store'])
+    ->middleware('throttle:mosque-track');
 Route::get('/volunteer-opportunities', [VolunteerOpportunityController::class, 'index']);
 Route::get('/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'show']);
 Route::get('/mosques/{mosque}/prayer-schedule', [MosqueController::class, 'prayerSchedule']);
@@ -119,6 +125,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::get('/mosques/{mosque}', [MosqueManagementController::class, 'show']);
             Route::patch('/mosques/{mosque}', [MosqueManagementController::class, 'update']);
             Route::get('/mosques/{mosque}/dashboard', [MosqueDashboardController::class, 'show']);
+            Route::get('/mosques/{mosque}/insights', [MosqueInsightsController::class, 'show']);
+            Route::post('/mosques/{mosque}/photo', [MosquePhotoController::class, 'store']);
+            Route::delete('/mosques/{mosque}/photo', [MosquePhotoController::class, 'destroy']);
             Route::get('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'prayerSchedule']);
             Route::put('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'updatePrayerSchedule']);
 

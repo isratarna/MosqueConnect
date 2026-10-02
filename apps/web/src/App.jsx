@@ -13,8 +13,6 @@ const Register = lazy(() => import("./pages/Register"));
 const Profile = lazy(() => import("./pages/Profile"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const SuperAdminDashboard = lazy(() => import("./pages/SuperAdminDashboard"));
-const MosqueAdminAnnouncements = lazy(() => import("./pages/MosqueAdminAnnouncements"));
-const MosqueAdminPrayerSchedule = lazy(() => import("./pages/MosqueAdminPrayerSchedule"));
 const MosqueAdminClaim = lazy(() => import("./pages/MosqueAdminClaim"));
 const VerificationRequests = lazy(() => import("./pages/admin/VerificationRequests"));
 const Support = lazy(() => import("./pages/Support"));
@@ -105,14 +103,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/mosque-admin/announcements"
-            element={
-              <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
-                <MosqueAdminAnnouncements />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/mosque-admin/announcements" element={<DashboardSectionRedirect section="announcements" />} />
           <Route
             path="/super-admin/dashboard"
             element={
@@ -121,14 +112,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/mosque-admin/prayer-schedule"
-            element={
-              <ProtectedRoute allowedRoles={["mosque_admin"]} allowedStatuses={["approved"]}>
-                <MosqueAdminPrayerSchedule />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/mosque-admin/prayer-schedule" element={<DashboardSectionRedirect section="prayer" />} />
           <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
           <Route
             path="/mosque-admin/claim"
@@ -152,6 +136,14 @@ export default function App() {
       </RouteErrorBoundary>
     </Layout>
   );
+}
+
+/** Old admin pages now live in the dashboard; keep their links working. */
+function DashboardSectionRedirect({ section }) {
+  const { search } = useLocation();
+  const mosque = new URLSearchParams(search).get("mosque");
+  const params = new URLSearchParams({ section, ...(mosque ? { mosque } : {}) });
+  return <Navigate to={`/admin/dashboard?${params}`} replace />;
 }
 
 function PageLoading() {

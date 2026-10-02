@@ -63,5 +63,13 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute((int) config('otp.throttle.verify_per_minute', 10))
                 ->by($request->input('phone', $request->ip()));
         });
+
+        // Usage tracking is public, so each IP may count at most 30 events per mosque per hour.
+        RateLimiter::for('mosque-track', function (Request $request) {
+            $mosque = $request->route('mosque');
+            $mosqueId = $mosque instanceof Mosque ? $mosque->getKey() : $mosque;
+
+            return Limit::perHour(30)->by($request->ip().'|'.$mosqueId);
+        });
     }
 }

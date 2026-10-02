@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Follower;
 use App\Models\Mosque;
+use App\Models\MosqueDailyStat;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,8 @@ class MosqueFollowController extends Controller
             throw $exception;
         }
 
+        MosqueDailyStat::record($mosque->id, 'follows');
+
         return response()->json([
             'message' => 'Mosque followed successfully.',
             'data' => $follower,
@@ -45,6 +48,8 @@ class MosqueFollowController extends Controller
                 'message' => 'You are not following this mosque.',
             ], 404);
         }
+
+        MosqueDailyStat::record($mosque->id, 'unfollows');
 
         return response()->json([
             'message' => 'Mosque unfollowed successfully.',

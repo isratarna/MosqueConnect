@@ -19,7 +19,7 @@ function round(value) {
  * Picks a point by clicking or dragging a pin on the map. Latitude and
  * longitude fields stay available for exact values and when maps are off.
  */
-export default function LocationPicker({ value, onChange, center, idPrefix = "location" }) {
+export default function LocationPicker({ value, onChange, center, idPrefix = "location", hint = "Click the map or drag the pin to the jamaat location." }) {
   const { disabled, isLoaded, loadError } = useGoogleMapsLoader();
   const point = coordinatesOf(value);
   const mapCenter = point || coordinatesOf(center) || DEFAULT_CENTER;
@@ -54,7 +54,7 @@ export default function LocationPicker({ value, onChange, center, idPrefix = "lo
           {disabled ? "The map is turned off, so enter the coordinates below (you can copy them from Google Maps)." : "Loading map…"}
         </p>
       )}
-      {!disabled && isLoaded && <p className="form-text mt-0 mb-2">Click the map or drag the pin to the jamaat location.</p>}
+      {!disabled && isLoaded && <p className="form-text mt-0 mb-2">{hint}</p>}
       <div className="row g-2">
         {[["lat", "Latitude", -90, 90], ["lng", "Longitude", -180, 180]].map(([field, label, min, max]) => (
           <div className="col-6" key={field}>
