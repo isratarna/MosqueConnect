@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { Clock3, Heart, MapPin, Navigation, Star } from "lucide-react";
 import { directionsUrl } from "../utils/mosqueDiscovery";
-import { dhuhrJamaatLabel } from "../utils/prayerTime";
+import { dhuhrJamaatLabel, isEstimatedPrayer } from "../utils/prayerTime";
 import { useFollow } from "../context/FollowContext";
+import EstimatedBadge from "./EstimatedBadge";
 import FacilityBadge from "./FacilityBadge";
 import VerifiedBadge from "./VerifiedBadge";
 
@@ -53,6 +54,7 @@ export default function MosqueCard({ mosque }) {
             <span className="text-muted ms-2">
               <Clock3 size={14} className="me-1" aria-hidden="true" />
               {dhuhrJamaatLabel(mosque.prayer)}
+              {isEstimatedPrayer(mosque.prayer_sources, "Dhuhr") && <EstimatedBadge className="ms-1" />}
             </span>
           )}
         </div>

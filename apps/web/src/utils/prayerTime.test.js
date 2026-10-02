@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { dhuhrJamaatLabel, formatClockTime, parseClockTime } from "./prayerTime.js";
+import { dhuhrJamaatLabel, formatClockTime, isEstimatedPrayer, parseClockTime } from "./prayerTime.js";
 
 test("24-hour jamaat times parse without the old Fajr-only AM heuristic", () => {
   const dhuhr = parseClockTime("13:30", new Date(2026, 7, 21, 12, 0));
@@ -24,4 +24,11 @@ test("dhuhr labels drop the hardcoded PM suffix", () => {
   assert.match(dhuhrJamaatLabel({ Dhuhr: "13:30" }), /Dhuhr/);
   assert.equal(dhuhrJamaatLabel({}), null);
   assert.ok(formatClockTime("13:30"));
+});
+
+test("only calculated prayers are reported as estimated", () => {
+  const sources = { Fajr: "mosque", Dhuhr: "calculated" };
+  assert.equal(isEstimatedPrayer(sources, "Dhuhr"), true);
+  assert.equal(isEstimatedPrayer(sources, "Fajr"), false);
+  assert.equal(isEstimatedPrayer(undefined, "Asr"), false);
 });

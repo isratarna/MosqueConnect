@@ -88,6 +88,8 @@ export function normalizeMosque(record, origin, options = {}) {
     jumuah_sessions: jumuahSessions,
     prayer_schedule: prayerSchedule,
     prayer: record.prayer && typeof record.prayer === "object" ? record.prayer : {},
+    prayer_sources: record.prayer_sources && typeof record.prayer_sources === "object" ? record.prayer_sources : {},
+    eid_jamaats: Array.isArray(record.eid_jamaats) ? record.eid_jamaats : [],
   };
 }
 

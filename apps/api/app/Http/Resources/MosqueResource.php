@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Models\PrayerTime;
+use App\Services\PrayerScheduleService;
 use App\Support\ClockTime;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -19,6 +19,10 @@ class MosqueResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $schedule = $this->relationLoaded('prayerTimes')
+            ? app(PrayerScheduleService::class)->forDate($this->resource)
+            : null;
+
         $payload = [
             'id' => $this->id,
             'name' => $this->name,
@@ -46,7 +50,8 @@ class MosqueResource extends JsonResource
                 ->values()
                 ->all(), []),
 
-            'prayer' => $this->whenLoaded('prayerTimes', fn (): array => $this->prayerSummary(), []),
+            'prayer' => $schedule === null ? [] : $this->prayerSummary($schedule, 'jamaat_time'),
+            'prayer_sources' => $schedule === null ? [] : $this->prayerSummary($schedule, 'source'),
             'created_at' => $this->created_at?->toJSON(),
             'updated_at' => $this->updated_at?->toJSON(),
         ];
@@ -56,15 +61,10 @@ class MosqueResource extends JsonResource
         }
 
         if ($this->detailed) {
-            $payload['prayer_schedule'] = $this->whenLoaded('prayerTimes', fn (): array => $this->prayerTimes
-                ->map(fn ($time): array => [
-                    'prayer' => $time->prayer,
-                    'label' => $time->label(),
-                    'adhan_time' => ClockTime::format($time->adhan_time),
-                    'jamaat_time' => ClockTime::format($time->jamaat_time),
-                ])
-                ->values()
-                ->all(), []);
+            $payload['prayer_schedule'] = array_map(
+                fn (array $entry): array => array_diff_key($entry, ['id' => true]),
+                $schedule ?? [],
+            );
             $payload['jumuah_sessions'] = $this->whenLoaded('jumuahSessions', fn (): array => $this->jumuahSessions
                 ->map(fn ($session): array => [
                     'id' => $session->id,
@@ -77,24 +77,28 @@ class MosqueResource extends JsonResource
                 ->values()
                 ->all(), []);
             $payload['announcements'] = $this->whenLoaded('publishedAnnouncements', fn (): array => AnnouncementResource::collection($this->publishedAnnouncements)->resolve(), []);
+            $payload['eid_jamaats'] = $this->whenLoaded('eidJamaats', fn (): array => $this->eidJamaats
+                ->map(fn ($jamaat): array => (new EidJamaatResource($jamaat->setRelation('mosque', $this->resource)))->resolve())
+                ->values()
+                ->all(), []);
         }
 
         return $payload;
     }
 
     /**
+     * Map each prayer label to one field of its schedule entry.
+     *
+     * @param  list<array<string, mixed>>  $schedule
      * @return array<string, string>
      */
-    private function prayerSummary(): array
+    private function prayerSummary(array $schedule, string $field): array
     {
         $summary = [];
 
-        foreach ($this->prayerTimes as $time) {
-            $label = PrayerTime::PRAYER_LABELS[$time->prayer] ?? null;
-            $jamaat = ClockTime::format($time->jamaat_time);
-
-            if ($label && $jamaat) {
-                $summary[$label] = $jamaat;
+        foreach ($schedule as $entry) {
+            if (filled($entry[$field] ?? null)) {
+                $summary[$entry['label']] = $entry[$field];
             }
         }
 

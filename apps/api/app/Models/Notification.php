@@ -33,6 +33,8 @@ class Notification extends Model
 
     public const TYPE_SYSTEM = 'system';
 
+    public const TYPE_EID = 'eid';
+
     public const REFERENCE_EVENT = 'event';
 
     public const REFERENCE_ANNOUNCEMENT = 'announcement';
@@ -41,12 +43,15 @@ class Notification extends Model
 
     public const REFERENCE_CAMPAIGN = 'campaign';
 
+    public const REFERENCE_EID_JAMAAT = 'eid_jamaat';
+
     public const TYPES = [
         self::TYPE_EVENT,
         self::TYPE_ANNOUNCEMENT,
         self::TYPE_PRAYER_SCHEDULE,
         self::TYPE_CAMPAIGN,
         self::TYPE_SYSTEM,
+        self::TYPE_EID,
     ];
 
     /**

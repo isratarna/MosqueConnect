@@ -214,10 +214,10 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
                       <><br /><span style={{ fontSize: 12, textTransform: "capitalize" }}>{mosque.verification_status}</span></>
                     )}
                     {dhuhrJamaatLabel(mosque.prayer) && (
-                      <><br /><span style={{ fontSize: 12 }}>Next Jamat: {dhuhrJamaatLabel(mosque.prayer)}</span></>
+                      <><br /><span style={{ fontSize: 12 }}>Next Jamat: {dhuhrJamaatLabel(mosque.prayer)}{mosque.prayer_sources?.Dhuhr === "calculated" ? " (estimated)" : ""}</span></>
                     )}
                     <br />
-                    <Link to={`/mosque/${mosque.id}`} style={{ fontSize: 13 }}>
+                    <Link to={mosque.profile_path || `/mosque/${mosque.id}`} style={{ fontSize: 13 }}>
                       View profile →
                     </Link>
                   </div>
