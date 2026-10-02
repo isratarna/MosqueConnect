@@ -4,14 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\MosqueResource;
 use App\Models\Mosque;
+use App\Services\PrayerScheduleService;
+use App\Support\EidSeason;
+use App\Support\Geo;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class MosqueController extends Controller
 {
-    private const EARTH_RADIUS_KM = 6371;
-
     private const DEFAULT_RADIUS_KM = 20;
 
     private const MAX_RADIUS_KM = 100;
@@ -37,7 +39,7 @@ class MosqueController extends Controller
                     return (new MosqueResource(
                         $mosque,
                         false,
-                        $this->distanceInKilometers(
+                        Geo::distanceKm(
                             $latitude,
                             $longitude,
                             (float) $mosque->latitude,
@@ -62,7 +64,7 @@ class MosqueController extends Controller
 
         $expression = sprintf(
             '%d * ACOS(LEAST(1, GREATEST(-1, COS(RADIANS(?)) * COS(RADIANS(latitude)) * COS(RADIANS(longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(latitude)))))',
-            self::EARTH_RADIUS_KM,
+            Geo::EARTH_RADIUS_KM,
         );
 
         $mosques = Mosque::query()
@@ -90,28 +92,28 @@ class MosqueController extends Controller
             'publishedAnnouncements',
         ]);
 
+        // Eid jamaats are only part of the profile while the Eid season shows.
+        if ($season = EidSeason::active()) {
+            $mosque->load(['eidJamaats' => fn ($query) => $query
+                ->published()
+                ->forSeason($season['eid'], $season['year'])]);
+        }
+
         return response()->json([
             'data' => (new MosqueResource($mosque, true))->resolve(),
         ]);
     }
 
-    public function prayerSchedule(Mosque $mosque): JsonResponse
+    public function prayerSchedule(Mosque $mosque, PrayerScheduleService $schedules): JsonResponse
     {
         $mosque->load(['prayerTimes', 'jumuahSessions']);
+        $date = CarbonImmutable::now(config('prayer.timezone'));
 
         return response()->json([
             'data' => [
                 'mosque_id' => $mosque->id,
-                'prayer_schedule' => $mosque->prayerTimes
-                    ->map(fn ($time): array => [
-                        'id' => $time->id,
-                        'prayer' => $time->prayer,
-                        'label' => $time->label(),
-                        'adhan_time' => $time->adhan_time ? substr($time->adhan_time, 0, 5) : null,
-                        'jamaat_time' => $time->jamaat_time ? substr($time->jamaat_time, 0, 5) : null,
-                    ])
-                    ->values()
-                    ->all(),
+                'date' => $date->toDateString(),
+                'prayer_schedule' => $schedules->forDate($mosque, $date),
                 'jumuah_sessions' => $mosque->jumuahSessions
                     ->map(fn ($session): array => [
                         'id' => $session->id,
@@ -133,22 +135,6 @@ class MosqueController extends Controller
     private function summaryRelations(): array
     {
         return ['facilities', 'prayerTimes'];
-    }
-
-    private function distanceInKilometers(float $fromLatitude, float $fromLongitude, float $toLatitude, float $toLongitude): float
-    {
-        $fromLatitude = deg2rad($fromLatitude);
-        $fromLongitude = deg2rad($fromLongitude);
-        $toLatitude = deg2rad($toLatitude);
-        $toLongitude = deg2rad($toLongitude);
-
-        $latitudeDelta = $toLatitude - $fromLatitude;
-        $longitudeDelta = $toLongitude - $fromLongitude;
-
-        $haversine = sin($latitudeDelta / 2) ** 2
-            + cos($fromLatitude) * cos($toLatitude) * sin($longitudeDelta / 2) ** 2;
-
-        return 2 * self::EARTH_RADIUS_KM * asin(min(1, sqrt($haversine)));
     }
 
     private function hasValidCoordinates(Mosque $mosque): bool

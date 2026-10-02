@@ -40,3 +40,8 @@ test("notification timestamps are human readable", () => {
   assert.match(formatNotificationTime("2026-08-21T11:55:00Z", now), /5 minutes ago/);
   assert.equal(formatNotificationTime("not-a-date", now), "");
 });
+
+test("Eid notifications open the mosque's Eid jamaat card", () => {
+  assert.equal(getNotificationPath({ type: "eid", mosque_id: 4, reference_id: 9 }), "/mosque/4#eid-jamaat");
+  assert.equal(getNotificationTypeLabel("eid"), "Eid");
+});

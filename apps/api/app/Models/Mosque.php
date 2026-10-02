@@ -118,6 +118,17 @@ class Mosque extends Model
     }
 
     /**
+     * Get Eid jamaats held by the mosque, in the order they take place.
+     */
+    public function eidJamaats(): HasMany
+    {
+        return $this->hasMany(EidJamaat::class)
+            ->orderBy('date')
+            ->orderBy('jamaat_time')
+            ->orderBy('sequence');
+    }
+
+    /**
      * Get announcements published by the mosque.
      */
     public function announcements(): HasMany

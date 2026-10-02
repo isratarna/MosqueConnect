@@ -370,7 +370,10 @@ export function SettingsPanel() {
     setSaving(true);
     state.setError("");
     try {
-      const updated = await updateSystemSettings(form);
+      const updated = await updateSystemSettings({
+        ...form,
+        eid_season: form.eid_season ? { ...form.eid_season, show_from: form.eid_season.show_from || null } : null,
+      });
       setForm(updated);
       state.setData(updated);
     } catch (error) {
@@ -387,9 +390,31 @@ export function SettingsPanel() {
         {form && <form className="card border-0 shadow-sm" onSubmit={save}><div className="card-body p-4">
           <div className="mb-4"><label className="form-label fw-semibold" htmlFor="maintenance-notice">Maintenance notice</label><textarea id="maintenance-notice" className="form-control" rows="3" maxLength="1000" value={form.maintenance_notice || ""} onChange={(e) => setForm({ ...form, maintenance_notice: e.target.value })} /><div className="form-text">Shown by future maintenance-notice integrations; leave empty when no notice is required.</div></div>
           {[["claims_enabled", "Accept mosque claims"], ["reports_enabled", "Accept user reports"], ["auto_publish_verified_mosques", "Publish verified mosques automatically"]].map(([key, label]) => <div className="form-check form-switch mb-3" key={key}><input className="form-check-input" type="checkbox" role="switch" id={key} checked={Boolean(form[key])} onChange={(e) => setForm({ ...form, [key]: e.target.checked })} /><label className="form-check-label fw-semibold" htmlFor={key}>{label}</label></div>)}
+          <EidSeasonSettings value={form.eid_season} onChange={(eidSeason) => setForm({ ...form, eid_season: eidSeason })} />
         </div><div className="card-footer bg-white text-end py-3"><button className="btn btn-mc" disabled={saving}>{saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : "Save system settings"}</button></div></form>}
       </PanelState>
     </>
+  );
+}
+
+function EidSeasonSettings({ value, onChange }) {
+  const season = value || null;
+  const update = (field, fieldValue) => onChange({ ...season, [field]: fieldValue });
+
+  return (
+    <fieldset className="border-top pt-4 mt-2">
+      <legend className="fs-6 fw-semibold mb-1">Eid season</legend>
+      <p className="form-text mt-0 mb-3">Opens the “Eid jamaat near me” page and the Home banner, and adds Eid jamaats to mosque profiles, from the show-from date until three days after Eid.</p>
+      <div className="form-check form-switch mb-3">
+        <input className="form-check-input" type="checkbox" role="switch" id="eid-season-enabled" checked={Boolean(season)} onChange={(e) => onChange(e.target.checked ? { eid: "fitr", expected_date: "", show_from: "" } : null)} />
+        <label className="form-check-label fw-semibold" htmlFor="eid-season-enabled">Announce an upcoming Eid</label>
+      </div>
+      {season && <div className="row g-3">
+        <div className="col-md-4"><label className="form-label" htmlFor="eid-season-eid">Eid</label><select id="eid-season-eid" className="form-select" value={season.eid} onChange={(e) => update("eid", e.target.value)}><option value="fitr">Eid-ul-Fitr</option><option value="adha">Eid-ul-Adha</option></select></div>
+        <div className="col-md-4"><label className="form-label" htmlFor="eid-season-date">Expected date</label><input id="eid-season-date" type="date" className="form-control" required value={season.expected_date || ""} onChange={(e) => update("expected_date", e.target.value)} /></div>
+        <div className="col-md-4"><label className="form-label" htmlFor="eid-season-show">Show from</label><input id="eid-season-show" type="date" className="form-control" max={season.expected_date || undefined} value={season.show_from || ""} onChange={(e) => update("show_from", e.target.value)} /><div className="form-text">Leave empty for two weeks before.</div></div>
+      </div>}
+    </fieldset>
   );
 }
 

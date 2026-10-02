@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { CheckCircle, Clock3, Star } from "lucide-react";
 import { formatClockTime, parseClockTime } from "../utils/prayerTime";
+import EstimatedBadge from "./EstimatedBadge";
 
 const DAILY_PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
@@ -56,6 +57,7 @@ export default function PrayerTimeline({ prayers = {}, schedule = [] }) {
         name,
         time: jamaat ? formatClockTime(jamaat) : "—",
         adhan: details?.adhan_time ? formatClockTime(details.adhan_time) : null,
+        estimated: details?.source === "calculated",
         date: dt,
       };
     });
@@ -74,6 +76,7 @@ export default function PrayerTimeline({ prayers = {}, schedule = [] }) {
   }, [prayers, scheduleByLabel, nowTick]);
 
   const next = list.find((l) => l.status === "next") || list[0];
+  const hasEstimated = list.some((it) => it.estimated);
   const remaining = next && next.date ? next.date.getTime() - now.getTime() : 0;
 
   return (
@@ -93,7 +96,7 @@ export default function PrayerTimeline({ prayers = {}, schedule = [] }) {
             key={it.name}
             className={"mc-prayer-item bg-light rounded-3 me-2 " + (it.status ? `mc-${it.status}` : "")}
             role="group"
-            aria-label={`${it.name} jamaat at ${it.time}. ${it.status}.`}
+            aria-label={`${it.name} jamaat at ${it.time}${it.estimated ? ", estimated" : ""}. ${it.status}.`}
           >
             <small className="text-muted d-block">{it.name}</small>
             <div className="d-flex align-items-center justify-content-center gap-2">
@@ -109,12 +112,20 @@ export default function PrayerTimeline({ prayers = {}, schedule = [] }) {
             {it.adhan && (
               <div className="small text-muted mt-1">Adhan {it.adhan}</div>
             )}
+            {it.estimated && <EstimatedBadge className="mt-1" />}
             {it.status === "next" && it.date && (
               <div className="small text-muted mt-1">in {formatRemaining(it.date.getTime() - now.getTime())}</div>
             )}
           </div>
         ))}
       </div>
+
+      {hasEstimated && (
+        <p className="small text-muted mt-2 mb-0">
+          Times marked <EstimatedBadge /> are calculated from the mosque's location. Jamaat times are
+          approximate until the mosque publishes its own.
+        </p>
+      )}
     </div>
   );
 }

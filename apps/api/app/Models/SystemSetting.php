@@ -14,6 +14,8 @@ class SystemSetting extends Model
         'claims_enabled' => true,
         'reports_enabled' => true,
         'auto_publish_verified_mosques' => true,
+        // {eid, expected_date, show_from}, see App\Support\EidSeason.
+        'eid_season' => null,
     ];
 
     protected $primaryKey = 'key';
