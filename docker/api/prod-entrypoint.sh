@@ -5,13 +5,16 @@
 # exist. Building them at image-build time would bake in empty values.
 set -eu
 
-mkdir -p storage/framework/cache/data \
+mkdir -p storage/app/private \
+         storage/app/public \
+         storage/framework/cache/data \
          storage/framework/sessions \
          storage/framework/views \
          storage/logs
-chown -R www-data:www-data storage bootstrap/cache
+chown -R www-data:www-data storage/app/private storage/framework storage/logs bootstrap/cache
 
 php artisan config:clear --no-interaction >/dev/null 2>&1 || true
+php artisan storage:link --force --no-interaction
 
 # Optional one-shot schema setup. Container Apps can run several replicas, so
 # this is opt-in via RUN_MIGRATIONS rather than unconditional.

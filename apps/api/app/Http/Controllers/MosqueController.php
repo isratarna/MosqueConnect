@@ -11,6 +11,7 @@ use App\Services\PrayerScheduleService;
 use App\Services\Queries\MosqueQueryService;
 use App\Support\EidSeason;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -57,11 +58,23 @@ class MosqueController extends Controller
 
     public function show(Mosque $mosque): JsonResponse
     {
+        $mosque = Mosque::query()
+            ->withMax('prayerTimes', 'updated_at')
+            ->withMax('jumuahSessions', 'updated_at')
+            ->findOrFail($mosque->id);
+
         $mosque->load([
             'facilities',
             'prayerTimes',
             'jumuahSessions',
-            'publishedAnnouncements',
+            'photos',
+            'publishedAnnouncements' => fn ($query) => $query->limit(5),
+        ]);
+        $mosque->loadCount([
+            'followers',
+            'announcements as announcements_count' => fn (Builder $query) => $query->published(),
+            'events as upcoming_events_count' => fn (Builder $query) => $query->published()->whereDate('event_date', '>=', today()),
+            'campaigns as active_campaigns_count' => fn (Builder $query) => $query->publiclyActive(),
         ]);
 
         // Eid jamaats are only part of the profile while the Eid season shows.

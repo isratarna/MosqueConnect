@@ -385,6 +385,8 @@ export function ModerationPanel() {
   const [busy, setBusy] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const state = useRemoteData((signal) => fetchModerationQueue({ type, moderation_status: status, search, page }, { signal }), [type, status, search, page]);
+  const moderationStatuses = type === "review" ? ["approved", "hidden"] : ["pending", "approved", "rejected"];
+  const hiddenStatus = type === "review" ? "hidden" : "rejected";
 
   const moderate = (item, nextStatus) => {
     if (nextStatus === "rejected") {
@@ -396,15 +398,15 @@ export function ModerationPanel() {
 
   return (
     <>
-      <PanelHeader title="Content moderation" description="Approve or hide announcements, events, and campaigns across the platform." onRefresh={state.refresh}>
+      <PanelHeader title="Content moderation" description="Approve or hide announcements, events, campaigns, and reviews across the platform." onRefresh={state.refresh}>
         <input className="form-control form-control-sm" style={{ width: 180 }} placeholder="Search title" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
-        <select className="form-select form-select-sm" style={{ width: 145 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">All statuses</option>{["pending", "approved", "rejected"].map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="form-select form-select-sm" style={{ width: 145 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">All statuses</option>{moderationStatuses.map((item) => <option key={item}>{item}</option>)}</select>
       </PanelHeader>
-      <div className="nav nav-pills gap-2 mb-3">{["announcement", "event", "campaign"].map((item) => <button className={`nav-link ${type === item ? "active" : ""}`} key={item} onClick={() => { setType(item); setPage(1); }}>{labelize(item)}s</button>)}</div>
+      <div className="nav nav-pills gap-2 mb-3">{["announcement", "event", "campaign", "review"].map((item) => <button className={`nav-link ${type === item ? "active" : ""}`} key={item} onClick={() => { setType(item); setStatus(""); setPage(1); }}>{item === "review" ? "Reviews" : `${labelize(item)}s`}</button>)}</div>
       <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
         <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0">
           <thead className="table-light"><tr><th>Content</th><th>Mosque</th><th>Publication</th><th>Reports</th><th>Moderation</th><th className="text-end">Actions</th></tr></thead>
-          <tbody>{state.data?.data?.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 260 }}>{item.body || item.summary || item.description}</div></td><td>{item.mosque?.name}</td><td><StatusBadge value={item.status} /></td><td><span className={`badge ${item.reports_count ? "bg-danger" : "bg-secondary"}`}>{item.reports_count}</span></td><td><StatusBadge value={item.moderation_status} />{item.moderation_note && <div className="small text-danger mt-1">{item.moderation_note}</div>}</td><td><div className="d-flex justify-content-end gap-1"><button className="btn btn-sm btn-outline-danger" disabled={busy === item.id || item.moderation_status === "rejected"} onClick={() => moderate(item, "rejected")}>Hide</button><button className="btn btn-sm btn-outline-success" disabled={busy === item.id || item.moderation_status === "approved"} onClick={() => moderate(item, "approved")}>Approve</button></div></td></tr>)}</tbody>
+          <tbody>{state.data?.data?.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 260 }}>{item.body || item.summary || item.description}</div></td><td>{item.mosque?.name}</td><td><StatusBadge value={item.status} /></td><td><span className={`badge ${item.reports_count ? "bg-danger" : "bg-secondary"}`}>{item.reports_count}</span></td><td><StatusBadge value={item.moderation_status} />{item.moderation_note && <div className="small text-danger mt-1">{item.moderation_note}</div>}</td><td><div className="d-flex justify-content-end gap-1"><button className="btn btn-sm btn-outline-danger" disabled={busy === item.id || item.moderation_status === hiddenStatus} onClick={() => moderate(item, hiddenStatus)}>Hide</button><button className="btn btn-sm btn-outline-success" disabled={busy === item.id || item.moderation_status === "approved"} onClick={() => moderate(item, "approved")}>Approve</button></div></td></tr>)}</tbody>
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
       {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
@@ -431,7 +433,7 @@ export function ReportsPanel() {
   return (
     <>
       <PanelHeader title="Complaints and reports" description="Triage reports, investigate targets, and record a final resolution." onRefresh={state.refresh}>
-        <select className="form-select form-select-sm" style={{ width: 145 }} value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}><option value="">All content</option>{["announcement", "event", "campaign", "mosque"].map((item) => <option key={item}>{item}</option>)}</select>
+        <select className="form-select form-select-sm" style={{ width: 145 }} value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}><option value="">All content</option>{["announcement", "event", "campaign", "mosque", "review"].map((item) => <option key={item}>{item}</option>)}</select>
         <select className="form-select form-select-sm" style={{ width: 145 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">All statuses</option>{["pending", "reviewing", "resolved", "dismissed"].map((item) => <option key={item}>{item}</option>)}</select>
       </PanelHeader>
       <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>

@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\Mosque;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -20,14 +21,19 @@ class AnnouncementController extends Controller
             ->with(['mosque', 'creator'])->orderByDesc('published_at')->orderByDesc('id')->get());
     }
 
-    public function index(Mosque $mosque): AnonymousResourceCollection
+    public function index(Mosque $mosque, Request $request): AnonymousResourceCollection
     {
+        $filters = $request->validate([
+            'per_page' => ['sometimes', 'integer', 'between:1,50'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+        ]);
+
         $announcements = $mosque->announcements()
             ->with(['mosque', 'creator'])
             ->published()
             ->orderByDesc('published_at')
             ->orderByDesc('id')
-            ->get();
+            ->paginate($filters['per_page'] ?? 10);
 
         return AnnouncementResource::collection($announcements);
     }

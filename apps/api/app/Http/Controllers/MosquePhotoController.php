@@ -17,9 +17,11 @@ class MosquePhotoController extends Controller
 {
     public function show(Mosque $mosque): StreamedResponse
     {
-        abort_unless($mosque->photo_path && Storage::disk('local')->exists($mosque->photo_path), 404, 'This mosque has no photo.');
+        abort_unless($mosque->photo_path, 404, 'This mosque has no photo.');
+        $disk = $this->diskForPath($mosque->photo_path);
+        abort_unless($disk !== null, 404, 'This mosque has no photo.');
 
-        return Storage::disk('local')->response($mosque->photo_path, null, [
+        return Storage::disk($disk)->response($mosque->photo_path, null, [
             'Cache-Control' => 'public, max-age=86400',
         ]);
     }
@@ -36,8 +38,8 @@ class MosquePhotoController extends Controller
         $mosque->photo_path = $request->file('photo')->store("mosque-photos/{$mosque->id}", 'local');
         $mosque->save();
 
-        if ($previous && $previous !== $mosque->photo_path) {
-            Storage::disk('local')->delete($previous);
+        if ($previous && $previous !== $mosque->photo_path && ($disk = $this->diskForPath($previous))) {
+            Storage::disk($disk)->delete($previous);
         }
 
         return response()->json([
@@ -51,7 +53,9 @@ class MosquePhotoController extends Controller
         Gate::authorize('update', $mosque);
 
         if ($mosque->photo_path) {
-            Storage::disk('local')->delete($mosque->photo_path);
+            if ($disk = $this->diskForPath($mosque->photo_path)) {
+                Storage::disk($disk)->delete($mosque->photo_path);
+            }
             $mosque->photo_path = null;
             $mosque->save();
         }
@@ -60,5 +64,16 @@ class MosquePhotoController extends Controller
             'message' => 'Photo removed.',
             'mosque' => $mosque->refresh()->load('facilities'),
         ]);
+    }
+
+    private function diskForPath(string $path): ?string
+    {
+        foreach (['local', 'public'] as $disk) {
+            if (Storage::disk($disk)->exists($path)) {
+                return $disk;
+            }
+        }
+
+        return null;
     }
 }

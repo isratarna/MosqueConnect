@@ -27,7 +27,7 @@ class ContentReport extends Model
         self::STATUS_DISMISSED,
     ];
 
-    public const TYPES = ['announcement', 'event', 'campaign', 'mosque', 'lost_found'];
+    public const TYPES = ['announcement', 'event', 'campaign', 'mosque', 'review', 'lost_found'];
 
     public const CATEGORIES = ['inaccurate', 'inappropriate', 'fraud', 'safety', 'spam', 'other'];
 

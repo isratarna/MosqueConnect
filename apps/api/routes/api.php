@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\GoodsDonationManagementController;
 use App\Http\Controllers\Admin\MosqueDashboardController;
 use App\Http\Controllers\Admin\MosqueInsightsController;
 use App\Http\Controllers\Admin\MosqueManagementController;
+use App\Http\Controllers\Admin\MosquePhotoManagementController;
+use App\Http\Controllers\Admin\MosqueSuggestionManagementController;
 use App\Http\Controllers\Admin\MosqueSystemManagementController;
 use App\Http\Controllers\Admin\MosqueTeamController;
 use App\Http\Controllers\Admin\ReportManagementController;
@@ -40,8 +42,10 @@ use App\Http\Controllers\MosqueController;
 use App\Http\Controllers\MosqueFollowController;
 use App\Http\Controllers\MosqueInviteController;
 use App\Http\Controllers\MosquePhotoController;
+use App\Http\Controllers\MosqueReviewController;
 use App\Http\Controllers\MosqueSuggestionController;
 use App\Http\Controllers\MosqueTrackingController;
+use App\Http\Controllers\NewMosqueSuggestionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StatsController;
@@ -78,6 +82,7 @@ Route::get('/eid-jamaats/nearby', [EidJamaatController::class, 'nearby']);
 Route::get('/mosques/filters', [MosqueController::class, 'filters']);
 Route::get('/mosques', [MosqueController::class, 'index']);
 Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'index']);
+Route::get('/mosques/{mosque}/reviews', [MosqueReviewController::class, 'index']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
 Route::get('/mosques/{mosque}/photo', [MosquePhotoController::class, 'show']);
 Route::post('/mosques/{mosque}/track', [MosqueTrackingController::class, 'store'])
@@ -105,6 +110,10 @@ Route::get('/lost-found/{item}/photo', [LostFoundController::class, 'photo']);
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
+    // Suggest a mosque that is not in the system yet
+    Route::post('/mosque-suggestions', [NewMosqueSuggestionController::class, 'store'])->middleware('throttle:5,60');
+    Route::get('/me/mosque-suggestions', [NewMosqueSuggestionController::class, 'mine']);
+
     Route::get('/me/event-registrations', [EventRegistrationController::class, 'index']);
     Route::get('/me/volunteer-registrations', [VolunteerRegistrationController::class, 'index']);
     Route::get('/me/volunteer-applications', [VolunteerApplicationController::class, 'index']);
@@ -127,6 +136,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     // Follow / unfollow mosque
     Route::post('/mosques/{mosque}/follow', [MosqueFollowController::class, 'follow']);
     Route::delete('/mosques/{mosque}/follow', [MosqueFollowController::class, 'unfollow']);
+    Route::put('/mosques/{mosque}/reviews/me', [MosqueReviewController::class, 'upsert']);
+    Route::delete('/mosques/{mosque}/reviews/me', [MosqueReviewController::class, 'destroy']);
     Route::get('/me/followed-mosques', [MosqueFollowController::class, 'followed']);
 
     // Invitations to join a mosque's team
@@ -195,6 +206,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::get('/mosques/{mosque}/lost-found', [LostFoundController::class, 'adminIndex']);
 
             Route::scopeBindings()->group(function () {
+                Route::post('/mosques/{mosque}/photos', [MosquePhotoManagementController::class, 'store']);
+                Route::patch('/mosques/{mosque}/photos/{photo}', [MosquePhotoManagementController::class, 'update']);
+                Route::patch('/mosques/{mosque}/photos/{photo}/cover', [MosquePhotoManagementController::class, 'cover']);
+                Route::delete('/mosques/{mosque}/photos/{photo}', [MosquePhotoManagementController::class, 'destroy']);
+
                 Route::get('/mosques/{mosque}/complaints', [ComplaintManagementController::class, 'index']);
                 Route::patch('/mosques/{mosque}/complaints/{complaint}', [ComplaintManagementController::class, 'update']);
 
@@ -203,7 +219,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
                 Route::patch('/mosques/{mosque}/members/{member}', [MosqueTeamController::class, 'update']);
                 Route::delete('/mosques/{mosque}/members/{member}', [MosqueTeamController::class, 'destroy']);
-
                 Route::get('/mosques/{mosque}/volunteer-opportunities', [VolunteerOpportunityController::class, 'adminIndex']);
                 Route::post('/mosques/{mosque}/volunteer-opportunities', [VolunteerOpportunityController::class, 'store']);
                 Route::get('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'adminShow']);
@@ -257,6 +272,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::prefix('super-admin')
         ->middleware('role:super_admin')
         ->group(function () {
+            Route::get('/mosque-suggestions', [MosqueSuggestionManagementController::class, 'index']);
+            Route::patch('/mosque-suggestions/{suggestion}/approve', [MosqueSuggestionManagementController::class, 'approve']);
+            Route::patch('/mosque-suggestions/{suggestion}/reject', [MosqueSuggestionManagementController::class, 'reject']);
             Route::get('/overview', [SystemAdminController::class, 'overview']);
             Route::get('/statistics', [SystemAdminController::class, 'statistics']);
             Route::get('/dashboard', [SuperAdminDashboardController::class, 'index']);

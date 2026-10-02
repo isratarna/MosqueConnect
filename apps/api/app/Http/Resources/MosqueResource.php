@@ -4,9 +4,9 @@ namespace App\Http\Resources;
 
 use App\Services\PrayerScheduleService;
 use App\Support\ClockTime;
-use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 class MosqueResource extends JsonResource
 {
@@ -37,7 +37,18 @@ class MosqueResource extends JsonResource
             'latitude' => (float) $this->latitude,
             'longitude' => (float) $this->longitude,
             'phone' => $this->phone,
+            'whatsapp' => $this->whatsapp,
+            'email' => $this->email,
+            'website_url' => $this->website_url,
+            'facebook_url' => $this->facebook_url,
             'description' => $this->description,
+            'capacity' => $this->capacity,
+            'established_year' => $this->established_year,
+            'khutbah_language' => $this->khutbah_language,
+            'women_facility_notes' => $this->women_facility_notes,
+            'accessibility_notes' => $this->accessibility_notes,
+            'schedule_updated_at' => $this->scheduleUpdatedAt(),
+            'followers_count' => (int) ($this->followers_count ?? 0),
             'verification_status' => $this->verification_status,
 
             'facilities' => $this->whenLoaded('facilities', fn (): array => $this->facilities
@@ -84,7 +95,11 @@ class MosqueResource extends JsonResource
                 ])
                 ->values()
                 ->all(), []);
+            $payload['photos'] = $this->whenLoaded('photos', fn (): array => MosquePhotoResource::collection($this->photos)->resolve(), []);
             $payload['announcements'] = $this->whenLoaded('publishedAnnouncements', fn (): array => AnnouncementResource::collection($this->publishedAnnouncements)->resolve(), []);
+            $payload['announcements_count'] = (int) ($this->announcements_count ?? 0);
+            $payload['upcoming_events_count'] = (int) ($this->upcoming_events_count ?? 0);
+            $payload['active_campaigns_count'] = (int) ($this->active_campaigns_count ?? 0);
             $payload['times_confirmed_by_community_at'] = $this->times_confirmed_at
                 ? Carbon::parse($this->times_confirmed_at)->toJSON()
                 : null;
@@ -114,5 +129,15 @@ class MosqueResource extends JsonResource
         }
 
         return $summary;
+    }
+
+    private function scheduleUpdatedAt(): ?string
+    {
+        $updatedAt = collect([
+            $this->prayer_times_max_updated_at,
+            $this->jumuah_sessions_max_updated_at,
+        ])->filter()->max();
+
+        return $updatedAt === null ? null : Carbon::parse($updatedAt)->toJSON();
     }
 }

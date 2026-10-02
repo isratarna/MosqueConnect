@@ -34,7 +34,11 @@ class MosqueQueryService
     /** @return EloquentCollection<int, Mosque>|Collection<int, Mosque> */
     public function nearby(float $lat, float $lng, float $radiusKm): Collection
     {
-        $query = Mosque::query()->with(['facilities', 'prayerTimes']);
+        $query = Mosque::query()
+            ->with(['facilities', 'prayerTimes'])
+            ->withCount('followers')
+            ->withMax('prayerTimes', 'updated_at')
+            ->withMax('jumuahSessions', 'updated_at');
 
         if (DB::connection()->getDriverName() === 'sqlite') {
             return $query->get()
@@ -52,7 +56,6 @@ class MosqueQueryService
         $expression = $this->distanceExpression();
 
         return $query
-            ->select('mosques.*')
             ->selectRaw($expression.' as distance_km', [$lat, $lng, $lat])
             ->whereBetween('latitude', [-90, 90])
             ->whereBetween('longitude', [-180, 180])
@@ -65,7 +68,11 @@ class MosqueQueryService
     /** @param array<string, mixed> $filters */
     public function search(array $filters): LengthAwarePaginator
     {
-        $query = Mosque::query()->with(['facilities', 'prayerTimes']);
+        $query = Mosque::query()
+            ->with(['facilities', 'prayerTimes'])
+            ->withCount('followers')
+            ->withMax('prayerTimes', 'updated_at')
+            ->withMax('jumuahSessions', 'updated_at');
         $this->applyFilters($query, $filters);
 
         $hasCoordinates = isset($filters['lat'], $filters['lng']);
@@ -75,7 +82,7 @@ class MosqueQueryService
         if ($hasCoordinates) {
             $query->whereBetween('latitude', [-90, 90])->whereBetween('longitude', [-180, 180]);
             if ($driver !== 'sqlite') {
-                $query->select('mosques.*')->selectRaw($this->distanceExpression().' as distance_km', [
+                $query->selectRaw($this->distanceExpression().' as distance_km', [
                     (float) $filters['lat'],
                     (float) $filters['lng'],
                     (float) $filters['lat'],
