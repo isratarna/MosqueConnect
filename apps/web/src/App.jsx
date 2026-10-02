@@ -22,6 +22,7 @@ const BloodDonation = lazy(() => import("./pages/BloodDonation"));
 const VolunteerOpportunities = lazy(() => import("./pages/VolunteerOpportunities"));
 const AnnouncementDetails = lazy(() => import("./pages/AnnouncementDetails"));
 const EventDetails = lazy(() => import("./pages/EventDetails"));
+const LostFoundDetails = lazy(() => import("./pages/LostFoundDetails"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
@@ -76,6 +77,7 @@ export default function App() {
           <Route path="/campaigns/:id" element={<CampaignDetails />} />
           <Route path="/community/announcements/:id" element={<AnnouncementDetails />} />
           <Route path="/community/events/:id" element={<EventDetails />} />
+          <Route path="/community/lost-found/:id" element={<LostFoundDetails />} />
           <Route
             path="/notifications"
             element={

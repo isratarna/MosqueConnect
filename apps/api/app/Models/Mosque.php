@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TextSearch;
 use Database\Factories\MosqueFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,6 +48,32 @@ class Mosque extends Model
     /** @var list<string> */
     protected $appends = ['photo_url'];
 
+    protected static function booted(): void
+    {
+        // owner_id is kept for compatibility. Whenever it points at someone,
+        // that person is an owner on the mosque's team, so every place that
+        // still sets owner_id (claim approval, seeders, tests) keeps working.
+        static::saved(function (Mosque $mosque): void {
+            if (! $mosque->owner_id || ! ($mosque->wasRecentlyCreated || $mosque->wasChanged('owner_id'))) {
+                return;
+            }
+
+            $member = MosqueMember::query()->firstOrNew([
+                'mosque_id' => $mosque->id,
+                'user_id' => $mosque->owner_id,
+            ]);
+
+            if ($member->exists && $member->isOwner() && $member->isAccepted()) {
+                return;
+            }
+
+            $member->fill([
+                'role' => MosqueMember::ROLE_OWNER,
+                'accepted_at' => $member->accepted_at ?? now(),
+            ])->save();
+        });
+    }
+
     public function scopeWithFacilities(Builder $query, array $keys): Builder
     {
         foreach (array_unique($keys) as $key) {
@@ -56,18 +83,15 @@ class Mosque extends Model
         return $query;
     }
 
+    /**
+     * Match a search term against the name, address, area and district:
+     * FULLTEXT on MySQL, LIKE on SQLite. A blank term leaves the query as is.
+     */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        if (filled($term)) {
-            $like = '%'.$term.'%';
-            $query->where(fn (Builder $search) => $search
-                ->where('name', 'like', $like)
-                ->orWhere('address', 'like', $like)
-                ->orWhere('area', 'like', $like)
-                ->orWhere('district', 'like', $like));
-        }
-
-        return $query;
+        return filled($term)
+            ? TextSearch::apply($query, ['name', 'address'], $term, ['area', 'district'])
+            : $query;
     }
 
     public function scopeInDistrict(Builder $query, ?string $district): Builder
@@ -86,6 +110,22 @@ class Mosque extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Get the mosque's team: accepted members and pending invitations.
+     */
+    public function members(): HasMany
+    {
+        return $this->hasMany(MosqueMember::class);
+    }
+
+    /**
+     * Get corrections to this mosque suggested by the community.
+     */
+    public function editSuggestions(): HasMany
+    {
+        return $this->hasMany(MosqueEditSuggestion::class);
     }
 
     /**
@@ -185,6 +225,30 @@ class Mosque extends Model
     public function volunteerApplications(): HasManyThrough
     {
         return $this->hasManyThrough(VolunteerApplication::class, VolunteerOpportunity::class, 'mosque_id', 'volunteer_opportunity_id');
+    }
+
+    /**
+     * Lost and found items posted at this mosque.
+     */
+    public function lostFoundItems(): HasMany
+    {
+        return $this->hasMany(LostFoundItem::class);
+    }
+
+    /**
+     * Private feedback sent to this mosque.
+     */
+    public function complaints(): HasMany
+    {
+        return $this->hasMany(Complaint::class);
+    }
+
+    /**
+     * Pledges of goods made to this mosque.
+     */
+    public function goodsDonations(): HasMany
+    {
+        return $this->hasMany(GoodsDonation::class);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Services\PrayerScheduleService;
 use App\Support\ClockTime;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -84,6 +85,9 @@ class MosqueResource extends JsonResource
                 ->values()
                 ->all(), []);
             $payload['announcements'] = $this->whenLoaded('publishedAnnouncements', fn (): array => AnnouncementResource::collection($this->publishedAnnouncements)->resolve(), []);
+            $payload['times_confirmed_by_community_at'] = $this->times_confirmed_at
+                ? Carbon::parse($this->times_confirmed_at)->toJSON()
+                : null;
             $payload['eid_jamaats'] = $this->whenLoaded('eidJamaats', fn (): array => $this->eidJamaats
                 ->map(fn ($jamaat): array => (new EidJamaatResource($jamaat->setRelation('mosque', $this->resource)))->resolve())
                 ->values()

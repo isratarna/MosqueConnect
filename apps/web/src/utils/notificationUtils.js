@@ -4,6 +4,10 @@ export const NOTIFICATION_TYPES = {
   prayer_schedule: { label: "Prayer schedule" },
   campaign: { label: "Campaign" },
   eid: { label: "Eid" },
+  team: { label: "Mosque team" },
+  suggestion: { label: "Your correction" },
+  complaint: { label: "Your feedback" },
+  goods_donation: { label: "Goods donation" },
   system: { label: "System" },
 };
 
@@ -28,6 +32,14 @@ export function normalizeNotification(notification) {
   };
 }
 
+/** A broadcast link that is a page on this site or an https URL; anything else is dropped. */
+export function safeNotificationLink(link) {
+  if (typeof link !== "string") return null;
+  const trimmed = link.trim();
+  if (/^\/(?!\/)/.test(trimmed) || /^https:\/\//i.test(trimmed)) return trimmed;
+  return null;
+}
+
 export function getNotificationPath(notification) {
   if (!notification) return null;
 
@@ -45,6 +57,16 @@ export function getNotificationPath(notification) {
       return mosqueId ? `/mosque/${encodeURIComponent(mosqueId)}#prayer-schedule` : null;
     case "eid":
       return mosqueId ? `/mosque/${encodeURIComponent(mosqueId)}#eid-jamaat` : null;
+    case "team":
+      return "/profile?tab=invites";
+    case "suggestion":
+      return "/profile?tab=suggestions";
+    case "complaint":
+      return "/profile?tab=feedback";
+    case "goods_donation":
+      return safeNotificationLink(notification.link) || "/profile?tab=donations";
+    case "system":
+      return safeNotificationLink(notification.link);
     default:
       return null;
   }

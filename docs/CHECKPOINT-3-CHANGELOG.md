@@ -301,3 +301,491 @@ Then log in as the demo mosque admin (`+8801711000101`, OTP `123456` after `php 
 | `apps/web/src/pages/MosqueProfile.jsx` | 33, 54, 132–143 |
 
 **Deploy note:** on Azure, run the migrations once or deploy with `RUN_MIGRATIONS=true`.
+
+---
+
+## Issue 3 – Mosque teams and community-suggested corrections (10 pts)
+
+Both parts are finished and working.
+
+- **Backend:** 344 of 349 tests pass (81 are new). The 5 failures are the same ones listed under Issue 1. They also fail without these changes.
+- **Frontend:** all 44 unit tests pass (12 are new).
+- **Manual check:** the production build was run against the local MySQL database and driven in a real browser (Edge), twice. The test signed in as six different real users: the owner, two invitees, a brand-new number, a visitor and the super admin. All 73 checks passed both times, on desktop (1366 px wide) and on a phone screen (390 px). There were no console errors. All test data was removed afterwards.
+- Both test suites were also run twice, with the same result each time.
+
+### Part 1 – Mosque teams: several admins per mosque (6 pts, originally #229)
+
+**What was asked:** a mosque could have only one admin (`mosques.owner_id`). Real mosques are run by committees, and if that one person left, nobody could manage the mosque. The issue asked for:
+- teams with roles (owner, manager, editor, prayer times);
+- invitations by phone number;
+- member management and a Team section in the dashboard;
+- invitations on the profile;
+- super-admin tools to transfer ownership and revoke access, recorded in the audit log.
+
+**What was done:**
+- **Teams:** a new `mosque_members` table holds each mosque's team: who, which role, who invited them, and when they accepted. A row that isn't accepted yet is a pending invitation. Every existing `owner_id` was copied in as an owner. On the local database that was 12 owners, with 0 mismatches.
+- **`owner_id` is kept** for compatibility and always points at one of the mosque's owners. Anything that still sets it (claim approval, seeders, tests) automatically puts that person on the team as owner.
+- **Permissions in one place:** `App\Support\MosqueAbility` holds the role table. `MosquePolicy` and every `Gate::authorize(…, $mosque)` call now go through it:
+
+  | Role | Can use |
+  |---|---|
+  | Owner | everything, including changing a member's role or removing a member |
+  | Manager | everything except changing or removing members (can invite and cancel invitations) |
+  | Editor | announcements, events, volunteering, campaigns (and Insights) |
+  | Prayer times | the prayer schedule: daily times, Jumuah and Eid jamaats |
+
+  Every role can open the dashboard and see the team. A test checks every role against every section (48 combinations).
+- **Invitations:**
+  - `POST /api/admin/mosques/{mosque}/members` with `{ phone, role }` creates a pending invitation and notifies the person. Only an owner can invite another owner.
+  - If the number has no account yet, the invitation is stored with the phone number and attached when that person first signs in.
+  - `GET /api/me/mosque-invites`, plus `POST …/{invite}/accept` and `…/decline`. Accepting makes the person a mosque admin.
+- **Managing the team:**
+  - `PATCH` / `DELETE /api/admin/mosques/{mosque}/members/{member}` are owner-only. The last owner can't be demoted or removed.
+  - `POST /api/admin/mosques/{mosque}/leave` lets anyone leave, except the last owner.
+  - When someone is on no team any more, their account goes back to a normal user.
+- **`GET /api/auth/me`** returns `managed_mosques` with the user's `role` and `abilities` for each mosque, plus `pending_mosque_invites_count`.
+- **Super admin:**
+  - `POST /api/super-admin/mosques/{mosque}/transfer` with `{ user_id }` makes that person the owner. The previous owners stay on as managers, or are removed with `previous_owners: "remove"`.
+  - `DELETE /api/super-admin/mosques/{mosque}/members/{user}` revokes anyone's access, including the last owner's.
+  - Both are recorded in the audit log as `mosque.ownership_transferred` and `mosque.member_revoked`.
+- **Frontend:**
+  - **Team section in the dashboard:** members with their roles, invite by phone number (`01712 345678` works too), change role, remove member, cancel an invitation, leave the mosque, and a "What each role can do" list.
+  - **Sections the role can't use are hidden** from the sidebar and the phone menu. Opening one by URL shows the Overview instead.
+  - **The Overview cards follow the role too.** Editors don't get the prayer **Edit** link. Prayer-times members don't get Quick post, announcements, pledges, events or campaigns.
+  - **This isn't only cosmetic:** the dashboard API also leaves out pledge, campaign and report data for roles without content access.
+  - **Profile → Team Invitations:** Accept / Decline buttons and a count badge. The invitation notification links here.
+  - **Super-admin → Mosques:** each mosque shows its team size and a **Team · transfer / revoke** dialog.
+
+### Part 2 – Community-suggested corrections (4 pts, originally #227)
+
+**What was asked:**
+- Let signed-in visitors suggest fixes to a mosque's times and details.
+- The mosque's admin reviews them, or the super admin for mosques nobody manages.
+- Accepting applies the change the same way the admin editor does, and tells followers if times changed.
+- Count accepted suggestions for a "Trusted contributor" badge.
+- Show "Times confirmed by the community" on the profile.
+
+**What was done:**
+- **Suggestions:** a new `mosque_edit_suggestions` table holds the field, the suggested value, a note, the status, the reviewer and the review note. There is also a new `users.accepted_suggestions_count` column.
+  - `POST /api/mosques/{mosque}/suggestions` works for anyone signed in, up to 10 a day per person.
+  - Each field is validated: prayer time, Jumuah time, phone, address, map location, facilities, or "something else" (which needs a note).
+  - A suggestion that wouldn't change anything is refused.
+  - `GET /api/me/suggestions` lists your own suggestions.
+- **Who reviews:**
+  - **Managed mosques** (verified, with a team): their admins, at `/api/admin/mosques/{mosque}/suggestions`. Time fixes need the Prayer times, Manager or Owner role. Fixes to other details need Manager or Owner.
+  - **Every other mosque:** the super admin, at `/api/super-admin/suggestions`. There is also an "all mosques" option.
+- **One code path:** the admin editor's save logic moved into a new `MosqueEditor` service, and accepting a suggestion goes through it.
+  - If a time actually changed, followers get one notification, for example "Isha jamaat 8:15 PM".
+  - The person who suggested the fix is told whether it was accepted, with the reviewer's note.
+- **Trust:** each accepted suggestion adds to the person's count.
+  - At 3 they get the **Trusted contributor** badge.
+  - Their fixes to mosques nobody manages go live straight away. "Something else" always needs a person to review it.
+  - The threshold, the daily limit and auto-accept can be changed in [config/suggestions.php](../apps/api/config/suggestions.php).
+- **Frontend:**
+  - **"Suggest a correction" links on the mosque profile:** on the prayer card, the Jumuah card, the Facilities and Location cards, and a new **About** card with the address and phone. Each opens a form filled in with the current values. Guests are asked to sign in first.
+  - **"Times confirmed by the community 2 days ago"** shows on the prayer card after an accepted time fix.
+  - **Review queues:** **Suggested corrections** in the dashboard (with a count on the Overview), and **Corrections** in the super-admin console. They show the value before and after, the visitor's note, and how many of the visitor's fixes were accepted before.
+  - **Profile → My Corrections** shows each suggestion's status, and the badge.
+
+### Fixed while testing
+- **The admin's own prayer-time changes never notified followers.** The notification code existed, but nothing called it. Accepted suggestions now share the admin editor's code path, so saving changed times from the dashboard notifies followers too. This only happens when a time actually changed. Saving without changes notifies nobody.
+- **Profile → Followed Mosques crashed for anyone who follows a mosque** ("Cannot read properties of undefined (reading 'slice')"). This bug was already there before checkpoint 3. The followed-mosques list wasn't converted to the same format as every other mosque list, so the card had no facilities list. The crash showed up when a member who left a team landed on their profile.
+- **Claim approval updated the mosque straight in the database**, which skips the model's events. It now saves the model, so the approved applicant is also added to the team as owner.
+
+### Notes
+- Several tickets this work links to aren't merged yet, so small versions were built in, as in Issues 1 and 2:
+  - [F3] Part 1 (About section): a small **About** card on the profile.
+  - [L5] Part 1 (super-admin console): the team dialog and the Corrections section.
+  - [B6] Part 1 (notifications): notifications for invitations and reviews, and the prayer-time fix above.
+- Each invitation is tied to the phone number it was sent to. Users can't change their phone number in this app, so an invitation can't end up with the wrong person.
+- A super admin can revoke the last owner. The mosque then has no owner until ownership is transferred, and its suggestions go to the super-admin queue.
+
+### Seeing it yourself
+
+First run the two new migrations. This is needed once on every database, including Azure:
+
+```powershell
+cd apps/api
+php artisan migrate
+```
+
+Demo accounts. The OTP is `123456` after `php artisan db:seed --class=DemoAuthenticationSeeder`. For the other numbers, `get-otp.ps1` reads the code from the log.
+
+| Account | Phone |
+|---|---|
+| Owner of Baitul Mukarram | `+8801711000101` |
+| Super admin | `+8801700000001` |
+| Normal user (Ayesha) | `+8801812000201` |
+| Normal user (Tanvir) | `+8801812000202` |
+
+| What to check | How |
+|---|---|
+| Invite | As the owner: **Dashboard → Team**, invite `01812000201` as **Editor**. |
+| Accept | As Ayesha: **Profile → Team Invitations → Accept**, then open **Mosque Dashboard**. Only the content sections show. Publish something with **Quick post**. **Team** has no invite form. |
+| Prayer-times role | Invite `01812000202` as **Prayer times** and accept as Tanvir. Only Overview, Prayer & Jamat, Jummah, Eid Jamaat, Suggested corrections and Team show. |
+| Last owner | As the owner, try to change your own role. It says the mosque needs at least one owner. |
+| Transfer and revoke | As the super admin: **Mosques → Team · transfer / revoke** on Baitul Mukarram. Find a user, click **Transfer ownership**, then **Revoke**. Both appear in **Audit Log**. |
+| Suggest | As any user, open a mosque page and click **Wrong time? Suggest a correction**. Change Isha and send. |
+| Review | As the owner: the Overview shows **Review 1 suggestion**. Open it, compare the before and after values, and click **Accept & apply**. The profile then shows the new time and "Times confirmed by the community today", and followers get a notification. |
+| Unmanaged mosques | Suggest a fix on **Star Mosque**, which isn't verified. It appears under **Corrections** in the super-admin console. |
+| Trusted contributor | After 3 accepted fixes, the profile shows the badge, and fixes to unmanaged mosques go live straight away. |
+
+### Files and lines
+
+#### Part 1
+
+| File | Lines |
+|---|---|
+| `apps/api/database/migrations/2026_10_04_000000_create_mosque_members_table.php` | new file |
+| `apps/api/app/Models/MosqueMember.php` | new file |
+| `apps/api/app/Support/MosqueAbility.php` | new file (the role table) |
+| `apps/api/app/Services/MosqueTeamService.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/MosqueTeamController.php` | new file |
+| `apps/api/app/Http/Controllers/MosqueInviteController.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/SuperAdminMosqueTeamController.php` | new file |
+| `apps/api/app/Http/Resources/MosqueMemberResource.php` | new file |
+| `apps/api/app/Policies/MosquePolicy.php` | rewritten |
+| `apps/api/app/Policies/AnnouncementPolicy.php`, `CampaignPolicy.php`, `EventPolicy.php`, `VolunteerOpportunityPolicy.php` | 15, 35 |
+| `apps/api/app/Http/Controllers/AnnouncementController.php` | 37 |
+| `apps/api/app/Http/Controllers/VolunteerOpportunityController.php` | 38 |
+| `apps/api/app/Http/Controllers/Admin/CampaignManagementController.php` | 32 |
+| `apps/api/app/Http/Controllers/Admin/EventManagementController.php` | 24 |
+| `apps/api/app/Http/Controllers/Admin/EidJamaatManagementController.php` | 25, 46, 67, 100, 112 |
+| `apps/api/app/Http/Controllers/Admin/MosqueInsightsController.php` | 17 |
+| `apps/api/app/Http/Controllers/Admin/MosqueDashboardController.php` | 24–27, 36, 38–39, 55, 57–59, 62–64 |
+| `apps/api/app/Http/Resources/Admin/MosqueDashboardResource.php` | 43 |
+| `apps/api/app/Http/Controllers/Auth/PhoneOtpController.php` | 8, 10, 38, 65–67, 119–139 |
+| `apps/api/app/Http/Controllers/Admin/VerificationRequestManagementController.php` | 80–85 |
+| `apps/api/app/Http/Controllers/Admin/MosqueSystemManagementController.php` | 26 |
+| `apps/api/app/Http/Controllers/Admin/UserManagementController.php` | 25, 65 |
+| `apps/api/app/Services/MosqueClaimService.php` | 24 |
+| `apps/api/app/Models/Mosque.php` | 47–72 (owner sync), 81–96 (also Part 2) |
+| `apps/api/app/Models/User.php` | 50, 84–114, 224 (also Part 2) |
+| `apps/api/app/Models/Notification.php` | 38–41, 52–55, 63–64 (also Part 2) |
+| `apps/api/app/Services/NotificationService.php` | 125–148 (also Part 2) |
+| `apps/api/routes/api.php` | 12, 14, 16, 33, 35, 107–116, 149–160, 224–229 (also Part 2) |
+| `apps/api/database/seeders/MosqueSeeder.php` | 6, 161–166 |
+| `apps/api/database/seeders/DemoDataIntegritySeeder.php` | 24–25, 28–36 |
+| `apps/api/tests/Feature/MosqueTeamTest.php` | new file |
+| `apps/web/src/components/admin/TeamManager.jsx` | new file |
+| `apps/web/src/components/super-admin/MosqueTeamModal.jsx` | new file |
+| `apps/web/src/components/Modal.jsx` | new file (also Part 2) |
+| `apps/web/src/utils/teamRoles.js` | new file |
+| `apps/web/src/utils/teamRoles.test.js` | new file |
+| `apps/web/src/utils/teamApi.js` | new file (also Part 2) |
+| `apps/web/src/pages/AdminDashboard.jsx` | 3, 16, 18, 34–37, 51–66, 117, 143–167, 179, 185, 194, 207, 223, 227 (also Part 2) |
+| `apps/web/src/utils/dashboardFormat.js` | 14–15 |
+| `apps/web/src/components/admin/dashboard/DashboardOverview.jsx` | 8, 15, 37–49 |
+| `apps/web/src/components/admin/dashboard/AttentionCard.jsx` | 2, 7, 13, 39–61, 104, 106, 126 (also Part 2) |
+| `apps/web/src/components/admin/dashboard/TodayPrayersCard.jsx` | 25 |
+| `apps/web/src/context/AuthContext.jsx` | 161–173, 194 (`refreshUser`) |
+| `apps/web/src/pages/Profile.jsx` | 2–31, 53–65, 89, 98, 112, 117–138 (also Part 2) |
+| `apps/web/src/components/super-admin/AdminPanels.jsx` | 33–35, 241, 253, 264, 270–271, 274–305 (also Part 2) |
+| `apps/web/src/components/notifications/NotificationList.jsx` | 12–13, 27–28 (also Part 2) |
+| `apps/web/src/utils/notificationUtils.js` | 7–8, 50–53 (also Part 2) |
+| `apps/web/src/utils/notificationUtils.test.js` | 48–53 |
+| `apps/web/src/utils/mosqueDiscovery.js` | 290–293 (followed-mosques crash fix) |
+| `apps/web/package.json` | 10 (new tests added to `npm test`) |
+
+#### Part 2
+
+| File | Lines |
+|---|---|
+| `apps/api/database/migrations/2026_10_04_000100_create_mosque_edit_suggestions_table.php` | new file |
+| `apps/api/app/Models/MosqueEditSuggestion.php` | new file |
+| `apps/api/app/Services/MosqueEditor.php` | new file (the admin editor's save logic, now shared) |
+| `apps/api/app/Services/MosqueSuggestionService.php` | new file |
+| `apps/api/app/Http/Controllers/MosqueSuggestionController.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/SuggestionReviewController.php` | new file |
+| `apps/api/app/Http/Resources/MosqueEditSuggestionResource.php` | new file |
+| `apps/api/config/suggestions.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/MosqueManagementController.php` | 7, 23–36, 68–74 (now uses `MosqueEditor`) |
+| `apps/api/app/Http/Controllers/MosqueController.php` | 7, 103–108 |
+| `apps/api/app/Http/Resources/MosqueResource.php` | 7, 84–86 |
+| `apps/api/app/Providers/AppServiceProvider.php` | 67–77 (10 a day limit) |
+| `apps/api/tests/Feature/MosqueSuggestionTest.php` | new file |
+| `apps/web/src/components/suggestions/SuggestCorrectionModal.jsx` | new file |
+| `apps/web/src/components/suggestions/SuggestionReviewList.jsx` | new file (review queue and badge) |
+| `apps/web/src/utils/suggestionFormat.js` | new file |
+| `apps/web/src/utils/suggestionFormat.test.js` | new file |
+| `apps/web/src/pages/MosqueProfile.jsx` | 1, 5, 7, 17, 37–47, 55–56, 120–121, 199–221, 289–304, 313, 326, 331–346 |
+| `apps/web/src/pages/SuperAdminDashboard.jsx` | 9, 19, 35, 65 |
+| `apps/web/src/index.css` | 5794–5897 (also Part 1) |
+
+**Deploy note:** on Azure, run the migrations once or deploy with `RUN_MIGRATIONS=true`.
+
+---
+
+## Issue 4 – Super-admin console upgrades and claim-document pre-screening (9 pts)
+
+Both parts are finished. Part 2 uses **Google Document AI** instead of Claude, because the project has no Anthropic API key.
+
+- **Backend:** 378 of 383 tests pass (34 are new: 15 console, 12 pre-screen, 7 scorer). The 5 failures are the same date-based ones listed under Issue 1, and they fail without these changes too.
+- **Frontend:** all 52 unit tests pass (8 are new, plus 4 new link checks in `notificationUtils.test.js`). The production build succeeds.
+- Both suites were run twice, with the same result each time.
+- **Not done:** an automated browser run. A local security hook blocked starting the dev server, so the screens still need the manual check under "Seeing it yourself" below.
+
+### Part 1 – Super-admin console (6 pts, originally #228)
+
+**What was asked:** replace every `window.prompt`; view claim documents and the AI hints in place; edit, merge and delete mosques; a user detail view; actually show the maintenance notice; decide what to do with `auto_publish_verified_mosques`; broadcasts; audit-log filters and CSV export.
+
+**What was done:**
+- **Dialogs:** a new `ConfirmDialog`, built on `Modal`, has a reason box that is required where the API requires it, shows a character count, validates input and displays server errors inline. It replaces all 5 `window.prompt` calls (claims, users, mosques, moderation, reports) and both `window.confirm` calls (deleting a campaign, deleting an Eid jamaat). A grep finds none left. With stacked dialogs, Escape closes only the top one.
+- **Claims:** a **Review** button opens a side panel with:
+  - the document (a PDF shows in an `<iframe>` from a blob URL, and JPG/PNG shows inline);
+  - the AI score badge, a ✓/✗ for whether the mosque name and the applicant's name were found, the red flags and the findings, all labelled "advice only";
+  - other claims for the same mosque, and the applicant's other claims;
+  - Approve, Reject and More info.
+
+  The table now shows the AI percentage, a red-flag count and a "competing claims" badge.
+- **Inline document:** `GET /api/super-admin/claims/{id}/document?inline=1` returns `Content-Disposition: inline` with the correct MIME type, `nosniff` and `no-store`, and still needs a super-admin login. Without `inline` the file downloads as before.
+- **Mosques:** every row has Edit, Merge and Delete.
+  - `PATCH /api/super-admin/mosques/{id}` edits the mosque.
+  - `POST …/merge {into_mosque_id}` runs in one transaction. It moves followers (keeping a single follow when someone follows both mosques), events, announcements, campaigns, volunteer opportunities, claims, notifications and reports, then deletes the duplicate.
+    - An open claim that would duplicate the same person's open claim on the target is closed automatically, with a note saying why.
+    - Mosques that still have an admin team are refused. Transfer or revoke their admins first, using the existing Team dialog.
+    - The merge dialog searches for the target mosque and asks you to type MERGE.
+  - `DELETE` returns 409 with the content counts unless `?force=1` is sent. The UI then offers a force-delete that lists what will be lost. Former team members lose the mosque-admin role if they have no other mosque.
+  - Edits, merges and deletes are all audited (`mosque.updated`, `mosque.merged`, `mosque.deleted`).
+- **Users:** a **Details** button and `GET /api/super-admin/users/{id}` show managed mosques, claims, reports filed, donations and suspension history (taken from the audit log).
+- **Maintenance notice:** `GET /api/settings/public` needs no login and is cached for 60 seconds. Saving settings clears the cache. It returns `{ maintenance_notice, claims_enabled, reports_enabled, eid_season }`. A yellow banner in `Layout.jsx` shows the notice on every page. A visitor can dismiss it, and it shows again if the text changes.
+- **`auto_publish_verified_mosques`: removed.** Approving a claim already marks the mosque verified, and nothing read this switch. The default, the validation rule, the switch in the UI and the stored row are all gone. An old client that still sends it is simply ignored.
+- **Broadcasts:**
+  - A new **Broadcasts** section and `GET`/`POST /api/super-admin/broadcasts`, with `{ title, message, audience: all | role | district, audience_value, link }`.
+  - Messages are sent as queued `system` notifications in chunks of 500, only to active accounts. Each broadcast is audited as `broadcast.sent`, and a list of past broadcasts shows the recipient count.
+  - "District" means people who follow at least one mosque in that district, because accounts have no district of their own.
+  - A link must start with `/` or `https://`. Clicking the notification opens it.
+  - `notifications.mosque_id` is now nullable, and notifications have a `link` column. Push delivery waits for #240.
+- **Audit log:** filters for action (a dropdown of the actions that exist), admin user ID, from and to dates, plus **Export CSV** (`GET /api/super-admin/audit-logs/export`, using the same filters, up to 10,000 rows). Cells that start with `=`, `+`, `-` or `@` are escaped so spreadsheet apps can't run them as formulas.
+
+### Part 2 – Claim-document pre-screening (3 pts, originally #210)
+
+**What was asked:** fill the unused `ai_score`, `ai_result` and `ai_reviewed` fields with an automatic assessment of each claim document, without ever letting it decide a claim.
+
+**What was done, and how it differs from the issue:**
+- **Claude Opus was replaced with Google Document AI (OCR) plus a scoring step written in PHP**, because there is no Anthropic API key. Document AI reads the text from the PDF or image. `ClaimAssessmentScorer` then checks for:
+  - the mosque name (ignoring words like "masjid" and "jame");
+  - the applicant's name, area or district, and stated role;
+  - the document type (letterhead, committee resolution, NID, utility bill, other), detected from keywords in English and Bangla;
+  - text that is too short, low recognition confidence, an unrelated document, an NID card used as proof of a role, and reviewer-directed instructions such as "approve this claim".
+
+  It returns the fields the issue asked for: `score` (0–1), `document_type`, `mentions_mosque_name`, `mentions_applicant_name`, `findings`, `red_flags` and `summary`. Because no language model is involved, text inside a document can never act as an instruction. It is only matched and flagged.
+- **Trade-off:** this is a text match, not judgement. It catches missing names, unrelated or unreadable files and pasted instructions, but it cannot spot a well-edited forgery the way a language model might. The `ClaimDocumentReviewer` interface means a Claude reviewer can replace it later without touching the job.
+- **No new Composer package.** The REST `:process` endpoint is called with Laravel's `Http` client, using a service-account token (a signed JWT, cached for 50 minutes).
+- **Settings:** `CLAIM_AI_REVIEW_ENABLED` (off by default), plus `GOOGLE_DOCUMENT_AI_PROJECT_ID`, `_LOCATION`, `_PROCESSOR_ID` and `_CREDENTIALS`. Credentials can be a key-file path or the JSON itself, raw or base64, for an Azure secret. They are exposed as `services.google_document_ai` and `services.claim_ai.enabled`, and added to `.env.example` with empty values.
+- **Job:** `App\Jobs\PrescreenClaimDocument`, with `ShouldQueue`, `$tries = 3`, `$backoff = [30, 120]` and `$timeout = 120`.
+  - It is dispatched with `->afterCommit()` from `MosqueClaimService::create()`, only when the flag is on.
+  - **Success:** stores `ai_score` and `ai_result` (the assessment plus provider, page count, characters read and OCR confidence). It sets the status to `ai_reviewed` only if the claim is still `pending`.
+  - **Errors:** 429, 5xx and network failures are retried. Any other 4xx, a bad key, missing settings or an unsupported file are recorded as `{"error": …}` and not retried.
+  - Every write is a conditional `UPDATE … WHERE status IN (open statuses)`, so a super admin's decision made while the job runs is never overwritten. A failure never changes the claim's status.
+- **Privacy:** only the file, the mosque's name and address, and the applicant's name, role and reason are given to the reviewer, never a phone number (a test checks this). The claim form now says documents are screened by Google Document AI and that a person decides. The repo has no Privacy Policy page yet (that is #252), so the policy text still needs adding there.
+- **Refusals:** a Claude-style "refusal" doesn't exist for OCR. Its counterpart, an unreadable document, is stored as a score of 0 with an "Unreadable" red flag, and the claim is left for a person to review.
+
+### Seeing it yourself
+
+1. Run `php artisan migrate` (adds `broadcasts` and `notifications.link`, and makes `notifications.mosque_id` nullable).
+2. Sign in as the super admin and go to **System Administration**.
+3. **Settings:** type a maintenance notice and save. Within a minute a yellow banner appears on every page, including when signed out. Dismiss it, change the text, and it comes back. The "Publish verified mosques automatically" switch is gone.
+4. **Mosque Claims:** click **Review** on a claim. The PDF or image shows inside the panel. Approve or reject it: a dialog asks for the reason, and Reject won't submit while the reason is empty.
+5. **Mosques:** use the pencil to edit. Use the merge icon to search for another mosque, pick it and type MERGE; the duplicate disappears and its followers move. Use the bin to delete: an empty mosque deletes, and one with content asks before a force-delete.
+6. **Users:** click **Details** to see claims, reports, donations and suspension history. Suspend: the dialog requires a reason.
+7. **Broadcasts:** send "Eid moon sighted" to Everyone with link `/eid`. Sign in as a normal user; the notification is there, and clicking it opens `/eid`.
+8. **Audit Log:** filter by action and dates, then click **Export CSV**.
+9. **Pre-screening (needs Google Cloud):**
+   - Create a Document AI **OCR processor** in a project with billing enabled, and a service account with the *Document AI API User* role.
+   - Set the five `GOOGLE_DOCUMENT_AI_*`/`CLAIM_AI_REVIEW_ENABLED=true` values in `apps/api/.env`, then run `php artisan config:clear`.
+   - Submit a claim. With `QUEUE_CONNECTION=sync` the score appears at once; on Azure, run a queue worker.
+   - Check current pricing before turning this on; there is a monthly free allowance, but billing must be enabled.
+
+### Files
+
+| File | Change |
+|---|---|
+| `apps/api/app/Services/ClaimReview/` (7 files) | new: interface, Document AI client, reviewer, scorer, assessment, input, exception |
+| `apps/api/app/Jobs/PrescreenClaimDocument.php` | new file |
+| `apps/api/app/Jobs/SendBroadcast.php`, `app/Models/Broadcast.php` | new files |
+| `apps/api/app/Http/Controllers/Admin/BroadcastController.php` | new file |
+| `apps/api/app/Services/MosqueMergeService.php` | new file (merge and delete) |
+| `apps/api/database/migrations/2026_10_05_000000_add_broadcasts_and_platform_notifications.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/MosqueSystemManagementController.php` | edit, merge and destroy actions |
+| `apps/api/app/Http/Controllers/Admin/VerificationRequestManagementController.php` | inline document, competing claims |
+| `apps/api/app/Http/Controllers/Admin/UserManagementController.php` | `show` |
+| `apps/api/app/Http/Controllers/Admin/AuditLogController.php` | filters, actions list, CSV export |
+| `apps/api/app/Http/Controllers/Admin/SystemSettingController.php`, `app/Models/SystemSetting.php` | public settings with cache; auto-publish removed |
+| `apps/api/app/Services/MosqueClaimService.php` | dispatches the pre-screen job |
+| `apps/api/app/Models/Notification.php`, `app/Http/Resources/NotificationResource.php` | `link`, nullable mosque |
+| `apps/api/app/Providers/AppServiceProvider.php` | reviewer binding |
+| `apps/api/config/services.php`, `.env.example` | Document AI and flag settings |
+| `apps/api/routes/api.php` | 1 public and 9 super-admin routes |
+| `apps/api/tests/Feature/SuperAdminConsoleTest.php`, `ClaimDocumentPrescreenTest.php`, `tests/Unit/ClaimAssessmentScorerTest.php` | new files |
+| `apps/web/src/components/ConfirmDialog.jsx`, `MaintenanceBanner.jsx` | new files |
+| `apps/web/src/components/super-admin/ClaimReviewPanel.jsx`, `MosqueToolsModals.jsx`, `UserDetailModal.jsx` | new files |
+| `apps/web/src/components/super-admin/AdminPanels.jsx` | dialogs, review, mosque tools, user details, broadcasts, audit filters |
+| `apps/web/src/pages/SuperAdminDashboard.jsx` | Broadcasts section |
+| `apps/web/src/components/Layout.jsx`, `Modal.jsx` | banner; Escape closes only the top dialog |
+| `apps/web/src/components/admin/CampaignManager.jsx`, `EidJamaatManager.jsx` | `ConfirmDialog` instead of `window.confirm` |
+| `apps/web/src/components/MosqueClaimForm.jsx` | privacy note |
+| `apps/web/src/utils/adminConsole.js` (+ test), `settingsApi.js`, `systemAdminApi.js`, `notificationUtils.js` (+ test) | helpers and API calls |
+| `apps/web/src/pages/Notifications.jsx` | broadcast links open |
+| `apps/web/src/index.css` | banner, document viewer, stacked dialogs |
+| `apps/web/package.json` | adds `adminConsole.test.js` to `npm test` |
+
+**Deploy note:** run the migrations, run a queue worker (the pre-screen job and broadcasts are queued), and add the Google settings as Azure secrets before setting `CLAIM_AI_REVIEW_ENABLED=true`.
+
+---
+
+## Issue 5 – Community hub: lost & found, feedback, search, contact, impact stats and goods pledges (12 pts)
+
+All four parts are finished and working.
+
+- **Backend:** 418 of 423 tests pass, including the 40 new ones. The 5 failures are the same date-based tests listed under Issue 1. They also fail on `main`. The full suite was run twice, with the same result both times.
+- **Frontend:** all 57 tests pass (4 new), and `npm run build` succeeds.
+- **Manual check:** the migrations were run on local MySQL, including the FULLTEXT indexes. Search and the stats were checked against real seeded data. The new pages were opened in Chrome on desktop and at phone width, with no console errors and no sideways scrolling.
+
+### Part 1 – Lost & Found and Complaints / Feedback (6 pts, originally #196)
+
+**What was asked:** the community hub needed lost & found and private feedback to a mosque. Items get photos and a "returned" status, and close themselves after 30 days. Feedback stays private to its author, that mosque's admin and the super admin, and the author is told when the admin replies.
+
+**What was done:**
+- **Lost & found:**
+  - New `lost_found_items` table, with moderation in the same style as announcements.
+  - Public list with `type`, `mosque_id`, `category` and `status` filters, paginated, plus a detail route.
+  - Logged-in users can post an item, with an optional photo. Only the owner can edit it.
+  - The owner, that mosque's admin or the super admin can mark an item returned, closed or open again.
+  - Photos are stored and served the same way as mosque cover photos.
+  - A daily scheduled command, `lost-found:close-stale`, closes items that have been open for more than 30 days.
+  - `lost_found` was added to `ContentReport::TYPES` and to super-admin moderation. Reports about items at a mosque show on that mosque's dashboard.
+- **Feedback (complaints):**
+  - New `complaints` table and `ComplaintPolicy`.
+  - Only the author, the mosque's owners and managers, and the super admin can read a complaint. Other users, admins of other mosques, and editor or prayer-times team members get 403.
+  - When a complaint is anonymous, the mosque admin doesn't see the name. The super admin does.
+  - When the admin writes a reply, the author gets a notification. Changing only the status doesn't send one.
+  - The open-complaints count was added to the dashboard.
+- **Frontend:**
+  - **Community page:** a **Lost & Found** tab (the box icon, or `/community?category=lost_found`). It has filters, cards (photo, lost/found badge, mosque, date) and a **Report a lost / found item** form. Each item has a detail page at `/community/lost-found/:id` with **Mark as returned**.
+  - **Mosque profile:** a "Lost & found at this mosque" card showing the latest 3 items. A **Send feedback to this mosque** button opens the feedback form, which explains the anonymous option.
+  - **Admin dashboard:** new **Feedback inbox** (status filter and reply box) and **Lost & Found** sections, and a feedback count in "Needs your attention".
+  - **Profile:** **My Feedback** (with the mosque's responses) and **My Lost & Found** tabs.
+
+### Part 2 – Global search API (2 pts, originally #209)
+
+**What was asked:** a public `GET /api/search?q=&types[]=` that searches mosques, upcoming events, active campaigns, announcements from the last 90 days and open volunteer opportunities. Each group returns up to 5 results and a total, and every result has the same shape. It needed FULLTEXT indexes on MySQL and a LIKE fallback on SQLite.
+
+**What was done:**
+- `SearchService` returns every group as `{ total, items }`. Each item is `{ type, id, title, subtitle, url }`, and `url` is the frontend page.
+- The endpoint is limited to 60 requests a minute, and `q` must be at least 2 characters.
+- New `Mosque::scopeSearch` matches name, address, area and district.
+- FULLTEXT indexes were added on `mosques(name, address)`, `events(title, description)`, `campaigns(title, summary)` and `announcements(title, body)`. The migration does nothing on SQLite.
+- `TextSearch` uses MySQL's boolean FULLTEXT search, so prefixes match: `baitul` finds "Baitul Mukarram". It falls back to LIKE on SQLite and for 2-letter terms, which are shorter than MySQL's minimum indexed word length.
+- Only public content is returned: no drafts, no past events, and nothing rejected by moderation.
+- The `/search` page is #252 (Part 2). The lost & found form already uses this API to pick a mosque.
+
+### Part 3 – Contact-message API and public impact-stats API (2 pts, originally #170)
+
+**What was asked:** store the home page "Get in touch" messages and show them to the super admin, and replace the made-up home page numbers with real ones.
+
+**What was done:**
+- **Contact form:**
+  - New `contact_messages` table.
+  - `POST /api/contact` is limited to 3 messages per 10 minutes per IP. It validates the name (up to 100 characters), the email and the message (10–3000 characters). A hidden `website` honeypot field must be empty, which stops bots.
+  - Super admin: `GET /api/super-admin/contact-messages?status=` and `PATCH .../{message}` (status). The super-admin panel for these is #252 (Part 4).
+- **Impact stats:**
+  - `GET /api/stats/public` returns `mosques_count`, `verified_mosques_count`, `members_count`, `donations_confirmed_total`, `volunteer_signups_count` and `events_held_count`.
+  - The queries are in the new `StatisticsService`, cached for 10 minutes under `public-stats`.
+- **Home page:**
+  - The contact form now sends to the API and shows success or error messages in place of the old `alert()`.
+  - The impact section shows the real numbers. The hardcoded `IMPACT_STATS` were removed.
+
+### Part 4 – Goods donation pledge API (2 pts, originally #169)
+
+**What was asked:** a backend for goods pledges, matching the SupportForm options. Users create and list their pledges, and the mosque admin accepts, receives or declines them. The admin is notified when a pledge arrives, and the donor when its status changes.
+
+**What was done:**
+- New `goods_donations` table, plus a model, factory, `GoodsDonationResource`, `StoreGoodsDonationRequest` and `GoodsDonationPolicy`. The policy is modelled on `CampaignPolicy`: only the mosque's own admin or the super admin can manage pledges.
+- **Allowed values:** they follow the selects in `SupportForm.jsx`. **Please confirm these with @urmee111.**
+  - `condition`: `new`, `gently_used`, `used`
+  - `delivery_method`: `drop_off` ("I will deliver to the mosque"), `pickup` ("Request pickup from my location"), `discuss` ("Need to discuss with the mosque")
+  - The label-to-value mapping is exported from `communityHubFormat.js`, so the `/support` flow can use it.
+- **Routes:**
+  - User: `POST /api/mosques/{mosque}/goods-donations`, `GET /api/me/goods-donations`.
+  - Admin, inside `scopeBindings()`: list, and `PATCH .../{goodsDonation}`. A pledge can go pending → accepted → received, or be declined. Received and declined are final.
+  - An optional `announcement_id` must belong to the same mosque.
+- **Notifications:** the mosque's content team is notified of a new pledge. The donor is notified once for each new status.
+- **Dashboard:** `pending_goods_donations_count` was added to `DashboardQueryService` and the dashboard response.
+- **Frontend:**
+  - Each mosque page has a small **Donate goods to this mosque** form, so the API can be tried today.
+  - The admin dashboard has a **Goods Donations** section.
+  - The donor's pledges show under **Profile → Donations**.
+  - The `/support` goods step is still the frontend placeholder. Connecting it is frontend work.
+
+### Fixed while testing
+- `content_reports.reportable_type` is a database enum, so reporting a lost & found item failed until a migration added `lost_found` to it.
+
+### Seeing it yourself
+
+First run the six new migrations. This is needed once on every database, including Azure:
+
+```powershell
+cd apps/api
+php artisan migrate
+```
+
+Use the demo accounts from Issue 3 (OTP `123456` after `php artisan db:seed --class=DemoAuthenticationSeeder`).
+
+| What to check | How |
+|---|---|
+| Real stats | Open the Home page. The impact numbers now match the database. They are cached for 10 minutes. |
+| Contact form | Home → **Get in touch** → send a message. The success message appears under the form. The 4th message within 10 minutes is refused. |
+| Lost & found | As Ayesha (`+8801812000201`): **Community → box icon (Lost & Found) → Report a lost / found item**. Pick Baitul Mukarram and add a photo. Then open the item and click **Mark as returned**. |
+| On the mosque page | Open Baitul Mukarram. The item shows under **Lost & found at this mosque**. |
+| Feedback | On Baitul Mukarram, click **Send feedback to this mosque**, tick **Send anonymously** and send. |
+| Inbox | As the owner (`+8801711000101`): **Dashboard → Feedback inbox**. The message shows as "Anonymous". Write a reply, set **Resolved** and save. |
+| Reply reaches the author | As Ayesha: the bell shows the reply. **Profile → My Feedback** shows the mosque's response. |
+| Privacy | As the super admin (`+8801700000001`), open `/api/admin/mosques/<id>/complaints`: the author's name is visible. As Tanvir (`+8801812000202`), the same URL returns 403. |
+| Goods pledge | As Ayesha, on Baitul Mukarram: **Donate goods to this mosque**. As the owner: the bell and Overview show it. **Dashboard → Goods Donations → Accept**, then **Mark received**. Ayesha gets a notification each time, and **Profile → Donations** shows the status. |
+| Search API | `http://localhost:8000/api/search?q=baitul` (all groups) or `...?q=bait&types[]=mosques`. `q=b` returns 422. |
+| Contact messages | There is no panel yet (#252). Read them with `php artisan tinker --execute="dump(App\Models\ContactMessage::latest()->get(['name','email','message','status'])->toArray());"`. |
+| Auto-close | `php artisan lost-found:close-stale` closes items open for more than 30 days. On a server, `php artisan schedule:run` must run every minute. |
+
+### Files
+
+| File | Change |
+|---|---|
+| `apps/api/database/migrations/2026_10_06_000000_create_lost_found_items_table.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000050_add_lost_found_to_content_report_types.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000100_create_complaints_table.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000200_create_contact_messages_table.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000300_create_goods_donations_table.php` | new file |
+| `apps/api/database/migrations/2026_10_06_000400_add_search_fulltext_indexes.php` | new file (MySQL only) |
+| `apps/api/app/Models/LostFoundItem.php`, `Complaint.php`, `ContactMessage.php`, `GoodsDonation.php` | new files |
+| `apps/api/database/factories/LostFoundItemFactory.php`, `ComplaintFactory.php`, `GoodsDonationFactory.php` | new files |
+| `apps/api/app/Policies/LostFoundItemPolicy.php`, `ComplaintPolicy.php`, `GoodsDonationPolicy.php` | new files |
+| `apps/api/app/Http/Controllers/LostFoundController.php`, `ComplaintController.php`, `GoodsDonationController.php`, `SearchController.php`, `StatsController.php`, `ContactMessageController.php` | new files |
+| `apps/api/app/Http/Controllers/Admin/ComplaintManagementController.php`, `GoodsDonationManagementController.php`, `ContactMessageManagementController.php` | new files |
+| `apps/api/app/Http/Resources/LostFoundItemResource.php`, `ComplaintResource.php`, `GoodsDonationResource.php` | new files |
+| `apps/api/app/Http/Requests/StoreGoodsDonationRequest.php` | new file |
+| `apps/api/app/Services/SearchService.php`, `StatisticsService.php`, `app/Support/TextSearch.php` | new files |
+| `apps/api/app/Console/Commands/CloseStaleLostFoundItems.php` | new file |
+| `apps/api/routes/api.php` | 21 new routes |
+| `apps/api/routes/console.php` | daily `lost-found:close-stale` |
+| `apps/api/app/Models/Mosque.php` | `lostFoundItems`, `complaints`, `goodsDonations`, `scopeSearch` |
+| `apps/api/app/Models/Notification.php`, `app/Services/NotificationService.php` | `complaint` and `goods_donation` types; `notifyUser` accepts a `link` |
+| `apps/api/app/Models/ContentReport.php`, `ContentReportController.php`, `Admin/ReportManagementController.php`, `Admin/ContentModerationController.php` | `lost_found` type |
+| `apps/api/app/Services/DashboardQueryService.php`, `Admin/MosqueDashboardController.php`, `Resources/Admin/MosqueDashboardResource.php` | `open_complaints_count`, `pending_goods_donations_count`, lost & found reports |
+| `apps/api/app/Providers/AppServiceProvider.php` | registers the three policies |
+| `apps/api/tests/Feature/LostFoundAndComplaintTest.php`, `GlobalSearchTest.php`, `ContactAndPublicStatsTest.php`, `GoodsDonationTest.php` | new files (40 tests) |
+| `apps/web/src/utils/communityHubApi.js`, `communityHubFormat.js` (+ `communityHubApi.test.js`) | new: API calls, labels, stats formatting |
+| `apps/web/src/components/community/LostFoundSection.jsx`, `LostFoundCard.jsx`, `LostFoundForm.jsx`, `MosqueLostFoundCard.jsx`, `ComplaintForm.jsx`, `GoodsPledgeForm.jsx` | new files |
+| `apps/web/src/components/admin/CommunityHubManagers.jsx` | new: feedback inbox, lost & found and goods sections |
+| `apps/web/src/pages/LostFoundDetails.jsx` | new file |
+| `apps/web/src/App.jsx` | `/community/lost-found/:id` route |
+| `apps/web/src/pages/Community.jsx`, `data/community.js`, `components/CommunityCard.jsx` | Lost & Found tab |
+| `apps/web/src/pages/MosqueProfile.jsx` | lost & found card, feedback and goods buttons |
+| `apps/web/src/pages/AdminDashboard.jsx`, `utils/dashboardFormat.js`, `utils/teamRoles.js` (+ test), `components/admin/dashboard/AttentionCard.jsx` | 3 new sections and the counts |
+| `apps/web/src/pages/Profile.jsx` | My Feedback and My Lost & Found tabs, goods pledges under Donations |
+| `apps/web/src/pages/Home.jsx`, `data/mosques.js` | real stats; contact form sends to the API; `IMPACT_STATS` removed |
+| `apps/web/src/utils/notificationUtils.js` (+ test) | the two new notification types open the right page |
+| `apps/web/src/index.css` | lost & found cards, honeypot |
+| `apps/web/package.json` | adds `communityHubApi.test.js` to `npm test` |
+
+**Deploy note:** run the migrations, and make sure the scheduler (`php artisan schedule:run` every minute) runs on Azure so old lost & found items close. Lost & found photos are stored on the `local` disk, like mosque photos.

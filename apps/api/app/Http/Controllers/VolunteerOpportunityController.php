@@ -40,7 +40,7 @@ class VolunteerOpportunityController extends Controller
 
     public function adminIndex(Mosque $mosque): AnonymousResourceCollection
     {
-        Gate::authorize('view', $mosque);
+        Gate::authorize('manageContent', $mosque);
 
         $opportunities = $mosque->volunteerOpportunities()
             ->with(['mosque', 'creator'])

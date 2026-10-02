@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { ArrowUp } from "lucide-react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import MaintenanceBanner from "./MaintenanceBanner";
 
 const MOTION_SELECTOR = ".mc-motion-section, .mc-motion-stagger > *";
 const PARALLAX_SELECTOR = "[data-mc-parallax]";
@@ -162,6 +163,7 @@ export default function Layout({ children }) {
   return (
     <>
       <Navbar />
+      <MaintenanceBanner />
       <main ref={pageRef} className="mc-page-shell">{children}</main>
       <Footer />
       <BackToTop />

@@ -158,6 +158,19 @@ export function AuthProvider({ children }) {
     return { ok: true };
   }
 
+  // Re-read the user (e.g. after joining or leaving a mosque team) without the
+  // loading state, so protected pages stay mounted while it refreshes.
+  const refreshUser = useCallback(async () => {
+    const res = await fetch(apiUrl("/api/auth/me"), { headers: getAuthHeaders() });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.user) {
+      setUser(data.user);
+      cacheUser(data.user);
+    }
+    return data.user ?? null;
+  }, []);
+
   function updateUser(updatedFields) {
     setUser((prev) => {
       if (!prev) return null;
@@ -178,6 +191,7 @@ export function AuthProvider({ children }) {
         logout,
         updateUser,
         restoreSession,
+        refreshUser,
         clearSession,
       }}
     >

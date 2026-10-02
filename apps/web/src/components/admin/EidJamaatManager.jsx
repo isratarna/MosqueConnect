@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Pencil, Send, Trash2 } from "lucide-react";
+import ConfirmDialog from "../ConfirmDialog";
 import LocationPicker from "./LocationPicker";
 import { formatEidDate } from "../eid/EidJamaatCard";
 import {
@@ -34,6 +35,7 @@ export default function EidJamaatManager({ mosqueId, mosque }) {
   const [year, setYear] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [editingId, setEditingId] = useState(null);
+  const [deleting, setDeleting] = useState(null);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -139,7 +141,11 @@ export default function EidJamaatManager({ mosqueId, mosque }) {
   }
 
   function remove(jamaat) {
-    if (!window.confirm(`Delete the ${formatClockTime(jamaat.jamaat_time)} jamaat?`)) return;
+    setDeleting(jamaat);
+  }
+
+  function confirmRemove() {
+    const jamaat = deleting;
     run(() => deleteEidJamaat(mosqueId, jamaat.id), "Eid jamaat deleted.");
     if (editingId === jamaat.id) cancelEdit();
   }
@@ -287,6 +293,7 @@ export default function EidJamaatManager({ mosqueId, mosque }) {
           <Link to={`/mosque/${mosqueId}#eid-jamaat`} className="btn btn-link ms-auto">View public profile</Link>
         </div>
       </form>
+      {deleting && <ConfirmDialog title="Delete this jamaat?" message={`Delete the ${formatClockTime(deleting.jamaat_time)} jamaat?`} confirmLabel="Delete jamaat" tone="danger" onConfirm={confirmRemove} onClose={() => setDeleting(null)} />}
     </section>
   );
 }

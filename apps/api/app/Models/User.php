@@ -47,6 +47,7 @@ class User extends Authenticatable
         'suspension_reason',
     ];
 
+
     /**
      * Get the follower records for the user.
      */
@@ -78,6 +79,37 @@ class User extends Authenticatable
     public function ownedMosques(): HasMany
     {
         return $this->hasMany(Mosque::class, 'owner_id');
+    }
+
+    /**
+     * Get the user's mosque team memberships, including pending invitations.
+     */
+    public function mosqueMemberships(): HasMany
+    {
+        return $this->hasMany(MosqueMember::class);
+    }
+
+    /**
+     * Get the mosques this user helps run (accepted team memberships only).
+     */
+    public function managedMosques(): BelongsToMany
+    {
+        return $this->belongsToMany(Mosque::class, 'mosque_members')
+            ->withPivot(['id', 'role', 'accepted_at'])
+            ->wherePivotNotNull('accepted_at');
+    }
+
+    /**
+     * Get the corrections this user has suggested.
+     */
+    public function editSuggestions(): HasMany
+    {
+        return $this->hasMany(MosqueEditSuggestion::class);
+    }
+
+    public function isTrustedContributor(): bool
+    {
+        return (int) $this->accepted_suggestions_count >= (int) config('suggestions.trusted_threshold', 3);
     }
 
     /**
@@ -194,6 +226,7 @@ class User extends Authenticatable
     {
         return [
             'suspended_at' => 'datetime',
+            'accepted_suggestions_count' => 'integer',
         ];
     }
 }

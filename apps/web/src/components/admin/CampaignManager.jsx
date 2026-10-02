@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, CircleX, Edit3, Eye, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import ConfirmDialog from "../ConfirmDialog";
 import CampaignProgress from "../campaigns/CampaignProgress";
 import CampaignStatusBadge from "../campaigns/CampaignStatusBadge";
 import {
@@ -22,6 +23,7 @@ export default function CampaignManager({ mosqueId }) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   const load = useCallback((signal) => {
     if (!mosqueId) return Promise.resolve();
@@ -65,10 +67,13 @@ export default function CampaignManager({ mosqueId }) {
     catch (requestError) { setError(requestError.message || "Campaign status could not be updated."); }
   };
 
-  const remove = async (campaign) => {
-    if (!window.confirm(`Delete “${campaign.title}” and all of its support records?`)) return;
-    try { await deleteAdminCampaign(mosqueId, campaign.id); setNotice("Campaign deleted."); setReviewing(null); await load(); }
-    catch (requestError) { setError(requestError.message || "Campaign could not be deleted."); }
+  const remove = (campaign) => setDeleting(campaign);
+
+  const confirmRemove = async () => {
+    await deleteAdminCampaign(mosqueId, deleting.id);
+    setNotice("Campaign deleted.");
+    setReviewing(null);
+    await load();
   };
 
   if (!mosqueId) return <div className="alert alert-warning">Your verified mosque could not be identified. Sign out and back in to refresh your account.</div>;
@@ -103,6 +108,7 @@ export default function CampaignManager({ mosqueId }) {
           </article>
         ))}
       </div>
+      {deleting && <ConfirmDialog title="Delete this campaign?" message={`Delete “${deleting.title}” and all of its support records? This cannot be undone.`} confirmLabel="Delete campaign" tone="danger" onConfirm={confirmRemove} onClose={() => setDeleting(null)} />}
     </div>
   );
 }

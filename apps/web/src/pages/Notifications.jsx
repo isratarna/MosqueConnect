@@ -78,7 +78,8 @@ export default function Notifications() {
       }
     }
 
-    if (destination) navigate(destination);
+    if (destination?.startsWith("https://")) window.open(destination, "_blank", "noopener,noreferrer");
+    else if (destination) navigate(destination);
   }, [markAsRead, navigate]);
 
   const handleMarkAll = useCallback(async () => {

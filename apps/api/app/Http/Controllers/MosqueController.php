@@ -6,6 +6,7 @@ use App\Http\Requests\MosqueIndexRequest;
 use App\Http\Resources\MosqueResource;
 use App\Http\Resources\PrayerScheduleResource;
 use App\Models\Mosque;
+use App\Models\MosqueEditSuggestion;
 use App\Services\PrayerScheduleService;
 use App\Services\Queries\MosqueQueryService;
 use App\Support\EidSeason;
@@ -69,6 +70,12 @@ class MosqueController extends Controller
                 ->published()
                 ->forSeason($season['eid'], $season['year'])]);
         }
+
+        // When the community last had a correction to the times accepted.
+        $mosque->times_confirmed_at = $mosque->editSuggestions()
+            ->accepted()
+            ->whereIn('field', MosqueEditSuggestion::TIME_FIELDS)
+            ->max('reviewed_at');
 
         return response()->json([
             'data' => (new MosqueResource($mosque, true))->resolve(),
