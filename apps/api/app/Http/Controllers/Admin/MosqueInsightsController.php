@@ -14,7 +14,7 @@ class MosqueInsightsController extends Controller
 {
     public function show(Request $request, Mosque $mosque, MosqueInsightsService $insights): JsonResponse
     {
-        Gate::authorize('view', $mosque);
+        Gate::authorize('manageContent', $mosque);
 
         $validated = $request->validate([
             'range' => ['sometimes', 'string', Rule::in(array_keys(MosqueInsightsService::RANGES))],

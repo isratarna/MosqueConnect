@@ -23,7 +23,7 @@ class MosqueSystemManagementController extends Controller
 
         $mosques = Mosque::query()
             ->with('owner:id,name,phone,role,account_status')
-            ->withCount(['followers', 'events', 'campaigns'])
+            ->withCount(['followers', 'events', 'campaigns', 'members as team_count' => fn (Builder $query) => $query->whereNotNull('accepted_at')])
             ->when($filters['verification_status'] ?? null, fn (Builder $query, string $status) => $query->where('verification_status', $status))
             ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(fn (Builder $query) => $query->where('name', 'like', "%{$search}%")->orWhere('address', 'like', "%{$search}%")))
             ->latest('id')

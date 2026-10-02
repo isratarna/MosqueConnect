@@ -6,6 +6,7 @@ import {
   FileCheck2,
   Flag,
   LayoutDashboard,
+  PencilLine,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -15,6 +16,7 @@ import {
 import {
   AuditPanel,
   ClaimsPanel,
+  CorrectionsPanel,
   ModerationPanel,
   MosquesPanel,
   OverviewPanel,
@@ -30,6 +32,7 @@ const SECTIONS = [
   { id: "claims", label: "Mosque Claims", icon: FileCheck2 },
   { id: "users", label: "Users", icon: Users },
   { id: "mosques", label: "Mosques", icon: Building2 },
+  { id: "corrections", label: "Corrections", icon: PencilLine },
   { id: "moderation", label: "Moderation", icon: SlidersHorizontal },
   { id: "reports", label: "Reports", icon: Flag },
   { id: "statistics", label: "Statistics", icon: Activity },
@@ -59,6 +62,7 @@ export default function SuperAdminDashboard() {
       case "claims": return <ClaimsPanel />;
       case "users": return <UsersPanel currentUser={user} />;
       case "mosques": return <MosquesPanel />;
+      case "corrections": return <CorrectionsPanel />;
       case "moderation": return <ModerationPanel />;
       case "reports": return <ReportsPanel />;
       case "statistics": return <StatisticsPanel />;

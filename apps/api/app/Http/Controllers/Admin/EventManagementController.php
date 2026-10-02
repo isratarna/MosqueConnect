@@ -21,7 +21,7 @@ class EventManagementController extends Controller
 
     public function index(EventIndexRequest $request, Mosque $mosque): AnonymousResourceCollection
     {
-        Gate::authorize('view', $mosque);
+        Gate::authorize('manageContent', $mosque);
 
         $filters = $request->validated();
 

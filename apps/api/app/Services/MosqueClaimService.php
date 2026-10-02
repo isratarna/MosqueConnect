@@ -21,7 +21,7 @@ class MosqueClaimService
      */
     public function isEligible(User $user): bool
     {
-        return $user->isNormalUser() && $user->ownedMosques()->doesntExist();
+        return $user->isNormalUser() && $user->managedMosques()->doesntExist();
     }
 
     /**

@@ -45,3 +45,9 @@ test("Eid notifications open the mosque's Eid jamaat card", () => {
   assert.equal(getNotificationPath({ type: "eid", mosque_id: 4, reference_id: 9 }), "/mosque/4#eid-jamaat");
   assert.equal(getNotificationTypeLabel("eid"), "Eid");
 });
+
+test("Team and correction notifications open the matching profile tab", () => {
+  assert.equal(getNotificationPath({ type: "team", mosque_id: 4, reference_id: 9 }), "/profile?tab=invites");
+  assert.equal(getNotificationPath({ type: "suggestion", mosque_id: 4, reference_id: 2 }), "/profile?tab=suggestions");
+  assert.equal(getNotificationTypeLabel("team"), "Mosque team");
+});

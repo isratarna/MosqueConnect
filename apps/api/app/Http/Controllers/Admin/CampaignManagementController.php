@@ -29,7 +29,7 @@ class CampaignManagementController extends Controller
 
     public function index(CampaignIndexRequest $request, Mosque $mosque): AnonymousResourceCollection
     {
-        Gate::authorize('view', $mosque);
+        Gate::authorize('manageContent', $mosque);
 
         $campaigns = $mosque->campaigns()
             ->with(['mosque', 'creator'])

@@ -44,12 +44,54 @@ class Mosque extends Model
     /** @var list<string> */
     protected $appends = ['photo_url'];
 
+    protected static function booted(): void
+    {
+        // owner_id is kept for compatibility. Whenever it points at someone,
+        // that person is an owner on the mosque's team, so every place that
+        // still sets owner_id (claim approval, seeders, tests) keeps working.
+        static::saved(function (Mosque $mosque): void {
+            if (! $mosque->owner_id || ! ($mosque->wasRecentlyCreated || $mosque->wasChanged('owner_id'))) {
+                return;
+            }
+
+            $member = MosqueMember::query()->firstOrNew([
+                'mosque_id' => $mosque->id,
+                'user_id' => $mosque->owner_id,
+            ]);
+
+            if ($member->exists && $member->isOwner() && $member->isAccepted()) {
+                return;
+            }
+
+            $member->fill([
+                'role' => MosqueMember::ROLE_OWNER,
+                'accepted_at' => $member->accepted_at ?? now(),
+            ])->save();
+        });
+    }
+
     /**
      * Get the user assigned to administer this mosque.
      */
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Get the mosque's team: accepted members and pending invitations.
+     */
+    public function members(): HasMany
+    {
+        return $this->hasMany(MosqueMember::class);
+    }
+
+    /**
+     * Get corrections to this mosque suggested by the community.
+     */
+    public function editSuggestions(): HasMany
+    {
+        return $this->hasMany(MosqueEditSuggestion::class);
     }
 
     /**

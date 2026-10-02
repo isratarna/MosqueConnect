@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Mosque;
+use App\Models\MosqueMember;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -157,6 +158,12 @@ class MosqueSeeder extends Seeder
                 User::query()->where('phone', $ownerPhone)->firstOrFail(),
             );
             $model->save();
+
+            // Seeding runs without model events, so add the owner to the team here.
+            MosqueMember::query()->updateOrCreate(
+                ['mosque_id' => $model->id, 'user_id' => $model->owner_id],
+                ['role' => MosqueMember::ROLE_OWNER, 'accepted_at' => $model->created_at ?? now()],
+            );
         }
     }
 }

@@ -12,7 +12,7 @@ class VolunteerOpportunityPolicy
 {
     public function create(User $user, Mosque $mosque): Response
     {
-        return Gate::forUser($user)->inspect('update', $mosque);
+        return Gate::forUser($user)->inspect('manageContent', $mosque);
     }
 
     public function view(User $user, VolunteerOpportunity $volunteerOpportunity): Response
@@ -32,6 +32,6 @@ class VolunteerOpportunityPolicy
 
     private function canManage(User $user, Mosque $mosque): Response
     {
-        return Gate::forUser($user)->inspect('update', $mosque);
+        return Gate::forUser($user)->inspect('manageContent', $mosque);
     }
 }

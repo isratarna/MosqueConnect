@@ -9,6 +9,8 @@ import {
   LoaderCircle,
   Megaphone,
   Moon,
+  PencilLine,
+  UsersRound,
 } from "lucide-react";
 import {
   formatNotificationTime,
@@ -22,6 +24,8 @@ const TYPE_ICONS = {
   prayer_schedule: Clock3,
   campaign: CircleDollarSign,
   eid: Moon,
+  team: UsersRound,
+  suggestion: PencilLine,
   system: Info,
 };
 

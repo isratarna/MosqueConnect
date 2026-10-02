@@ -4,6 +4,8 @@ export const NOTIFICATION_TYPES = {
   prayer_schedule: { label: "Prayer schedule" },
   campaign: { label: "Campaign" },
   eid: { label: "Eid" },
+  team: { label: "Mosque team" },
+  suggestion: { label: "Your correction" },
   system: { label: "System" },
 };
 
@@ -45,6 +47,10 @@ export function getNotificationPath(notification) {
       return mosqueId ? `/mosque/${encodeURIComponent(mosqueId)}#prayer-schedule` : null;
     case "eid":
       return mosqueId ? `/mosque/${encodeURIComponent(mosqueId)}#eid-jamaat` : null;
+    case "team":
+      return "/profile?tab=invites";
+    case "suggestion":
+      return "/profile?tab=suggestions";
     default:
       return null;
   }
