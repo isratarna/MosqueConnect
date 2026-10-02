@@ -10,10 +10,11 @@ import { respondToInvite } from "../utils/teamApi";
 import { describeValue } from "../utils/suggestionFormat";
 import { roleLabel } from "../utils/teamRoles";
 import { TrustedBadge } from "../components/suggestions/SuggestionReviewList";
+import { COMPLAINT_CATEGORIES, COMPLAINT_STATUS, GOODS_STATUS, LOST_FOUND_STATUS, labelOf } from "../utils/communityHubApi";
 
-const tabs = { followed: "Followed Mosques", invites: "Team Invitations", activity: "Event Registrations", donations: "Donations", suggestions: "My Corrections", claims: "Mosque Applications", settings: "Settings" };
-const endpoints = { invites: "/api/me/mosque-invites", activity: "/api/me/event-registrations", donations: "/api/me/donations", suggestions: "/api/me/suggestions", claims: "/api/me/mosque-claims" };
-const emptyText = { invites: "You have no team invitations.", activity: "No event registrations yet.", donations: "No donations yet.", suggestions: "You haven't suggested any corrections yet.", claims: "No mosque applications yet." };
+const tabs = { followed: "Followed Mosques", invites: "Team Invitations", activity: "Event Registrations", donations: "Donations", suggestions: "My Corrections", feedback: "My Feedback", lostfound: "My Lost & Found", claims: "Mosque Applications", settings: "Settings" };
+const endpoints = { invites: "/api/me/mosque-invites", activity: "/api/me/event-registrations", donations: "/api/me/donations", suggestions: "/api/me/suggestions", feedback: "/api/me/complaints", lostfound: "/api/lost-found/me", claims: "/api/me/mosque-claims" };
+const emptyText = { invites: "You have no team invitations.", activity: "No event registrations yet.", donations: "No donations yet.", suggestions: "You haven't suggested any corrections yet.", feedback: "You haven't sent feedback to a mosque yet.", lostfound: "You haven't posted a lost or found item yet.", claims: "No mosque applications yet." };
 const SUGGESTION_STATUS = { pending: ["Waiting for review", "bg-warning text-dark"], accepted: ["Accepted", "bg-success"], rejected: ["Not accepted", "bg-secondary"] };
 
 export default function Profile() {
@@ -124,6 +125,24 @@ export default function Profile() {
                       <button type="button" className="btn btn-sm btn-outline-secondary" disabled={busyInvite !== null} onClick={() => answerInvite(item, false)}><X size={14} aria-hidden="true" /> Decline</button>
                     </div>
                   </div>}
+                  {activeTab === "feedback" && <>
+                    <div className="d-flex flex-wrap align-items-center gap-2">
+                      <Link to={`/mosque/${item.mosque_id}`} className="fw-semibold">{item.mosque?.name || `Mosque #${item.mosque_id}`}</Link>
+                      <span className="badge bg-light text-dark border">{labelOf(COMPLAINT_CATEGORIES, item.category)}</span>
+                      {item.is_anonymous && <span className="badge bg-light text-dark border">Sent anonymously</span>}
+                      <span className={`badge ms-auto ${COMPLAINT_STATUS[item.status]?.[1] || "bg-secondary"}`}>{COMPLAINT_STATUS[item.status]?.[0] || item.status}</span>
+                    </div>
+                    <p className="mb-1 mt-2 fw-semibold">{item.subject}</p>
+                    <p className="mb-0 small text-muted" style={{ whiteSpace: "pre-line" }}>{item.body}</p>
+                    {item.admin_response
+                      ? <div className="mt-2 p-2 rounded bg-light small"><strong>Mosque's response</strong>{item.responded_at && <span className="text-muted"> · {item.responded_at.slice(0, 10)}</span>}<p className="mb-0" style={{ whiteSpace: "pre-line" }}>{item.admin_response}</p></div>
+                      : <p className="mb-0 mt-2 small text-muted">No response yet. You'll be notified when the mosque replies.</p>}
+                  </>}
+                  {activeTab === "lostfound" && <div className="d-flex flex-wrap align-items-center gap-2">
+                    <span className={`badge ${item.type === "lost" ? "bg-danger" : "bg-success"} text-uppercase`}>{item.type}</span>
+                    <Link to={`/community/lost-found/${item.id}`} className="fw-semibold me-auto">{item.title}</Link>
+                    <span className={`badge ${LOST_FOUND_STATUS[item.status]?.[1] || "bg-secondary"}`}>{LOST_FOUND_STATUS[item.status]?.[0] || item.status}</span>
+                  </div>}
                   {activeTab === "suggestions" && <>
                     <div className="d-flex flex-wrap align-items-center gap-2">
                       <Link to={`/mosque/${item.mosque_id}`} className="fw-semibold">{item.mosque?.name || `Mosque #${item.mosque_id}`}</Link>
@@ -137,6 +156,9 @@ export default function Profile() {
                 </div>)}
                 {activeTab === "suggestions" && <p className="small text-muted">Spotted a wrong time or detail? Open the mosque's page and choose <strong>Suggest a correction</strong>. After 3 accepted corrections you get the <strong>Trusted contributor</strong> badge.</p>}
                 {activeTab === "claims" && <p>To apply as a mosque administrator, open your <Link to="/browse">mosque profile</Link> and submit an application with your supporting document.</p>}
+                {activeTab === "feedback" && <p className="small text-muted">To send feedback, open a mosque's page and choose <strong>Send feedback to this mosque</strong>.</p>}
+                {activeTab === "lostfound" && <p className="small text-muted"><Link to="/community?category=lost_found">Open Lost &amp; Found</Link> to report an item or mark one returned.</p>}
+                {activeTab === "donations" && <GoodsPledges />}
                 {activeTab === "donations" && <p className="small text-muted">Pledges are confirmed by mosque administrators. <Link to="/campaigns">View campaigns</Link>.</p>}
               </>}
               {activeTab === "settings" && <form onSubmit={saveProfile}>
@@ -150,5 +172,32 @@ export default function Profile() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Goods pledges, listed under the Donations tab with the money pledges. */
+function GoodsPledges() {
+  const [pledges, setPledges] = useState([]);
+  useEffect(() => {
+    const controller = new AbortController();
+    apiRequest("/api/me/goods-donations", { signal: controller.signal })
+      .then((data) => setPledges(data.data || []))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  if (!pledges.length) return null;
+  return (
+    <>
+      <h3 className="h6 fw-bold mt-4">Goods pledges</h3>
+      {pledges.map((pledge) => (
+        <div className="border rounded p-3 mb-3" key={pledge.id}>
+          <div className="d-flex flex-wrap gap-2 align-items-center">
+            <strong className="me-auto">{pledge.quantity} × {pledge.item_name}</strong>
+            <span className={`badge ${GOODS_STATUS[pledge.status]?.[1] || "bg-secondary"}`}>{GOODS_STATUS[pledge.status]?.[0] || pledge.status}</span>
+          </div>
+          <p className="mb-0 mt-1 small text-muted">{pledge.mosque?.name}</p>
+        </div>
+      ))}
+    </>
   );
 }

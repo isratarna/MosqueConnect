@@ -126,7 +126,7 @@ class NotificationService
      * Notify one person about something that concerns only them, such as a
      * team invitation or the review of a correction they suggested.
      *
-     * @param  array{type: string, title: string, message: string, reference_type: string, reference_id: int}  $data
+     * @param  array{type: string, title: string, message: string, reference_type: string, reference_id: int, link?: string}  $data
      */
     public function notifyUser(int $userId, Mosque $mosque, array $data): bool
     {
@@ -140,6 +140,7 @@ class NotificationService
             'message' => Str::limit($data['message'], 10000, ''),
             'reference_type' => $data['reference_type'],
             'reference_id' => $data['reference_id'],
+            'link' => $data['link'] ?? null,
             'is_read' => false,
             'created_at' => $now,
             'updated_at' => $now,

@@ -59,6 +59,10 @@ class MosqueDashboardController extends Controller
         $mosque->pending_pledges = $canContent ? $section('pending_pledges', fn (): array => $this->queries->pendingPledges($mosque)) : [];
         $mosque->follower_growth = $section('follower_growth', fn (): array => $this->queries->followerGrowth($mosque));
         $mosque->profile_completeness = $section('profile_completeness', fn (): array => $this->queries->profileCompleteness($mosque));
+        $mosque->pending_goods_donations_count = $canContent ? $section('pending_goods_donations', fn (): int => $this->queries->pendingGoodsDonationsCount($mosque)) : 0;
+        $mosque->open_complaints_count = Gate::allows('update', $mosque)
+            ? $section('open_complaints', fn (): int => $this->queries->openComplaintsCount($mosque))
+            : 0;
         $mosque->pending_suggestions_count = Gate::allows('reviewSuggestions', $mosque)
             ? $section('pending_suggestions', fn (): int => $mosque->editSuggestions()->pending()->count())
             : 0;
@@ -116,7 +120,8 @@ class MosqueDashboardController extends Controller
                     ->where(fn ($q) => $q->where('reportable_type', 'mosque')->where('reportable_id', $mosque->id))
                     ->orWhere(fn ($q) => $q->where('reportable_type', 'announcement')->whereIn('reportable_id', $announcementIds))
                     ->orWhere(fn ($q) => $q->where('reportable_type', 'event')->whereIn('reportable_id', $eventIds))
-                    ->orWhere(fn ($q) => $q->where('reportable_type', 'campaign')->whereIn('reportable_id', $campaignIds));
+                    ->orWhere(fn ($q) => $q->where('reportable_type', 'campaign')->whereIn('reportable_id', $campaignIds))
+                    ->orWhere(fn ($q) => $q->where('reportable_type', 'lost_found')->whereIn('reportable_id', $mosque->lostFoundItems()->select('id')));
             });
     }
 

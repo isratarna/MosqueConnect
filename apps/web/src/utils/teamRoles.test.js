@@ -12,7 +12,7 @@ test("owners and managers see every dashboard section", () => {
 
 test("editors see content sections but not prayer times, settings or corrections", () => {
   const sections = ids(allowedSections(DASHBOARD_SECTIONS, abilitiesOf({ role: "editor" })));
-  assert.deepEqual(sections, ["overview", "insights", "announcements", "events", "donations", "volunteers", "team"]);
+  assert.deepEqual(sections, ["overview", "insights", "announcements", "events", "donations", "volunteers", "goods", "lostfound", "team"]);
 });
 
 test("prayer-times members see only the schedule sections, corrections and team", () => {

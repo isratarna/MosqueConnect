@@ -6,8 +6,11 @@ use App\Models\Announcement;
 use App\Models\BloodRequest;
 use App\Models\Campaign;
 use App\Models\CampaignDonation;
+use App\Models\Complaint;
 use App\Models\Event;
+use App\Models\GoodsDonation;
 use App\Models\JumuahSession;
+use App\Models\LostFoundItem;
 use App\Models\Mosque;
 use App\Models\PrayerTime;
 use App\Models\VolunteerApplication;
@@ -15,7 +18,10 @@ use App\Models\VolunteerOpportunity;
 use App\Observers\AdminActivityObserver;
 use App\Policies\AnnouncementPolicy;
 use App\Policies\BloodRequestPolicy;
+use App\Policies\ComplaintPolicy;
 use App\Policies\EventPolicy;
+use App\Policies\GoodsDonationPolicy;
+use App\Policies\LostFoundItemPolicy;
 use App\Policies\MosquePolicy;
 use App\Policies\VolunteerOpportunityPolicy;
 use App\Services\ClaimReview\ClaimDocumentReviewer;
@@ -53,7 +59,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(BloodRequest::class, BloodRequestPolicy::class);
+        Gate::policy(Complaint::class, ComplaintPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);
+        Gate::policy(GoodsDonation::class, GoodsDonationPolicy::class);
+        Gate::policy(LostFoundItem::class, LostFoundItemPolicy::class);
         Gate::policy(Mosque::class, MosquePolicy::class);
         Gate::policy(VolunteerOpportunity::class, VolunteerOpportunityPolicy::class);
 

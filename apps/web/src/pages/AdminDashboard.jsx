@@ -9,6 +9,9 @@ import {
   ExternalLink,
   HandCoins,
   HeartHandshake,
+  Inbox,
+  PackageOpen,
+  PackageSearch,
   LayoutDashboard,
   Megaphone,
   Menu,
@@ -32,6 +35,7 @@ import CampaignManager from "../components/admin/CampaignManager";
 import EventManager from "../components/admin/EventManager";
 import EidJamaatManager from "../components/admin/EidJamaatManager";
 import TeamManager from "../components/admin/TeamManager";
+import { ComplaintsInbox, GoodsDonationManager, LostFoundManager } from "../components/admin/CommunityHubManagers";
 import SuggestionReviewList from "../components/suggestions/SuggestionReviewList";
 import { fetchMosqueSuggestions, reviewMosqueSuggestion } from "../utils/teamApi";
 import { abilitiesOf, allowedSections, canUseSection, roleLabel } from "../utils/teamRoles";
@@ -49,6 +53,9 @@ const ICONS = {
   profile: Building2,
   facilities: Wrench,
   corrections: PencilLine,
+  feedback: Inbox,
+  goods: PackageOpen,
+  lostfound: PackageSearch,
   team: UsersRound,
 };
 
@@ -138,6 +145,9 @@ export default function AdminDashboard() {
       case "events": return <EventManager mosqueId={mosqueId} />;
       case "donations": return <CampaignManager mosqueId={mosqueId} />;
       case "volunteers": return <VolunteerManager mosqueId={mosqueId} />;
+      case "goods": return <GoodsDonationManager mosqueId={mosqueId} />;
+      case "lostfound": return <LostFoundManager mosqueId={mosqueId} />;
+      case "feedback": return <ComplaintsInbox mosqueId={mosqueId} />;
       case "profile": return needsMosque((m) => <ProfileForm mosque={m} onSaved={setMosque} />);
       case "facilities": return needsMosque((m) => <FacilitiesForm key={m.updated_at} mosque={m} onSaved={setMosque} />);
       case "corrections": return (

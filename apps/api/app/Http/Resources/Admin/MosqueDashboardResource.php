@@ -41,6 +41,8 @@ class MosqueDashboardResource extends JsonResource
                 'pending_content_reports_count' => (int) $mosque->pending_content_reports_count,
                 'pending_pledges_count' => $mosque->pending_pledges_count === null ? null : (int) $mosque->pending_pledges_count,
                 'pending_suggestions_count' => $mosque->pending_suggestions_count === null ? null : (int) $mosque->pending_suggestions_count,
+                'pending_goods_donations_count' => $mosque->pending_goods_donations_count === null ? null : (int) $mosque->pending_goods_donations_count,
+                'open_complaints_count' => $mosque->open_complaints_count === null ? null : (int) $mosque->open_complaints_count,
             ],
             'recent_content' => $mosque->recent_content,
             'pending_content_reports' => $mosque->pending_content_reports,

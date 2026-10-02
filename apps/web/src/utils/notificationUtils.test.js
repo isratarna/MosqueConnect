@@ -55,3 +55,9 @@ test("Team and correction notifications open the matching profile tab", () => {
   assert.equal(getNotificationPath({ type: "suggestion", mosque_id: 4, reference_id: 2 }), "/profile?tab=suggestions");
   assert.equal(getNotificationTypeLabel("team"), "Mosque team");
 });
+
+test("feedback and goods donation notifications open the right page", () => {
+  assert.equal(getNotificationPath({ type: "complaint", reference_id: 4 }), "/profile?tab=feedback");
+  assert.equal(getNotificationPath({ type: "goods_donation", link: "/admin/dashboard?section=goods" }), "/admin/dashboard?section=goods");
+  assert.equal(getNotificationPath({ type: "goods_donation" }), "/profile?tab=donations");
+});

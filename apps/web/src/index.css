@@ -5931,3 +5931,10 @@ main {
 .modal ~ .modal-backdrop ~ .modal {
   z-index: 1065;
 }
+
+/* Community hub: lost & found cards and the contact form honeypot */
+.mc-lost-found-card__photo { height: 160px; object-fit: cover; }
+.mc-lost-found-card__photo--empty { display: flex; align-items: center; justify-content: center; background: var(--bs-light, #f4f5f4); color: #9aa39d; border-radius: inherit; }
+.mc-lost-found-detail__photo { max-height: 420px; object-fit: cover; }
+.mc-line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mc-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }

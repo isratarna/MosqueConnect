@@ -18,8 +18,7 @@ import {
   Phone,
   Star,
   Sun,
-  TriangleAlert,
-} from "lucide-react";
+  TriangleAlert, MessageSquareText, PackageOpen } from "lucide-react";
 import { urgencyClass } from "../data/mosques";
 import { getAnnouncementDetailsPath } from "../data/announcements";
 import FacilityBadge from "../components/FacilityBadge";
@@ -35,6 +34,9 @@ import MosqueClaimForm from "../components/MosqueClaimForm";
 import EidJamaatCard from "../components/eid/EidJamaatCard";
 import { trackMosqueEvent, trackMosqueView } from "../utils/trackMosque";
 import SuggestCorrectionModal from "../components/suggestions/SuggestCorrectionModal";
+import MosqueLostFoundCard from "../components/community/MosqueLostFoundCard";
+import ComplaintForm from "../components/community/ComplaintForm";
+import GoodsPledgeForm from "../components/community/GoodsPledgeForm";
 import { communityConfirmedLabel } from "../utils/suggestionFormat";
 
 /** Small "Suggest a correction" link shown on each card with editable details. */
@@ -53,6 +55,8 @@ export default function MosqueProfile() {
   const [error, setError] = useState("");
   const [retryKey, setRetryKey] = useState(0);
   const [suggestField, setSuggestField] = useState(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [goodsOpen, setGoodsOpen] = useState(false);
   const applied = useRef(false);
   const { isFollowing: following, toggleFollow } = useFollow(id);
 
@@ -300,8 +304,17 @@ export default function MosqueProfile() {
                 <SuggestLink onClick={() => setSuggestField("phone")} label="Fix the phone number" />
                 <SuggestLink onClick={() => setSuggestField("other")} label="Something else" />
               </div>
+              <hr />
+              <button type="button" className="btn btn-sm btn-outline-mc w-100" onClick={() => setFeedbackOpen(true)}>
+                <MessageSquareText size={15} aria-hidden="true" /> Send feedback to this mosque
+              </button>
+              <p className="form-text">Private: only the mosque's admins read it. You can send it anonymously.</p>
+              <button type="button" className="btn btn-sm btn-outline-mc w-100" onClick={() => setGoodsOpen(true)}>
+                <PackageOpen size={15} aria-hidden="true" /> Donate goods to this mosque
+              </button>
             </div>
           </div>
+          <MosqueLostFoundCard mosque={mosque} />
           <div className="card mc-card mb-4">
             <div className="card-body">
               <h6 className="fw-bold mb-3"><Building2 size={18} className="text-mc me-2" aria-hidden="true" />Facilities</h6>
@@ -328,6 +341,8 @@ export default function MosqueProfile() {
           </div>
         </div>
       </div>
+      {goodsOpen && <GoodsPledgeForm mosque={mosque} onClose={() => setGoodsOpen(false)} />}
+      {feedbackOpen && <ComplaintForm mosque={mosque} onClose={() => setFeedbackOpen(false)} />}
       {suggestField && (
         <SuggestCorrectionModal
           key={suggestField}
