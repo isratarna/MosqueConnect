@@ -1,94 +1,202 @@
-﻿import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  BarChart3,
+  Building2,
+  CalendarDays,
+  Clock3,
+  ExternalLink,
+  HandCoins,
+  HeartHandshake,
+  LayoutDashboard,
+  Megaphone,
+  Menu,
+  Moon,
+  Sun,
+  Wrench,
+  X,
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../utils/api";
-import { FACILITY_META } from "../data/mosques";
+import { DASHBOARD_SECTIONS, dashboardSection } from "../utils/dashboardFormat";
+import DashboardOverview from "../components/admin/dashboard/DashboardOverview";
+import InsightsPanel from "../components/admin/dashboard/InsightsPanel";
+import AnnouncementManager from "../components/admin/AnnouncementManager";
+import { DailyPrayersForm, JumuahForm } from "../components/admin/PrayerTimesSection";
+import VolunteerManager from "../components/admin/VolunteerManager";
+import { FacilitiesForm, ProfileForm } from "../components/admin/MosqueProfileEditor";
 import CampaignManager from "../components/admin/CampaignManager";
 import EventManager from "../components/admin/EventManager";
 import EidJamaatManager from "../components/admin/EidJamaatManager";
 
-const tabs = { overview: "Dashboard Overview", profile: "Manage Mosque Profile", prayer: "Manage Prayer & Jamat", jummah: "Manage Jummah", eid: "Manage Eid Jamaat", announce: "Manage Announcements", events: "Manage Events", facilities: "Manage Facilities", donations: "Donation Campaigns", volunteers: "Volunteer Work" };
-const metrics = { followers_count: "Followers", active_announcements_count: "Active announcements", upcoming_events_count: "Upcoming events", active_campaigns_count: "Active campaigns", pending_content_reports_count: "Pending reports" };
+const ICONS = {
+  overview: LayoutDashboard,
+  insights: BarChart3,
+  announcements: Megaphone,
+  prayer: Clock3,
+  jummah: Sun,
+  eid: Moon,
+  events: CalendarDays,
+  donations: HandCoins,
+  volunteers: HeartHandshake,
+  profile: Building2,
+  facilities: Wrench,
+};
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const [params, setParams] = useSearchParams();
   const managed = user?.managed_mosques || [];
-  const [selectedId, setSelectedId] = useState("");
-  const mosqueId = selectedId || managed[0]?.id;
-  const [activeTab, setActiveTab] = useState("overview");
+  const mosqueId = (managed.find((item) => String(item.id) === params.get("mosque")) || managed[0])?.id;
+  const section = dashboardSection(params.get("section"));
+
   const [mosque, setMosque] = useState(null);
-  const [overview, setOverview] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [revision, setRevision] = useState(0);
+  const [mosqueError, setMosqueError] = useState("");
+  const [mosqueAttempt, setMosqueAttempt] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const menuButtonRef = useRef(null);
 
   useEffect(() => {
-    if (!mosqueId) { setLoading(false); return; }
+    if (!mosqueId) return undefined;
     const controller = new AbortController();
-    setLoading(true); setError(""); setMosque(null);
-    Promise.all([
-      apiRequest(`/api/admin/mosques/${mosqueId}`, { signal: controller.signal }),
-      apiRequest(`/api/admin/mosques/${mosqueId}/dashboard`, { signal: controller.signal }),
-    ]).then(([profile, dashboard]) => { setMosque(profile.mosque); setOverview(dashboard.data); })
-      .catch((err) => { if (err.name !== "AbortError") setError(err.message); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    setMosque(null);
+    setMosqueError("");
+    apiRequest(`/api/admin/mosques/${mosqueId}`, { signal: controller.signal })
+      .then((data) => setMosque(data.mosque))
+      .catch((err) => { if (err.name !== "AbortError") setMosqueError(err.message); });
     return () => controller.abort();
-  }, [mosqueId, revision]);
+  }, [mosqueId, mosqueAttempt]);
 
-  async function save(event) {
-    event.preventDefault();
-    if (busy) return;
-    const data = new FormData(event.currentTarget);
-    const body = activeTab === "facilities" ? { facilities: data.getAll("facilities") } : Object.fromEntries(data);
-    setBusy(true); setError(""); setMessage("");
-    try {
-      const result = await apiRequest(`/api/admin/mosques/${mosqueId}`, { method: "PATCH", body });
-      setMosque(result.mosque);
-      setMessage("Changes saved successfully.");
-    } catch (err) { setError(err.message); }
-    finally { setBusy(false); }
+  const updateParams = useCallback((changes) => {
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      Object.entries(changes).forEach(([key, value]) => (value ? next.set(key, value) : next.delete(key)));
+      return next;
+    }, { replace: true });
+  }, [setParams]);
+
+  const goTo = useCallback((id) => {
+    updateParams({ section: id === "overview" ? null : id });
+    setMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [updateParams]);
+
+  // Off-canvas menu on phones: Escape closes it, focus moves into it when it opens.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    menuRef.current?.querySelector("button")?.focus();
+    const onKey = (event) => { if (event.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    const opener = menuButtonRef.current;
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      opener?.focus({ preventScroll: true });
+    };
+  }, [menuOpen]);
+
+  if (!mosqueId) {
+    return (
+      <div className="container py-5" style={{ minHeight: "60vh" }}>
+        <h1 className="h3">Mosque Dashboard</h1>
+        <p>No mosque is assigned to this account. <Link to="/profile" state={{ tab: "claims" }}>View applications</Link>.</p>
+      </div>
+    );
   }
 
-  return <div className="container py-5" style={{ minHeight: "80vh" }}>
-    <h1 className="h3 mb-4">{mosque?.name || "Mosque Dashboard"}</h1>
-    {managed.length > 1 && <div className="mb-3"><label className="form-label" htmlFor="admin-mosque">Managed mosque</label><select id="admin-mosque" className="form-select" value={mosqueId} onChange={(e) => setSelectedId(e.target.value)}>{managed.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>}
-    {!mosqueId && <p>No mosque is assigned to this account. <Link to="/profile" state={{ tab: "claims" }}>View applications</Link>.</p>}
-    {error && <div className="alert alert-danger" role="alert">{error} <button className="btn btn-sm btn-outline-danger" onClick={() => setRevision((n) => n + 1)}>Retry</button></div>}
-    {message && <div className="alert alert-success" role="status">{message}</div>}
-    {loading && <p role="status">Loading dashboard...</p>}
-    {mosque && <div className="row g-4">
-      <aside className="col-md-4 col-lg-3">
-        <label className="form-label d-md-none" htmlFor="admin-section">Select section</label><select id="admin-section" className="form-select d-md-none mb-3" value={activeTab} onChange={(e) => { setActiveTab(e.target.value); setMessage(""); }}>{Object.entries(tabs).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
-        <nav className="list-group d-none d-md-block" aria-label="Dashboard sections">{Object.entries(tabs).map(([key, label]) => <button type="button" key={key} className={`list-group-item list-group-item-action ${activeTab === key ? "active bg-mc" : ""}`} onClick={() => { setActiveTab(key); setMessage(""); }}>{label}</button>)}</nav>
-      </aside>
-      <div className="col-md-8 col-lg-9"><div className="card shadow-sm border-0 p-4" key={`${activeTab}-${mosqueId}`}>
-        {activeTab === "overview" && <>
-          <h2 className="h4 mb-3">Dashboard Overview</h2>
-          <div className="row g-3 mb-4">{Object.entries(metrics).map(([key, label]) => <div className="col-sm-6 col-lg-4" key={key}><div className="border rounded p-3 h-100"><strong className="h3 d-block">{overview?.summary?.[key] ?? 0}</strong><span>{label}</span></div></div>)}</div>
-          <h3 className="h5">Recent content</h3>
-          {overview?.recent_content?.length ? overview.recent_content.map((item) => <div className="border-bottom py-3" key={`${item.type}-${item.id}`}><strong>{item.title}</strong><p className="small text-muted mb-0">{item.type} · {item.status}</p></div>) : <p className="text-muted">No recent content.</p>}
-          <Link to={`/mosque/${mosqueId}`} className="btn btn-outline-mc mt-3">View public profile</Link>
-        </>}
-        {activeTab === "profile" && <form onSubmit={save}>
-          <h2 className="h4 mb-4">Manage Mosque Profile</h2>
-          {[["name", "Mosque name", "text"], ["address", "Street address", "text"], ["phone", "Phone number", "tel"], ["latitude", "Latitude", "number"], ["longitude", "Longitude", "number"]].map(([key, label, type]) => <div className="mb-3" key={key}><label className="form-label" htmlFor={`mosque-${key}`}>{label}</label><input id={`mosque-${key}`} name={key} type={type} className="form-control" defaultValue={mosque[key] || ""} required={key !== "phone"} step={type === "number" ? "any" : undefined} min={key === "latitude" ? -90 : key === "longitude" ? -180 : undefined} max={key === "latitude" ? 90 : key === "longitude" ? 180 : undefined} /></div>)}
-          <div className="mb-3"><label htmlFor="mosque-description" className="form-label">Description</label><textarea id="mosque-description" name="description" className="form-control" defaultValue={mosque.description || ""} /></div>
-          <button className="btn btn-mc" disabled={busy}>{busy ? "Saving..." : "Save Mosque Profile"}</button>
-        </form>}
-        {activeTab === "facilities" && <form onSubmit={save}>
-          <h2 className="h4 mb-4">Manage Facilities</h2>
-          {Object.entries(FACILITY_META).map(([key, value]) => <label className="form-check mb-3" key={key}><input className="form-check-input" name="facilities" type="checkbox" value={key} defaultChecked={mosque.facilities?.some((item) => item.facility_key === key)} />{value.label}</label>)}
-          <button className="btn btn-mc" disabled={busy}>{busy ? "Saving..." : "Save Facilities"}</button>
-        </form>}
-        {["prayer", "jummah"].includes(activeTab) && <><h2 className="h4">{tabs[activeTab]}</h2><p>Update the prayer schedule and first Jumuah session displayed on your mosque profile.</p><Link to={`/mosque-admin/prayer-schedule?mosque=${mosqueId}`} className="btn btn-mc">Open prayer schedule</Link></>}
-        {activeTab === "announce" && <><h2 className="h4">Manage Announcements</h2><p>Publish mosque updates, including requests for goods and community support.</p><Link to={`/mosque-admin/announcements?mosque=${mosqueId}`} className="btn btn-mc">Open announcements</Link></>}
-        {activeTab === "eid" && <EidJamaatManager mosqueId={mosqueId} mosque={mosque} />}
-        {activeTab === "events" && <EventManager mosqueId={mosqueId} />}
-        {activeTab === "donations" && <CampaignManager mosqueId={mosqueId} />}
-        {activeTab === "volunteers" && <><h2 className="h4">Volunteer Work</h2><p>Create opportunities and manage your mosque's volunteering activities.</p><Link to={`/volunteers?mosque=${mosqueId}`} className="btn btn-mc">Open volunteer opportunities</Link></>}
-      </div></div>
-    </div>}
-  </div>;
+  const name = mosque?.name || managed.find((item) => item.id === mosqueId)?.name || "Mosque Dashboard";
+  const sectionLabel = DASHBOARD_SECTIONS.find((item) => item.id === section).label;
+
+  const needsMosque = (render) => {
+    if (mosqueError) return <div className="alert alert-danger" role="alert">{mosqueError} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={() => setMosqueAttempt((n) => n + 1)}>Retry</button></div>;
+    if (!mosque) return <div className="placeholder-glow" aria-busy="true"><span className="visually-hidden" role="status">Loading…</span><span className="placeholder rounded d-block mb-2" style={{ height: 40 }} /><span className="placeholder rounded d-block" style={{ height: 160 }} /></div>;
+    return render(mosque);
+  };
+
+  const renderSection = () => {
+    switch (section) {
+      case "insights": return <InsightsPanel mosqueId={mosqueId} />;
+      case "announcements": return <AnnouncementManager mosqueId={mosqueId} />;
+      case "prayer": return <DailyPrayersForm mosqueId={mosqueId} />;
+      case "jummah": return <JumuahForm mosqueId={mosqueId} />;
+      case "eid": return needsMosque((m) => <EidJamaatManager mosqueId={mosqueId} mosque={m} />);
+      case "events": return <EventManager mosqueId={mosqueId} />;
+      case "donations": return <CampaignManager mosqueId={mosqueId} />;
+      case "volunteers": return <VolunteerManager mosqueId={mosqueId} />;
+      case "profile": return needsMosque((m) => <ProfileForm mosque={m} onSaved={setMosque} />);
+      case "facilities": return needsMosque((m) => <FacilitiesForm key={m.updated_at} mosque={m} onSaved={setMosque} />);
+      default: return <DashboardOverview mosqueId={mosqueId} mosqueName={name} onNavigate={goTo} />;
+    }
+  };
+
+  return (
+    <div className="container-xxl py-4 mc-dash" style={{ minHeight: "80vh" }}>
+      <header className="d-flex flex-wrap align-items-center gap-2 mb-4">
+        <button type="button" ref={menuButtonRef} className="btn btn-outline-secondary d-lg-none" aria-label="Open dashboard menu" aria-expanded={menuOpen} aria-controls="dashboard-menu" onClick={() => setMenuOpen(true)}>
+          <Menu size={20} aria-hidden="true" />
+        </button>
+        <div className="me-auto min-w-0">
+          <h1 className="h4 fw-bold mb-0 text-truncate">{name}</h1>
+          <p className="small text-muted mb-0">Mosque dashboard · {sectionLabel}</p>
+        </div>
+        {managed.length > 1 && (
+          <div>
+            <label className="visually-hidden" htmlFor="admin-mosque">Managed mosque</label>
+            <select id="admin-mosque" className="form-select form-select-sm" value={mosqueId} onChange={(e) => updateParams({ mosque: e.target.value })}>
+              {managed.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
+            </select>
+          </div>
+        )}
+        <Link to={`/mosque/${mosqueId}`} className="btn btn-sm btn-outline-mc"><ExternalLink size={15} aria-hidden="true" /> Public profile</Link>
+      </header>
+
+      <div className="mc-dash-layout">
+        <div className="mc-dash-sidebar d-none d-lg-block">
+          <SectionNav section={section} onSelect={goTo} />
+        </div>
+
+        {/* Phone menu. Rendered into <body> because the page shell has a transform,
+            which would otherwise pin this fixed panel to the page instead of the screen. */}
+        {menuOpen && createPortal(
+          <>
+            <div id="dashboard-menu" ref={menuRef} className="offcanvas offcanvas-start show mc-dash-offcanvas d-lg-none" role="dialog" aria-modal="true" aria-label="Dashboard sections" tabIndex={-1}>
+              <div className="offcanvas-header justify-content-between border-bottom">
+                <span className="h6 mb-0 fw-bold">Dashboard</span>
+                <button type="button" className="btn btn-sm btn-light" aria-label="Close menu" onClick={() => setMenuOpen(false)}><X size={18} aria-hidden="true" /></button>
+              </div>
+              <div className="offcanvas-body p-2">
+                <SectionNav section={section} onSelect={goTo} />
+              </div>
+            </div>
+            <div className="offcanvas-backdrop fade show d-lg-none" onClick={() => setMenuOpen(false)} />
+          </>,
+          document.body,
+        )}
+
+        <div className="mc-dash-main" key={`${section}-${mosqueId}`}>
+          {section === "overview" ? renderSection() : <div className="card mc-dash-card"><div className="card-body p-3 p-md-4">{renderSection()}</div></div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionNav({ section, onSelect }) {
+  return (
+    <nav aria-label="Dashboard sections">
+      <ul className="nav nav-pills flex-column gap-1 w-100">
+        {DASHBOARD_SECTIONS.map(({ id, label }) => {
+          const Icon = ICONS[id];
+          return (
+            <li className="nav-item" key={id}>
+              <button type="button" className={`nav-link w-100 text-start d-flex align-items-center gap-2 ${section === id ? "active" : "text-body"}`} aria-current={section === id ? "page" : undefined} onClick={() => onSelect(id)}>
+                <Icon size={17} aria-hidden="true" />{label}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
 }

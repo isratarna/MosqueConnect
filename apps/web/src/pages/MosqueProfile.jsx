@@ -30,6 +30,7 @@ import { formatClockTime } from "../utils/prayerTime";
 import { useFollow } from "../context/FollowContext";
 import MosqueClaimForm from "../components/MosqueClaimForm";
 import EidJamaatCard from "../components/eid/EidJamaatCard";
+import { trackMosqueEvent, trackMosqueView } from "../utils/trackMosque";
 
 export default function MosqueProfile() {
   const { id } = useParams();
@@ -50,6 +51,7 @@ export default function MosqueProfile() {
         if (!active) return;
         setMosque(result);
         setStatus("success");
+        trackMosqueView(result.id);
       })
       .catch((requestError) => {
         if (!active) return;
@@ -127,14 +129,18 @@ export default function MosqueProfile() {
         )}
         {mosque.verified && <VerifiedBadge />}
         {mosque.phone && (
-          <span className="text-muted small">
+          <a
+            href={`tel:${mosque.phone.replace(/\s/g, "")}`}
+            className="btn btn-outline-secondary btn-sm"
+            onClick={() => trackMosqueEvent(mosque.id, "call")}
+          >
             <Phone size={14} className="me-1" aria-hidden="true" />
-            {mosque.phone}
-          </span>
+            Call {mosque.phone}
+          </a>
         )}
         <div className="ms-auto d-flex gap-2">
           {directions && (
-            <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-mc btn-sm">
+            <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-mc btn-sm" onClick={() => trackMosqueEvent(mosque.id, "directions")}>
               <Navigation size={16} aria-hidden="true" />
               Get Directions
             </a>

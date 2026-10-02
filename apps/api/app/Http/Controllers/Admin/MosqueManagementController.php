@@ -31,6 +31,8 @@ class MosqueManagementController extends Controller
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
             'address' => ['sometimes', 'string'],
+            'district' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'area' => ['sometimes', 'nullable', 'string', 'max:100'],
             'latitude' => ['sometimes', 'numeric', 'between:-90,90'],
             'longitude' => ['sometimes', 'numeric', 'between:-180,180'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:255'],

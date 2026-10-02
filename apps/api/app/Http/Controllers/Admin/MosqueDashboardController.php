@@ -9,10 +9,14 @@ use App\Models\Campaign;
 use App\Models\ContentReport;
 use App\Models\Event;
 use App\Models\Mosque;
+use App\Services\DashboardQueryService;
 use Illuminate\Support\Facades\Gate;
+use Throwable;
 
 class MosqueDashboardController extends Controller
 {
+    public function __construct(private readonly DashboardQueryService $queries) {}
+
     public function show(Mosque $mosque): MosqueDashboardResource
     {
         Gate::authorize('view', $mosque);
@@ -29,6 +33,29 @@ class MosqueDashboardController extends Controller
 
         $mosque->recent_content = $this->recentContent($mosque);
         $mosque->pending_content_reports = $this->pendingReports($mosque);
+
+        // Each card's data is loaded on its own, so one failing query leaves the
+        // rest of the dashboard working. Failed sections are null and listed.
+        $failed = [];
+        $section = function (string $key, callable $load) use (&$failed) {
+            try {
+                return $load();
+            } catch (Throwable $exception) {
+                report($exception);
+                $failed[] = $key;
+
+                return null;
+            }
+        };
+
+        $mosque->pending_pledges_count = $section('pending_pledges', fn (): int => $this->queries->pendingPledgesCount($mosque));
+        $mosque->today_prayers = $section('today_prayers', fn (): array => $this->queries->todayPrayers($mosque));
+        $mosque->upcoming_events = $section('upcoming_events', fn (): array => $this->queries->upcomingEvents($mosque));
+        $mosque->active_campaigns = $section('active_campaigns', fn (): array => $this->queries->activeCampaigns($mosque));
+        $mosque->pending_pledges = $section('pending_pledges', fn (): array => $this->queries->pendingPledges($mosque));
+        $mosque->follower_growth = $section('follower_growth', fn (): array => $this->queries->followerGrowth($mosque));
+        $mosque->profile_completeness = $section('profile_completeness', fn (): array => $this->queries->profileCompleteness($mosque));
+        $mosque->failed_sections = array_values(array_unique($failed));
 
         return new MosqueDashboardResource($mosque);
     }
