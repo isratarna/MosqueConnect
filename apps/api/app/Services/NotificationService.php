@@ -123,6 +123,31 @@ class NotificationService
     }
 
     /**
+     * Notify one person about something that concerns only them, such as a
+     * team invitation or the review of a correction they suggested.
+     *
+     * @param  array{type: string, title: string, message: string, reference_type: string, reference_id: int, link?: string}  $data
+     */
+    public function notifyUser(int $userId, Mosque $mosque, array $data): bool
+    {
+        $now = now();
+
+        return Notification::query()->insertOrIgnore([[
+            'user_id' => $userId,
+            'mosque_id' => $mosque->id,
+            'type' => $data['type'],
+            'title' => Str::limit($data['title'], 255, ''),
+            'message' => Str::limit($data['message'], 10000, ''),
+            'reference_type' => $data['reference_type'],
+            'reference_id' => $data['reference_id'],
+            'link' => $data['link'] ?? null,
+            'is_read' => false,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]]) > 0;
+    }
+
+    /**
      * Create one notification per current follower of the given mosque.
      *
      * Recipient identifiers are deliberately prohibited: recipients always come

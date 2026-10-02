@@ -2,59 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\MosqueSuggestionResource;
-use App\Models\MosqueFacility;
-use App\Models\MosqueSuggestion;
+use App\Http\Resources\MosqueEditSuggestionResource;
+use App\Models\Mosque;
+use App\Models\MosqueEditSuggestion;
 use App\Services\MosqueSuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
 
+/**
+ * Signed-in users suggesting corrections and following up on their own.
+ */
 class MosqueSuggestionController extends Controller
 {
     public function __construct(private readonly MosqueSuggestionService $suggestions) {}
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, Mosque $mosque): JsonResponse
     {
+        $field = $request->validate([
+            'field' => ['required', Rule::in(MosqueEditSuggestion::FIELDS)],
+        ])['field'];
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'address' => ['required', 'string', 'max:2000'],
-            'district' => ['required', 'string', 'max:100'],
-            'area' => ['nullable', 'string', 'max:100'],
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
-            'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'phone' => ['nullable', 'string', 'max:255'],
-            'facilities' => ['nullable', 'array'],
-            'facilities.*' => ['required', 'string', 'distinct', Rule::in(MosqueFacility::KEYS)],
-            'notes' => ['nullable', 'string', 'max:5000'],
+            'payload' => [$field === MosqueEditSuggestion::FIELD_OTHER ? 'nullable' : 'required', 'array'],
+            ...MosqueSuggestionService::payloadRules($field),
+            'note' => [$field === MosqueEditSuggestion::FIELD_OTHER ? 'required' : 'nullable', 'string', 'max:1000'],
+        ], [
+            'note.required' => 'Describe what is wrong so the reviewer can fix it.',
         ]);
 
-        $duplicate = $this->suggestions->duplicateNearby((float) $validated['latitude'], (float) $validated['longitude']);
-        if ($duplicate) {
-            return response()->json([
-                'message' => 'A mosque already exists near this location. Claim it instead.',
-                'mosque_id' => $duplicate->id,
-            ], 409);
-        }
+        $suggestion = $this->suggestions->create(
+            $mosque,
+            $request->user(),
+            $field,
+            $validated['payload'] ?? [],
+            $validated['note'] ?? null,
+        );
 
-        $suggestion = $this->suggestions->submit($request->user(), $validated);
+        $accepted = $suggestion->status === MosqueEditSuggestion::STATUS_ACCEPTED;
 
         return response()->json([
-            'message' => 'Mosque suggestion submitted for review.',
-            'data' => new MosqueSuggestionResource($suggestion),
+            'message' => $accepted
+                ? 'Thank you! As a trusted contributor, your correction is already live.'
+                : 'Thank you! Your suggestion will be reviewed.',
+            'data' => (new MosqueEditSuggestionResource($suggestion->load('mosque')))->resolve(),
         ], 201);
     }
 
-    public function mine(Request $request): AnonymousResourceCollection
+    public function mine(Request $request): JsonResponse
     {
-        $filters = $request->validate(['per_page' => ['sometimes', 'integer', 'between:1,50']]);
-        $suggestions = MosqueSuggestion::query()
-            ->where('user_id', $request->user()->id)
-            ->with('mosque')
+        $suggestions = $request->user()->editSuggestions()
+            ->with(['mosque:id,name,address,verification_status'])
             ->latest('id')
-            ->paginate($filters['per_page'] ?? 20);
+            ->limit(50)
+            ->get();
 
-        return MosqueSuggestionResource::collection($suggestions);
+        return response()->json([
+            'data' => $suggestions->map(fn (MosqueEditSuggestion $suggestion): array => (new MosqueEditSuggestionResource($suggestion))->resolve())->all(),
+            'accepted_suggestions_count' => (int) $request->user()->accepted_suggestions_count,
+            'trusted_contributor' => $request->user()->isTrustedContributor(),
+        ]);
     }
 }

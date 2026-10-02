@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Mosque;
 use App\Models\User;
+use App\Services\MosqueTeamService;
 use App\Services\Otp\PhoneOtpService;
+use App\Support\MosqueAbility;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +35,7 @@ class PhoneOtpController extends Controller
         ]);
     }
 
-    public function verifyOtp(Request $request, PhoneOtpService $otps): JsonResponse
+    public function verifyOtp(Request $request, PhoneOtpService $otps, MosqueTeamService $team): JsonResponse
     {
         $otpLength = (int) config('otp.length', 6);
 
@@ -59,6 +61,9 @@ class PhoneOtpController extends Controller
                 'message' => 'This account has been suspended.',
             ], 403);
         }
+
+        // Team invitations sent to this number before the account existed.
+        $team->attachPendingInvites($user);
 
         $token = $user->createToken('phone-otp')->plainTextToken;
 
@@ -111,11 +116,27 @@ class PhoneOtpController extends Controller
     /** @return array<string, mixed> */
     private function authenticatedUser(User $user): array
     {
-        $user->load('ownedMosques:id,owner_id,name,address,verification_status');
+        $user->load(['managedMosques' => fn ($query) => $query
+            ->select(['mosques.id', 'mosques.owner_id', 'mosques.name', 'mosques.address', 'mosques.verification_status'])
+            ->orderBy('mosque_members.id')]);
         $payload = $user->toArray();
-        $managedMosque = $user->ownedMosques->first();
+        $managedMosque = $user->managedMosques->first();
 
-        $payload['managed_mosques'] = $payload['owned_mosques'];
+        // Every mosque the user is on the team of, with their role there.
+        $payload['managed_mosques'] = $user->managedMosques
+            ->map(fn (Mosque $mosque): array => [
+                'id' => $mosque->id,
+                'owner_id' => $mosque->owner_id,
+                'name' => $mosque->name,
+                'address' => $mosque->address,
+                'verification_status' => $mosque->verification_status,
+                'role' => $mosque->pivot->role,
+                'abilities' => MosqueAbility::forRole($mosque->pivot->role),
+            ])
+            ->values()
+            ->all();
+        $payload['pending_mosque_invites_count'] = $user->mosqueMemberships()->pending()->count();
+        $payload['trusted_contributor'] = $user->isTrustedContributor();
         $payload['mosqueName'] = $managedMosque?->name;
         $payload['status'] = $user->isMosqueAdmin()
             ? match ($managedMosque?->verification_status) {

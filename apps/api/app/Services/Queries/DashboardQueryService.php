@@ -100,7 +100,8 @@ class DashboardQueryService
                     ->where(fn ($q) => $q->where('reportable_type', 'mosque')->where('reportable_id', $mosque->id))
                     ->orWhere(fn ($q) => $q->where('reportable_type', 'announcement')->whereIn('reportable_id', $announcementIds))
                     ->orWhere(fn ($q) => $q->where('reportable_type', 'event')->whereIn('reportable_id', $eventIds))
-                    ->orWhere(fn ($q) => $q->where('reportable_type', 'campaign')->whereIn('reportable_id', $campaignIds));
+                    ->orWhere(fn ($q) => $q->where('reportable_type', 'campaign')->whereIn('reportable_id', $campaignIds))
+                    ->orWhere(fn ($q) => $q->where('reportable_type', 'lost_found')->whereIn('reportable_id', $mosque->lostFoundItems()->select('id')));
             });
     }
 

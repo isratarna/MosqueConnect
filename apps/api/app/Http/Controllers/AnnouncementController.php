@@ -40,7 +40,7 @@ class AnnouncementController extends Controller
 
     public function adminIndex(Mosque $mosque): AnonymousResourceCollection
     {
-        Gate::authorize('view', $mosque);
+        Gate::authorize('manageContent', $mosque);
 
         $announcements = $mosque->announcements()
             ->with(['mosque', 'creator'])

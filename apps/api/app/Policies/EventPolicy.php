@@ -12,7 +12,7 @@ class EventPolicy
 {
     public function create(User $user, Mosque $mosque): Response
     {
-        return Gate::forUser($user)->inspect('update', $mosque);
+        return Gate::forUser($user)->inspect('manageContent', $mosque);
     }
 
     public function view(User $user, Event $event): Response
@@ -32,6 +32,6 @@ class EventPolicy
 
     private function canManage(User $user, Event $event): Response
     {
-        return Gate::forUser($user)->inspect('update', $event->mosque);
+        return Gate::forUser($user)->inspect('manageContent', $event->mosque);
     }
 }

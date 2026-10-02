@@ -100,6 +100,9 @@ class MosqueResource extends JsonResource
             $payload['announcements_count'] = (int) ($this->announcements_count ?? 0);
             $payload['upcoming_events_count'] = (int) ($this->upcoming_events_count ?? 0);
             $payload['active_campaigns_count'] = (int) ($this->active_campaigns_count ?? 0);
+            $payload['times_confirmed_by_community_at'] = $this->times_confirmed_at
+                ? Carbon::parse($this->times_confirmed_at)->toJSON()
+                : null;
             $payload['eid_jamaats'] = $this->whenLoaded('eidJamaats', fn (): array => $this->eidJamaats
                 ->map(fn ($jamaat): array => (new EidJamaatResource($jamaat->setRelation('mosque', $this->resource)))->resolve())
                 ->values()

@@ -21,10 +21,19 @@ class DemoDataIntegritySeeder extends Seeder
     public function run(): void
     {
         $this->ensure(
-            User::query()->where('role', User::ROLE_MOSQUE_ADMIN)->whereDoesntHave('ownedMosques')->doesntExist(),
-            'Every mosque admin must own at least one mosque.',
+            User::query()->where('role', User::ROLE_MOSQUE_ADMIN)->whereDoesntHave('managedMosques')->doesntExist(),
+            'Every mosque admin must be on at least one mosque team.',
         );
         $this->ensure(Mosque::query()->whereNull('owner_id')->doesntExist(), 'Every demo mosque must have an owner.');
+        $this->ensure(
+            Mosque::query()
+                ->whereDoesntHave('members', fn ($query) => $query
+                    ->whereColumn('mosque_members.user_id', 'mosques.owner_id')
+                    ->where('role', 'owner')
+                    ->whereNotNull('accepted_at'))
+                ->doesntExist(),
+            'Every demo mosque owner must be an owner on its team.',
+        );
 
         $this->ensure(
             ! Event::query()

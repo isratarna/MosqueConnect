@@ -9,6 +9,8 @@ Schedule::call(function (): void {
         ->whereDate('ends_on', '<', today())
         ->update(['status' => Campaign::STATUS_EXPIRED, 'updated_at' => now()]);
 })->hourly()->name('expire-ended-campaigns')->withoutOverlapping();
+
+Schedule::command('lost-found:close-stale')->daily()->name('close-stale-lost-found')->withoutOverlapping();
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 

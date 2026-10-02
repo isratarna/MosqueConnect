@@ -12,7 +12,7 @@ class CampaignPolicy
 {
     public function create(User $user, Mosque $mosque): Response
     {
-        return Gate::forUser($user)->inspect('update', $mosque);
+        return Gate::forUser($user)->inspect('manageContent', $mosque);
     }
 
     public function view(User $user, Campaign $campaign): Response
@@ -32,6 +32,6 @@ class CampaignPolicy
 
     private function canManage(User $user, Campaign $campaign): Response
     {
-        return Gate::forUser($user)->inspect('update', $campaign->mosque);
+        return Gate::forUser($user)->inspect('manageContent', $campaign->mosque);
     }
 }

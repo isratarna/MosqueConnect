@@ -22,7 +22,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
-import { IMPACT_STATS } from "../data/mosques";
+import { fetchPublicStats, impactStatsFrom, sendContactMessage } from "../utils/communityHubApi";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import { useAuth } from "../context/AuthContext";
@@ -601,6 +601,16 @@ function SupportSection() {
 
 function ImpactSection() {
   const impactIcons = [Landmark, UsersRound, Heart, HandHeart];
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchPublicStats({ signal: controller.signal })
+      .then((data) => setStats(impactStatsFrom(data.data)))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  // Real numbers only: until they load (or if they can't), the section stays hidden.
+  if (!stats?.length) return null;
   return (
     <section id="impact" className="mc-impact mc-motion-section mc-atmospheric-section" data-mc-parallax="0.18">
       <div className="container">
@@ -609,7 +619,7 @@ function ImpactSection() {
           <p>Your connection helps build stronger, more vibrant communities.</p>
         </div>
         <div className="row text-center g-0 mc-impact__stats">
-          {IMPACT_STATS.map((s, index) => {
+          {stats.map((s, index) => {
             const Icon = impactIcons[index];
             return (
               <div className="col-6 col-lg-3" key={s.label}>
@@ -626,10 +636,28 @@ function ImpactSection() {
 }
 
 function AboutSection() {
-  const onSubmit = (e) => {
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+  const onSubmit = async (e) => {
     e.preventDefault();
-    e.currentTarget.reset();
-    alert("Thanks! We will get back to you. (demo)");
+    const formElement = e.currentTarget;
+    const form = new FormData(formElement);
+    setSending(true);
+    setResult(null);
+    try {
+      const data = await sendContactMessage({
+        name: form.get("name").trim(),
+        email: form.get("email").trim(),
+        message: form.get("message").trim(),
+        website: form.get("website") || "",
+      });
+      formElement.reset();
+      setResult({ ok: true, text: data.message });
+    } catch (err) {
+      setResult({ ok: false, text: err.status === 429 ? "You've sent a few messages already. Please try again in a few minutes." : err.message });
+    } finally {
+      setSending(false);
+    }
   };
   return (
     <section id="about" className="py-5 mc-motion-section mc-atmospheric-section" data-mc-parallax="0.16">
@@ -654,10 +682,13 @@ function AboutSection() {
             <div className="card mc-card p-4">
               <h3 className="mc-form-title">Get in touch</h3>
               <form onSubmit={onSubmit}>
-                <div className="mb-3"><input className="form-control" placeholder="Your name" required /></div>
-                <div className="mb-3"><input type="email" className="form-control" placeholder="Your email" required /></div>
-                <div className="mb-3"><textarea className="form-control" rows="3" placeholder="Your message" required /></div>
-                <button className="btn btn-mc w-100" type="submit">Send message</button>
+                <div className="mb-3"><input name="name" className="form-control" placeholder="Your name" aria-label="Your name" required maxLength={100} /></div>
+                <div className="mb-3"><input name="email" type="email" className="form-control" placeholder="Your email" aria-label="Your email" required /></div>
+                <div className="mb-3"><textarea name="message" className="form-control" rows="3" placeholder="Your message" aria-label="Your message" required minLength={10} maxLength={3000} /></div>
+                {/* Honeypot: hidden from people; bots that fill it in are rejected. */}
+                <div className="mc-honeypot" aria-hidden="true"><label htmlFor="contact-website">Website</label><input id="contact-website" name="website" tabIndex={-1} autoComplete="off" /></div>
+                {result && <div className={`alert ${result.ok ? "alert-success" : "alert-danger"} py-2 small`} role={result.ok ? "status" : "alert"}>{result.text}</div>}
+                <button className="btn btn-mc w-100" type="submit" disabled={sending}>{sending ? "Sending…" : "Send message"}</button>
               </form>
             </div>
           </div>

@@ -6,8 +6,11 @@ use App\Models\Announcement;
 use App\Models\BloodRequest;
 use App\Models\Campaign;
 use App\Models\CampaignDonation;
+use App\Models\Complaint;
 use App\Models\Event;
+use App\Models\GoodsDonation;
 use App\Models\JumuahSession;
+use App\Models\LostFoundItem;
 use App\Models\Mosque;
 use App\Models\PrayerTime;
 use App\Models\VolunteerApplication;
@@ -15,9 +18,15 @@ use App\Models\VolunteerOpportunity;
 use App\Observers\AdminActivityObserver;
 use App\Policies\AnnouncementPolicy;
 use App\Policies\BloodRequestPolicy;
+use App\Policies\ComplaintPolicy;
 use App\Policies\EventPolicy;
+use App\Policies\GoodsDonationPolicy;
+use App\Policies\LostFoundItemPolicy;
 use App\Policies\MosquePolicy;
 use App\Policies\VolunteerOpportunityPolicy;
+use App\Services\ClaimReview\ClaimDocumentReviewer;
+use App\Services\ClaimReview\DocumentAiClaimReviewer;
+use App\Services\ClaimReview\GoogleDocumentAiClient;
 use App\Services\Otp\LogSmsOtpSender;
 use App\Services\Otp\MissingSmsOtpSender;
 use App\Services\Otp\SmsOtpSender;
@@ -38,6 +47,9 @@ class AppServiceProvider extends ServiceProvider
             'log' => new LogSmsOtpSender,
             default => new MissingSmsOtpSender,
         });
+
+        $this->app->bind(GoogleDocumentAiClient::class, fn () => new GoogleDocumentAiClient(config('services.google_document_ai', [])));
+        $this->app->bind(ClaimDocumentReviewer::class, DocumentAiClaimReviewer::class);
     }
 
     /**
@@ -47,7 +59,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(BloodRequest::class, BloodRequestPolicy::class);
+        Gate::policy(Complaint::class, ComplaintPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);
+        Gate::policy(GoodsDonation::class, GoodsDonationPolicy::class);
+        Gate::policy(LostFoundItem::class, LostFoundItemPolicy::class);
         Gate::policy(Mosque::class, MosquePolicy::class);
         Gate::policy(VolunteerOpportunity::class, VolunteerOpportunityPolicy::class);
 
@@ -63,6 +78,17 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('otp-verify', function (Request $request) {
             return Limit::perMinute((int) config('otp.throttle.verify_per_minute', 10))
                 ->by($request->input('phone', $request->ip()));
+        });
+
+        // Each person may suggest a limited number of corrections per day.
+        RateLimiter::for('suggestions', function (Request $request) {
+            $limit = (int) config('suggestions.daily_limit', 10);
+
+            return Limit::perDay($limit)
+                ->by('suggestions|'.($request->user()?->id ?? $request->ip()))
+                ->response(fn () => response()->json([
+                    'message' => "You can suggest up to {$limit} corrections a day. Please try again tomorrow.",
+                ], 429));
         });
 
         // Usage tracking is public, so each IP may count at most 30 events per mosque per hour.

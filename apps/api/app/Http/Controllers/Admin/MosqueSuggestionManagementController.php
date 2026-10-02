@@ -5,14 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MosqueSuggestionResource;
 use App\Models\MosqueSuggestion;
-use App\Services\MosqueSuggestionService;
+use App\Services\NewMosqueSuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class MosqueSuggestionManagementController extends Controller
 {
-    public function __construct(private readonly MosqueSuggestionService $suggestions) {}
+    public function __construct(private readonly NewMosqueSuggestionService $suggestions) {}
 
     public function index(Request $request): JsonResponse
     {

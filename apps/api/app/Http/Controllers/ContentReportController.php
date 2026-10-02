@@ -6,6 +6,7 @@ use App\Models\Announcement;
 use App\Models\Campaign;
 use App\Models\ContentReport;
 use App\Models\Event;
+use App\Models\LostFoundItem;
 use App\Models\Mosque;
 use App\Models\MosqueReview;
 use App\Models\SystemSetting;
@@ -51,6 +52,7 @@ class ContentReportController extends Controller
             'campaign' => Campaign::class,
             'mosque' => Mosque::class,
             'review' => MosqueReview::class,
+            'lost_found' => LostFoundItem::class,
         };
 
         return $model::query()->find($id);

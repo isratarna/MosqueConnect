@@ -8,6 +8,7 @@ use App\Models\Announcement;
 use App\Models\Campaign;
 use App\Models\ContentReport;
 use App\Models\Event;
+use App\Models\LostFoundItem;
 use App\Models\Mosque;
 use App\Models\MosqueReview;
 use Illuminate\Database\Eloquent\Builder;
@@ -82,6 +83,7 @@ class ReportManagementController extends Controller
             'campaign' => Campaign::class,
             'mosque' => Mosque::class,
             'review' => MosqueReview::class,
+            'lost_found' => LostFoundItem::class,
         };
 
         $query = $model::query();

@@ -7,6 +7,7 @@ use App\Models\AdminAuditLog;
 use App\Models\Announcement;
 use App\Models\Campaign;
 use App\Models\Event;
+use App\Models\LostFoundItem;
 use App\Models\MosqueReview;
 use App\Services\MosqueReviewService;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,7 +18,7 @@ use Illuminate\Validation\Rule;
 
 class ContentModerationController extends Controller
 {
-    private const TYPES = ['announcement', 'event', 'campaign', 'review'];
+    private const TYPES = ['announcement', 'event', 'campaign', 'review', 'lost_found'];
 
     private const STATUSES = ['pending', 'approved', 'rejected'];
 
@@ -101,6 +102,7 @@ class ContentModerationController extends Controller
             'event' => Event::class,
             'campaign' => Campaign::class,
             'review' => MosqueReview::class,
+            'lost_found' => LostFoundItem::class,
         };
     }
 }

@@ -1,19 +1,30 @@
 import { useEffect, useState } from "react";
 import {
-  Activity,
+  Bot,
   Building2,
   Check,
   CircleAlert,
   Clock3,
+  Download,
+  Eye,
   FileWarning,
   Flag,
+  GitMerge,
+  Megaphone,
+  Pencil,
   RefreshCw,
   ShieldCheck,
+  Trash2,
+  TriangleAlert,
   Users,
   X,
 } from "lucide-react";
 import {
+  deleteManagedMosque,
+  downloadAuditLogCsv,
+  fetchAuditActions,
   fetchAuditLogs,
+  fetchBroadcasts,
   fetchClaims,
   fetchManagedMosques,
   fetchManagedUsers,
@@ -22,14 +33,22 @@ import {
   fetchSystemAdminOverview,
   fetchSystemSettings,
   fetchSystemStatistics,
-  downloadClaimDocument,
   reviewClaim,
+  sendBroadcast,
   updateContentModeration,
   updateManagedUser,
   updateMosqueVerification,
   updateReport,
   updateSystemSettings,
 } from "../../utils/systemAdminApi";
+import { aiScoreBadge, broadcastAudienceLabel, cleanFilters, describeContent, isSafeBroadcastLink } from "../../utils/adminConsole";
+import ConfirmDialog from "../ConfirmDialog";
+import ClaimReviewPanel from "./ClaimReviewPanel";
+import { MosqueEditModal, MosqueMergeModal } from "./MosqueToolsModals";
+import MosqueTeamModal from "./MosqueTeamModal";
+import UserDetailModal from "./UserDetailModal";
+import SuggestionReviewList from "../suggestions/SuggestionReviewList";
+import { fetchSystemSuggestions, reviewSystemSuggestion } from "../../utils/teamApi";
 
 const dateTime = (value) => value ? new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -107,6 +126,16 @@ function Pager({ payload, onPage }) {
   );
 }
 
+function AiScoreBadge({ claim }) {
+  const badge = aiScoreBadge(claim.ai_score);
+  if (badge) {
+    const flags = claim.ai_result?.red_flags?.length || 0;
+    return <div className="small mt-1"><span className={`badge bg-${badge.tone}-subtle text-${badge.tone}-emphasis border border-${badge.tone}-subtle`} title={claim.ai_result?.summary || ""}><Bot size={12} className="me-1" aria-hidden="true" />AI {badge.percent}%</span>{flags > 0 && <span className="text-danger ms-2"><TriangleAlert size={12} aria-hidden="true" /> {flags} flag{flags === 1 ? "" : "s"}</span>}</div>;
+  }
+  if (claim.ai_result?.error) return <div className="small text-muted mt-1">AI check failed</div>;
+  return null;
+}
+
 async function mutate(action, controls) {
   const { setBusy, setError, refresh, key } = controls;
   setBusy(key);
@@ -168,28 +197,24 @@ export function OverviewPanel({ onNavigate }) {
   );
 }
 
+const CLAIM_ACTIONS = {
+  approve: (claim) => ({ title: `Approve ${claim.user?.name}'s claim?`, message: `${claim.user?.name} becomes the owner of ${claim.mosque?.name} and the mosque is marked verified.`, confirmLabel: "Approve claim", tone: "success", reason: "optional", reasonLabel: "Approval note" }),
+  reject: (claim) => ({ title: "Reject this claim?", message: `${claim.user?.name}'s claim for ${claim.mosque?.name} will be rejected.`, confirmLabel: "Reject claim", tone: "danger", reason: "required", reasonLabel: "Rejection reason" }),
+  "request-information": () => ({ title: "Ask for more information", message: "The claim stays open while the applicant responds.", confirmLabel: "Send request", reason: "required", reasonLabel: "What is needed" }),
+};
+
 export function ClaimsPanel() {
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [busy, setBusy] = useState(null);
+  const [reviewing, setReviewing] = useState(null);
+  const [confirm, setConfirm] = useState(null);
   const state = useRemoteData((signal) => fetchClaims({ status, search, page }, { signal }), [status, search, page]);
 
-  const act = (claim, action) => {
-    const prompts = {
-      approve: "Optional approval note:",
-      reject: "Rejection reason (required):",
-      "request-information": "Describe the additional information required:",
-    };
-    const note = window.prompt(prompts[action], "");
-    if (note === null || (action !== "approve" && !note.trim())) return;
-    mutate(() => reviewClaim(claim.id, action, note), { ...state, setBusy, key: `${claim.id}-${action}` });
-  };
-
-  const downloadProof = (claim) => mutate(
-    () => downloadClaimDocument(claim.id),
-    { ...state, setBusy, key: `${claim.id}-document` },
-  );
+  const act = (claim, action) => setConfirm({
+    ...CLAIM_ACTIONS[action](claim),
+    onConfirm: async (note) => { await reviewClaim(claim.id, action, note); state.refresh(); },
+  });
 
   return (
     <>
@@ -200,11 +225,13 @@ export function ClaimsPanel() {
       <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
         <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0">
           <thead className="table-light"><tr><th>Applicant</th><th>Mosque</th><th>Proof</th><th>Status</th><th>Submitted</th><th className="text-end">Actions</th></tr></thead>
-          <tbody>{state.data?.data?.map((claim) => <tr key={claim.id}><td><strong>{claim.user?.name}</strong><div className="small text-muted">{claim.user?.phone}</div><div className="small text-muted">{Math.max(0, claim.applicant_claims_count - 1)} previous claim(s)</div></td><td><strong>{claim.mosque?.name}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 220 }}>{claim.mosque?.address}</div></td><td><button className="btn btn-sm btn-link px-0" disabled={busy} onClick={() => downloadProof(claim)}>Download proof</button>{claim.ai_score && <div className="small text-muted">AI score: {claim.ai_score}</div>}{claim.review_note && <div className="small text-muted">Note: {claim.review_note}</div>}</td><td><StatusBadge value={claim.status} /></td><td className="small text-muted">{dateTime(claim.submitted_at)}</td><td><div className="d-flex justify-content-end gap-1">
-            {!['approved', 'rejected'].includes(claim.status) && <><button className="btn btn-sm btn-outline-secondary" disabled={busy} onClick={() => act(claim, "request-information")}>More info</button><button className="btn btn-sm btn-outline-danger" disabled={busy} onClick={() => act(claim, "reject")}><X size={14} /> Reject</button><button className="btn btn-sm btn-success" disabled={busy} onClick={() => act(claim, "approve")}><Check size={14} /> Approve</button></>}
+          <tbody>{state.data?.data?.map((claim) => <tr key={claim.id}><td><strong>{claim.user?.name}</strong><div className="small text-muted">{claim.user?.phone}</div><div className="small text-muted">{Math.max(0, claim.applicant_claims_count - 1)} previous claim(s)</div></td><td><strong>{claim.mosque?.name}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 220 }}>{claim.mosque?.address}</div>{claim.competing_claims_count > 0 && <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle mt-1">{claim.competing_claims_count} competing claim{claim.competing_claims_count === 1 ? "" : "s"}</span>}</td><td><button type="button" className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" onClick={() => setReviewing(claim.id)}><Eye size={14} aria-hidden="true" />Review</button><AiScoreBadge claim={claim} />{claim.review_note && <div className="small text-muted">Note: {claim.review_note}</div>}</td><td><StatusBadge value={claim.status} /></td><td className="small text-muted">{dateTime(claim.submitted_at)}</td><td><div className="d-flex justify-content-end gap-1">
+            {!['approved', 'rejected'].includes(claim.status) && <><button className="btn btn-sm btn-outline-secondary" onClick={() => act(claim, "request-information")}>More info</button><button className="btn btn-sm btn-outline-danger" onClick={() => act(claim, "reject")}><X size={14} /> Reject</button><button className="btn btn-sm btn-success" onClick={() => act(claim, "approve")}><Check size={14} /> Approve</button></>}
           </div></td></tr>)}</tbody>
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
+      {reviewing && <ClaimReviewPanel claimId={reviewing} onClose={() => setReviewing(null)} onChanged={state.refresh} />}
+      {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
     </>
   );
 }
@@ -215,14 +242,16 @@ export function UsersPanel({ currentUser }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const [detailId, setDetailId] = useState(null);
   const state = useRemoteData((signal) => fetchManagedUsers({ role, account_status: accountStatus, search, page }, { signal }), [role, accountStatus, search, page]);
 
   const changeRole = (user, nextRole) => mutate(() => updateManagedUser(user.id, { role: nextRole }), { ...state, setBusy, key: user.id });
   const toggleStatus = (user) => {
     const suspending = user.account_status !== "suspended";
-    const reason = suspending ? window.prompt("Suspension reason (required):", "") : "";
-    if (suspending && !reason?.trim()) return;
-    mutate(() => updateManagedUser(user.id, { account_status: suspending ? "suspended" : "active", suspension_reason: reason }), { ...state, setBusy, key: user.id });
+    setConfirm(suspending
+      ? { title: `Suspend ${user.name}?`, message: "They are signed out everywhere and cannot sign in until reactivated.", confirmLabel: "Suspend account", tone: "danger", reason: "required", reasonLabel: "Suspension reason", onConfirm: async (reason) => { await updateManagedUser(user.id, { account_status: "suspended", suspension_reason: reason }); state.refresh(); } }
+      : { title: `Reactivate ${user.name}?`, message: "They will be able to sign in again.", confirmLabel: "Reactivate", tone: "success", onConfirm: async () => { await updateManagedUser(user.id, { account_status: "active" }); state.refresh(); } });
   };
 
   return (
@@ -235,9 +264,11 @@ export function UsersPanel({ currentUser }) {
       <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
         <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0">
           <thead className="table-light"><tr><th>User</th><th>Role</th><th>Status</th><th>Activity</th><th className="text-end">Account control</th></tr></thead>
-          <tbody>{state.data?.data?.map((user) => <tr key={user.id}><td><strong>{user.name}</strong>{user.id === currentUser?.id && <span className="badge bg-primary ms-2">You</span>}<div className="small text-muted">{user.phone}</div></td><td><select className="form-select form-select-sm" value={user.role} disabled={busy === user.id || user.id === currentUser?.id} onChange={(e) => changeRole(user, e.target.value)}>{["normal_user", "mosque_admin", "super_admin"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></td><td><StatusBadge value={user.account_status} />{user.suspension_reason && <div className="small text-danger mt-1">{user.suspension_reason}</div>}</td><td className="small"><div>{user.owned_mosques_count} managed mosque(s)</div><div>{user.followed_mosques_count} followed</div></td><td className="text-end"><button className={`btn btn-sm ${user.account_status === "suspended" ? "btn-outline-success" : "btn-outline-danger"}`} disabled={busy === user.id || user.id === currentUser?.id} onClick={() => toggleStatus(user)}>{user.account_status === "suspended" ? "Reactivate" : "Suspend"}</button></td></tr>)}</tbody>
+          <tbody>{state.data?.data?.map((user) => <tr key={user.id}><td><strong>{user.name}</strong>{user.id === currentUser?.id && <span className="badge bg-primary ms-2">You</span>}<div className="small text-muted">{user.phone}</div></td><td><select className="form-select form-select-sm" value={user.role} disabled={busy === user.id || user.id === currentUser?.id} onChange={(e) => changeRole(user, e.target.value)}>{["normal_user", "mosque_admin", "super_admin"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></td><td><StatusBadge value={user.account_status} />{user.suspension_reason && <div className="small text-danger mt-1">{user.suspension_reason}</div>}</td><td className="small"><div>{user.managed_mosques_count ?? user.owned_mosques_count} managed mosque(s)</div><div>{user.followed_mosques_count} followed</div></td><td className="text-end"><div className="d-flex justify-content-end gap-1"><button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setDetailId(user.id)}>Details</button><button className={`btn btn-sm ${user.account_status === "suspended" ? "btn-outline-success" : "btn-outline-danger"}`} disabled={busy === user.id || user.id === currentUser?.id} onClick={() => toggleStatus(user)}>{user.account_status === "suspended" ? "Reactivate" : "Suspend"}</button></div></td></tr>)}</tbody>
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
+      {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
+      {detailId && <UserDetailModal userId={detailId} onClose={() => setDetailId(null)} />}
     </>
   );
 }
@@ -247,26 +278,101 @@ export function MosquesPanel() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(null);
+  const [teamMosque, setTeamMosque] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [merging, setMerging] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const [notice, setNotice] = useState("");
   const state = useRemoteData((signal) => fetchManagedMosques({ verification_status: status, search, page }, { signal }), [status, search, page]);
 
   const changeStatus = (mosque, nextStatus) => {
-    const note = nextStatus === "rejected" ? window.prompt("Rejection reason (required):", "") : "";
-    if (nextStatus === "rejected" && !note?.trim()) return;
-    mutate(() => updateMosqueVerification(mosque.id, nextStatus, note), { ...state, setBusy, key: mosque.id });
+    if (nextStatus === "rejected") {
+      setConfirm({ title: `Reject ${mosque.name}?`, message: "The mosque is marked as rejected.", confirmLabel: "Reject mosque", tone: "danger", reason: "required", reasonLabel: "Rejection reason", onConfirm: async (note) => { await updateMosqueVerification(mosque.id, nextStatus, note); state.refresh(); } });
+      return;
+    }
+    mutate(() => updateMosqueVerification(mosque.id, nextStatus, ""), { ...state, setBusy, key: mosque.id });
   };
+
+  const remove = (mosque, content = null) => setConfirm(content
+    ? {
+      title: `Force-delete ${mosque.name}?`,
+      message: `This mosque still has ${describeContent(content)}. Force-deleting removes all of it permanently. Merging into another mosque keeps it instead.`,
+      confirmLabel: "Delete everything",
+      tone: "danger",
+      onConfirm: async () => { await deleteManagedMosque(mosque.id, { force: true }); setNotice(`${mosque.name} was deleted.`); state.refresh(); },
+    }
+    : {
+      title: `Delete ${mosque.name}?`,
+      message: "Only mosques with no followers, content, claims or team can be deleted without force.",
+      confirmLabel: "Delete mosque",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await deleteManagedMosque(mosque.id);
+        } catch (error) {
+          if (error.status === 409) {
+            setTimeout(() => remove(mosque, error.payload?.content || {}), 0);
+            return;
+          }
+          throw error;
+        }
+        setNotice(`${mosque.name} was deleted.`);
+        state.refresh();
+      },
+    });
 
   return (
     <>
-      <PanelHeader title="Mosque management" description="Inspect ownership and control platform-wide verification." onRefresh={state.refresh}>
+      <PanelHeader title="Mosque management" description="Inspect ownership, manage each mosque's team and control platform-wide verification." onRefresh={state.refresh}>
         <input className="form-control form-control-sm" style={{ width: 210 }} placeholder="Mosque or address" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         <select className="form-select form-select-sm" style={{ width: 165 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">All statuses</option>{["unverified", "pending", "verified", "rejected"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select>
       </PanelHeader>
+      {notice && <div className="alert alert-success d-flex justify-content-between align-items-center py-2" role="status"><span>{notice}</span><button type="button" className="btn-close" aria-label="Dismiss" onClick={() => setNotice("")} /></div>}
       <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
         <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0">
-          <thead className="table-light"><tr><th>Mosque</th><th>Owner</th><th>Status</th><th>Platform activity</th><th>Verification control</th></tr></thead>
-          <tbody>{state.data?.data?.map((mosque) => <tr key={mosque.id}><td><strong>{mosque.name}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 240 }}>{mosque.address}</div></td><td>{mosque.owner ? <><strong>{mosque.owner.name}</strong><div className="small text-muted">{mosque.owner.phone}</div></> : <span className="text-muted">Unassigned</span>}</td><td><StatusBadge value={mosque.verification_status} /></td><td className="small">{mosque.followers_count} followers · {mosque.events_count} events · {mosque.campaigns_count} campaigns</td><td><select className="form-select form-select-sm" value={mosque.verification_status} disabled={busy === mosque.id} onChange={(e) => changeStatus(mosque, e.target.value)}>{["unverified", "pending", "verified", "rejected"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></td></tr>)}</tbody>
+          <thead className="table-light"><tr><th>Mosque</th><th>Owner &amp; team</th><th>Status</th><th>Platform activity</th><th>Verification control</th><th className="text-end">Tools</th></tr></thead>
+          <tbody>{state.data?.data?.map((mosque) => <tr key={mosque.id}><td><strong>{mosque.name}</strong> <span className="small text-muted">#{mosque.id}</span><div className="small text-muted text-truncate" style={{ maxWidth: 240 }}>{mosque.address}</div></td><td>{mosque.owner ? <><strong>{mosque.owner.name}</strong><div className="small text-muted">{mosque.owner.phone}</div></> : <span className="text-muted">Unassigned</span>}<div><button type="button" className="btn btn-link btn-sm p-0" onClick={() => setTeamMosque(mosque)}>Team ({mosque.team_count ?? 0}) · transfer / revoke</button></div></td><td><StatusBadge value={mosque.verification_status} /></td><td className="small">{mosque.followers_count} followers · {mosque.events_count} events · {mosque.campaigns_count} campaigns</td><td><select className="form-select form-select-sm" aria-label={`Verification status for ${mosque.name}`} value={mosque.verification_status} disabled={busy === mosque.id} onChange={(e) => changeStatus(mosque, e.target.value)}>{["unverified", "pending", "verified", "rejected"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></td><td><div className="d-flex justify-content-end gap-1">
+            <button type="button" className="btn btn-sm btn-outline-secondary" title="Edit details" aria-label={`Edit ${mosque.name}`} onClick={() => setEditing(mosque)}><Pencil size={14} aria-hidden="true" /></button>
+            <button type="button" className="btn btn-sm btn-outline-secondary" title="Merge into another mosque" aria-label={`Merge ${mosque.name} into another mosque`} onClick={() => setMerging(mosque)}><GitMerge size={14} aria-hidden="true" /></button>
+            <button type="button" className="btn btn-sm btn-outline-danger" title="Delete" aria-label={`Delete ${mosque.name}`} onClick={() => remove(mosque)}><Trash2 size={14} aria-hidden="true" /></button>
+          </div></td></tr>)}</tbody>
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
+      {teamMosque && <MosqueTeamModal mosque={teamMosque} onClose={() => setTeamMosque(null)} onChanged={state.refresh} />}
+      {editing && <MosqueEditModal mosque={editing} onClose={() => setEditing(null)} onSaved={() => { setNotice(`${editing.name} was updated.`); state.refresh(); }} />}
+      {merging && <MosqueMergeModal mosque={merging} onClose={() => setMerging(null)} onMerged={() => { setNotice(`${merging.name} was merged.`); state.refresh(); }} />}
+      {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
+    </>
+  );
+}
+
+/** Suggested corrections. By default only mosques nobody manages; their own admins review the rest. */
+export function CorrectionsPanel() {
+  const [scope, setScope] = useState("unclaimed");
+  const [search, setSearch] = useState("");
+
+  return (
+    <>
+      <PanelHeader title="Suggested corrections" description="Fixes from visitors to mosques that have no admin team. Accepting one updates the mosque, and followers hear about time changes." />
+      <div className="card border-0 shadow-sm"><div className="card-body">
+        <SuggestionReviewList
+          showMosque
+          filterKey={`${scope}|${search}`}
+          load={(query, options) => fetchSystemSuggestions({ ...query, scope, search }, options)}
+          review={(suggestion, action, note) => reviewSystemSuggestion(suggestion.id, action, note)}
+          emptyText="No corrections waiting for mosques without an admin."
+          filters={(
+            <>
+              <label className="visually-hidden" htmlFor="corrections-scope">Mosques</label>
+              <select id="corrections-scope" className="form-select form-select-sm" style={{ width: 230 }} value={scope} onChange={(e) => setScope(e.target.value)}>
+                <option value="unclaimed">Mosques without an admin</option>
+                <option value="all">All mosques</option>
+              </select>
+              <input className="form-control form-control-sm" style={{ width: 190 }} placeholder="Mosque name" aria-label="Search by mosque name" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </>
+          )}
+        />
+      </div></div>
     </>
   );
 }
@@ -277,14 +383,17 @@ export function ModerationPanel() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(null);
+  const [confirm, setConfirm] = useState(null);
   const state = useRemoteData((signal) => fetchModerationQueue({ type, moderation_status: status, search, page }, { signal }), [type, status, search, page]);
   const moderationStatuses = type === "review" ? ["approved", "hidden"] : ["pending", "approved", "rejected"];
   const hiddenStatus = type === "review" ? "hidden" : "rejected";
 
   const moderate = (item, nextStatus) => {
-    const note = nextStatus === "rejected" ? window.prompt("Moderation reason (required):", "") : "";
-    if (nextStatus === "rejected" && !note?.trim()) return;
-    mutate(() => updateContentModeration(type, item.id, nextStatus, note), { ...state, setBusy, key: item.id });
+    if (nextStatus === "rejected") {
+      setConfirm({ title: `Hide “${item.title}”?`, message: "It disappears from the public site. The mosque admin sees your reason.", confirmLabel: "Hide content", tone: "danger", reason: "required", reasonLabel: "Moderation reason", onConfirm: async (note) => { await updateContentModeration(type, item.id, nextStatus, note); state.refresh(); } });
+      return;
+    }
+    mutate(() => updateContentModeration(type, item.id, nextStatus, ""), { ...state, setBusy, key: item.id });
   };
 
   return (
@@ -300,6 +409,7 @@ export function ModerationPanel() {
           <tbody>{state.data?.data?.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 260 }}>{item.body || item.summary || item.description}</div></td><td>{item.mosque?.name}</td><td><StatusBadge value={item.status} /></td><td><span className={`badge ${item.reports_count ? "bg-danger" : "bg-secondary"}`}>{item.reports_count}</span></td><td><StatusBadge value={item.moderation_status} />{item.moderation_note && <div className="small text-danger mt-1">{item.moderation_note}</div>}</td><td><div className="d-flex justify-content-end gap-1"><button className="btn btn-sm btn-outline-danger" disabled={busy === item.id || item.moderation_status === hiddenStatus} onClick={() => moderate(item, hiddenStatus)}>Hide</button><button className="btn btn-sm btn-outline-success" disabled={busy === item.id || item.moderation_status === "approved"} onClick={() => moderate(item, "approved")}>Approve</button></div></td></tr>)}</tbody>
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
+      {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
     </>
   );
 }
@@ -309,13 +419,15 @@ export function ReportsPanel() {
   const [type, setType] = useState("");
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(null);
+  const [confirm, setConfirm] = useState(null);
   const state = useRemoteData((signal) => fetchReports({ status, type, page }, { signal }), [status, type, page]);
 
   const changeStatus = (report, nextStatus) => {
-    const final = ["resolved", "dismissed"].includes(nextStatus);
-    const note = final ? window.prompt("Resolution note (required):", "") : "";
-    if (final && !note?.trim()) return;
-    mutate(() => updateReport(report.id, nextStatus, note), { ...state, setBusy, key: report.id });
+    if (["resolved", "dismissed"].includes(nextStatus)) {
+      setConfirm({ title: `Mark report as ${nextStatus}?`, message: `${labelize(report.category)}: ${report.reason}`, confirmLabel: nextStatus === "resolved" ? "Resolve report" : "Dismiss report", tone: nextStatus === "resolved" ? "success" : "secondary", reason: "required", reasonLabel: "Resolution note", onConfirm: async (note) => { await updateReport(report.id, nextStatus, note); state.refresh(); } });
+      return;
+    }
+    mutate(() => updateReport(report.id, nextStatus, ""), { ...state, setBusy, key: report.id });
   };
 
   return (
@@ -330,6 +442,7 @@ export function ReportsPanel() {
           <tbody>{state.data?.data?.map((report) => <tr key={report.id}><td><strong>{labelize(report.category)}</strong><div>{report.reason}</div>{report.details && <div className="small text-muted">{report.details}</div>}</td><td><span className="badge bg-light text-dark border me-1">{report.reportable_type}</span>{report.target?.title || `#${report.reportable_id}`}</td><td>{report.reporter?.name || "Deleted user"}<div className="small text-muted">{report.reporter?.phone}</div></td><td><StatusBadge value={report.status} /></td><td className="small text-muted">{dateTime(report.created_at)}</td><td><select className="form-select form-select-sm" value={report.status} disabled={busy === report.id} onChange={(e) => changeStatus(report, e.target.value)}>{["pending", "reviewing", "resolved", "dismissed"].map((item) => <option key={item}>{item}</option>)}</select>{report.resolution_note && <div className="small text-muted mt-1">{report.resolution_note}</div>}</td></tr>)}</tbody>
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
+      {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
     </>
   );
 }
@@ -348,15 +461,113 @@ export function StatisticsPanel() {
 }
 
 export function AuditPanel() {
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState({ search: "", action: "", actor_id: "", from: "", to: "" });
   const [page, setPage] = useState(1);
-  const state = useRemoteData((signal) => fetchAuditLogs({ search, page }, { signal }), [search, page]);
+  const [actions, setActions] = useState([]);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const query = cleanFilters(filters);
+  const state = useRemoteData((signal) => fetchAuditLogs({ ...query, page }, { signal }), [JSON.stringify(query), page]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchAuditActions({ signal: controller.signal }).then(setActions).catch(() => {});
+    return () => controller.abort();
+  }, []);
+
+  const setFilter = (key, value) => { setFilters((current) => ({ ...current, [key]: value })); setPage(1); };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    setExportError("");
+    try {
+      await downloadAuditLogCsv(query);
+    } catch (error) {
+      setExportError(error.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
-      <PanelHeader title="Administrative audit log" description="Immutable history of claims, user controls, moderation, reports, and settings." onRefresh={state.refresh}><input className="form-control form-control-sm" style={{ width: 210 }} placeholder="Search action or target" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} /></PanelHeader>
+      <PanelHeader title="Administrative audit log" description="Immutable history of claims, user controls, moderation, reports, broadcasts and settings." onRefresh={state.refresh}>
+        <button type="button" className="btn btn-sm btn-outline-success d-flex align-items-center gap-1" disabled={exporting} onClick={exportCsv}><Download size={14} aria-hidden="true" />{exporting ? "Exporting…" : "Export CSV"}</button>
+      </PanelHeader>
+      <div className="card border-0 shadow-sm mb-3"><div className="card-body py-3 row g-2 align-items-end">
+        <div className="col-md-3"><label className="form-label small mb-1" htmlFor="audit-search">Search</label><input id="audit-search" className="form-control form-control-sm" placeholder="Action or target" value={filters.search} onChange={(e) => setFilter("search", e.target.value)} /></div>
+        <div className="col-md-3"><label className="form-label small mb-1" htmlFor="audit-action">Action</label><select id="audit-action" className="form-select form-select-sm" value={filters.action} onChange={(e) => setFilter("action", e.target.value)}><option value="">All actions</option>{actions.map((action) => <option key={action} value={action}>{labelize(action.replaceAll(".", " "))}</option>)}</select></div>
+        <div className="col-md-2"><label className="form-label small mb-1" htmlFor="audit-actor">Admin user ID</label><input id="audit-actor" type="number" min="1" className="form-control form-control-sm" value={filters.actor_id} onChange={(e) => setFilter("actor_id", e.target.value)} /></div>
+        <div className="col-md-2"><label className="form-label small mb-1" htmlFor="audit-from">From</label><input id="audit-from" type="date" className="form-control form-control-sm" max={filters.to || undefined} value={filters.from} onChange={(e) => setFilter("from", e.target.value)} /></div>
+        <div className="col-md-2"><label className="form-label small mb-1" htmlFor="audit-to">To</label><input id="audit-to" type="date" className="form-control form-control-sm" min={filters.from || undefined} value={filters.to} onChange={(e) => setFilter("to", e.target.value)} /></div>
+      </div></div>
+      {exportError && <div className="alert alert-danger py-2">{exportError}</div>}
       <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
-        <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0"><thead className="table-light"><tr><th>Time</th><th>Administrator</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{state.data?.data?.map((log) => <tr key={log.id}><td className="small text-muted text-nowrap">{dateTime(log.created_at)}</td><td>{log.actor?.name || "System"}<div className="small text-muted">{log.actor?.phone}</div></td><td><strong>{labelize(log.action.replaceAll(".", " "))}</strong></td><td>{log.target_type ? `${log.target_type} #${log.target_id || "—"}` : "—"}</td><td><code className="small text-wrap">{log.metadata ? JSON.stringify(log.metadata) : "—"}</code></td></tr>)}</tbody></table></div><Pager payload={state.data} onPage={setPage} /></div>
+        <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0"><thead className="table-light"><tr><th>Time</th><th>Administrator</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{state.data?.data?.map((log) => <tr key={log.id}><td className="small text-muted text-nowrap">{dateTime(log.created_at)}</td><td>{log.actor?.name || "System"}<div className="small text-muted">{log.actor_id ? `ID ${log.actor_id} · ` : ""}{log.actor?.phone}</div></td><td><strong>{labelize(log.action.replaceAll(".", " "))}</strong></td><td>{log.target_type ? `${log.target_type} #${log.target_id || "—"}` : "—"}</td><td><code className="small text-wrap">{log.metadata ? JSON.stringify(log.metadata) : "—"}</code></td></tr>)}</tbody></table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
+    </>
+  );
+}
+
+const EMPTY_BROADCAST = { title: "", message: "", audience: "all", audience_value: "", link: "" };
+
+export function BroadcastPanel() {
+  const [form, setForm] = useState(EMPTY_BROADCAST);
+  const [page, setPage] = useState(1);
+  const [confirming, setConfirming] = useState(false);
+  const [notice, setNotice] = useState("");
+  const state = useRemoteData((signal) => fetchBroadcasts({ page }, { signal }), [page]);
+  const linkOk = isSafeBroadcastLink(form.link.trim());
+  const needsValue = form.audience !== "all";
+  const ready = form.title.trim() && form.message.trim() && linkOk && (!needsValue || form.audience_value.trim());
+
+  const payload = () => ({
+    title: form.title.trim(),
+    message: form.message.trim(),
+    audience: form.audience,
+    audience_value: needsValue ? form.audience_value.trim() : null,
+    link: form.link.trim() || null,
+  });
+
+  return (
+    <>
+      <PanelHeader title="Broadcasts" description="Send an in-app notification to everyone, one role, or followers of mosques in a district." onRefresh={state.refresh} />
+      {notice && <div className="alert alert-success d-flex justify-content-between align-items-center py-2" role="status"><span>{notice}</span><button type="button" className="btn-close" aria-label="Dismiss" onClick={() => setNotice("")} /></div>}
+      <form className="card border-0 shadow-sm mb-4" onSubmit={(event) => { event.preventDefault(); if (ready) setConfirming(true); }}>
+        <div className="card-body row g-3">
+          <div className="col-md-8"><label className="form-label fw-semibold" htmlFor="broadcast-title">Title <span className="text-danger">*</span></label><input id="broadcast-title" className="form-control" maxLength="120" required placeholder="Eid moon sighted" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+          <div className="col-md-4"><label className="form-label fw-semibold" htmlFor="broadcast-audience">Audience</label><select id="broadcast-audience" className="form-select" value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value, audience_value: e.target.value === "role" ? "normal_user" : "" })}><option value="all">Everyone</option><option value="role">One role</option><option value="district">A district</option></select></div>
+          <div className="col-12"><label className="form-label fw-semibold" htmlFor="broadcast-message">Message <span className="text-danger">*</span></label><textarea id="broadcast-message" className="form-control" rows="3" maxLength="2000" required placeholder="Check your mosque's Eid jamaat times." value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /><div className="form-text">{form.message.length}/2000</div></div>
+          {form.audience === "role" && <div className="col-md-6"><label className="form-label fw-semibold" htmlFor="broadcast-role">Role</label><select id="broadcast-role" className="form-select" value={form.audience_value} onChange={(e) => setForm({ ...form, audience_value: e.target.value })}>{["normal_user", "mosque_admin", "super_admin"].map((role) => <option key={role} value={role}>{labelize(role)}</option>)}</select></div>}
+          {form.audience === "district" && <div className="col-md-6"><label className="form-label fw-semibold" htmlFor="broadcast-district">District <span className="text-danger">*</span></label><input id="broadcast-district" className="form-control" placeholder="Dhaka" value={form.audience_value} onChange={(e) => setForm({ ...form, audience_value: e.target.value })} /><div className="form-text">Reaches people who follow at least one mosque in this district.</div></div>}
+          <div className="col-md-6"><label className="form-label fw-semibold" htmlFor="broadcast-link">Link (optional)</label><input id="broadcast-link" className={`form-control ${linkOk ? "" : "is-invalid"}`} placeholder="/eid" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} /><div className={linkOk ? "form-text" : "invalid-feedback"}>A page on this site (starting with /) or an https:// link.</div></div>
+        </div>
+        <div className="card-footer bg-white text-end py-3"><button className="btn btn-mc d-inline-flex align-items-center gap-2" disabled={!ready}><Megaphone size={16} aria-hidden="true" />Review and send</button></div>
+      </form>
+
+      <h5 className="fw-bold mb-3">Past broadcasts</h5>
+      <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
+        <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0">
+          <thead className="table-light"><tr><th>Sent</th><th>Message</th><th>Audience</th><th>Recipients</th><th>By</th></tr></thead>
+          <tbody>{state.data?.data?.map((item) => <tr key={item.id}><td className="small text-muted text-nowrap">{dateTime(item.created_at)}</td><td><strong>{item.title}</strong><div className="small text-muted" style={{ maxWidth: 380 }}>{item.message}</div>{item.link && <div className="small"><code>{item.link}</code></div>}</td><td className="small">{broadcastAudienceLabel(item)}</td><td>{item.sent_at ? item.recipients_count : <span className="text-muted small">Sending…</span>}</td><td className="small">{item.sender?.name || "—"}</td></tr>)}</tbody>
+        </table></div><Pager payload={state.data} onPage={setPage} /></div>
+      </PanelState>
+
+      {confirming && (
+        <ConfirmDialog
+          title="Send this broadcast?"
+          confirmLabel="Send broadcast"
+          message={`“${form.title.trim()}” goes to: ${broadcastAudienceLabel(payload())}. It cannot be unsent.`}
+          onClose={() => setConfirming(false)}
+          onConfirm={async () => {
+            const response = await sendBroadcast(payload());
+            setNotice(response.message || "Broadcast sent.");
+            setForm(EMPTY_BROADCAST);
+            setPage(1);
+            state.refresh();
+          }}
+        />
+      )}
     </>
   );
 }
@@ -373,7 +584,9 @@ export function SettingsPanel() {
     state.setError("");
     try {
       const updated = await updateSystemSettings({
-        ...form,
+        maintenance_notice: form.maintenance_notice,
+        claims_enabled: form.claims_enabled,
+        reports_enabled: form.reports_enabled,
         eid_season: form.eid_season ? { ...form.eid_season, show_from: form.eid_season.show_from || null } : null,
       });
       setForm(updated);
@@ -390,8 +603,8 @@ export function SettingsPanel() {
       <PanelHeader title="System settings" description="Control platform-level availability and administrator notices." onRefresh={state.refresh} />
       <PanelState loading={state.loading} error={state.error} onRetry={state.refresh}>
         {form && <form className="card border-0 shadow-sm" onSubmit={save}><div className="card-body p-4">
-          <div className="mb-4"><label className="form-label fw-semibold" htmlFor="maintenance-notice">Maintenance notice</label><textarea id="maintenance-notice" className="form-control" rows="3" maxLength="1000" value={form.maintenance_notice || ""} onChange={(e) => setForm({ ...form, maintenance_notice: e.target.value })} /><div className="form-text">Shown by future maintenance-notice integrations; leave empty when no notice is required.</div></div>
-          {[["claims_enabled", "Accept mosque claims"], ["reports_enabled", "Accept user reports"], ["auto_publish_verified_mosques", "Publish verified mosques automatically"]].map(([key, label]) => <div className="form-check form-switch mb-3" key={key}><input className="form-check-input" type="checkbox" role="switch" id={key} checked={Boolean(form[key])} onChange={(e) => setForm({ ...form, [key]: e.target.checked })} /><label className="form-check-label fw-semibold" htmlFor={key}>{label}</label></div>)}
+          <div className="mb-4"><label className="form-label fw-semibold" htmlFor="maintenance-notice">Maintenance notice</label><textarea id="maintenance-notice" className="form-control" rows="3" maxLength="1000" value={form.maintenance_notice || ""} onChange={(e) => setForm({ ...form, maintenance_notice: e.target.value })} /><div className="form-text">Shown as a banner at the top of every page (visitors can dismiss it). Leave empty to hide it. Can take up to a minute to appear.</div></div>
+          {[["claims_enabled", "Accept mosque claims"], ["reports_enabled", "Accept user reports"]].map(([key, label]) => <div className="form-check form-switch mb-3" key={key}><input className="form-check-input" type="checkbox" role="switch" id={key} checked={Boolean(form[key])} onChange={(e) => setForm({ ...form, [key]: e.target.checked })} /><label className="form-check-label fw-semibold" htmlFor={key}>{label}</label></div>)}
           <EidSeasonSettings value={form.eid_season} onChange={(eidSeason) => setForm({ ...form, eid_season: eidSeason })} />
         </div><div className="card-footer bg-white text-end py-3"><button className="btn btn-mc" disabled={saving}>{saving ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : "Save system settings"}</button></div></form>}
       </PanelState>
