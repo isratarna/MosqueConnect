@@ -21,7 +21,16 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
     'latitude',
     'longitude',
     'phone',
+    'whatsapp',
+    'email',
+    'website_url',
+    'facebook_url',
     'description',
+    'capacity',
+    'established_year',
+    'khutbah_language',
+    'women_facility_notes',
+    'accessibility_notes',
     'verification_status',
 ])]
 class Mosque extends Model
@@ -177,6 +186,16 @@ class Mosque extends Model
         return $this->hasMany(Announcement::class);
     }
 
+    public function photos(): HasMany
+    {
+        return $this->hasMany(MosquePhoto::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(MosqueReview::class);
+    }
+
     public function volunteerOpportunities(): HasMany
     {
         return $this->hasMany(VolunteerOpportunity::class);
@@ -243,6 +262,8 @@ class Mosque extends Model
             'longitude' => 'decimal:7',
             'rating_avg' => 'decimal:1',
             'reviews_count' => 'integer',
+            'capacity' => 'integer',
+            'established_year' => 'integer',
         ];
     }
 }

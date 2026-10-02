@@ -103,6 +103,23 @@ rebuild:
 New database migrations run by setting `RUN_MIGRATIONS=true` for one boot, then
 returning it to `false`.
 
+### Durable mosque photos
+
+Mosque gallery photos use Laravel's `public` disk. For Container Apps, attach an
+Azure Files share to the `mc-api` container and mount it at
+`/var/www/html/storage/app/public`; the production entrypoint creates or repairs
+the `public/storage` symlink at every boot. This keeps gallery files across image
+revisions and replica replacement. Do not mount the share over the whole
+`storage/app` directory, because private verification documents remain on the
+private local disk.
+
+Create/register an Azure Files share in the `mc-env-uae` Container Apps
+environment, then configure the `mc-api` container volume with read/write access
+and the mount path above. The storage account key must be configured as an Azure
+secret, not committed to this repository. Existing single-cover files on the
+private local disk continue to be served while new gallery covers resolve from
+the public disk.
+
 ## Known limitations
 
 The site currently runs with `APP_ENV=local` so that OTP codes are written to

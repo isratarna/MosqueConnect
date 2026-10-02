@@ -22,10 +22,10 @@ class NotificationResource extends JsonResource
             'reference_type' => $this->reference_type,
             'reference_id' => $this->reference_id,
             'is_read' => $this->is_read,
-            'mosque' => $this->whenLoaded('mosque', fn (): array => [
+            'mosque' => $this->whenLoaded('mosque', fn (): ?array => $this->mosque ? [
                 'id' => $this->mosque->id,
                 'name' => $this->mosque->name,
-            ]),
+            ] : null),
             'created_at' => $this->created_at?->toJSON(),
             'updated_at' => $this->updated_at?->toJSON(),
         ];

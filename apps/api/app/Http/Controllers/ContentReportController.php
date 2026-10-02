@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\ContentReport;
 use App\Models\Event;
 use App\Models\Mosque;
+use App\Models\MosqueReview;
 use App\Models\SystemSetting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -49,6 +50,7 @@ class ContentReportController extends Controller
             'event' => Event::class,
             'campaign' => Campaign::class,
             'mosque' => Mosque::class,
+            'review' => MosqueReview::class,
         };
 
         return $model::query()->find($id);

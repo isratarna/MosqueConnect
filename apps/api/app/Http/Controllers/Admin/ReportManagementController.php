@@ -9,6 +9,7 @@ use App\Models\Campaign;
 use App\Models\ContentReport;
 use App\Models\Event;
 use App\Models\Mosque;
+use App\Models\MosqueReview;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -80,8 +81,14 @@ class ReportManagementController extends Controller
             'event' => Event::class,
             'campaign' => Campaign::class,
             'mosque' => Mosque::class,
+            'review' => MosqueReview::class,
         };
 
-        return $model::query()->find($id);
+        $query = $model::query();
+        if ($type === 'review') {
+            $query->with('user');
+        }
+
+        return $query->find($id);
     }
 }
