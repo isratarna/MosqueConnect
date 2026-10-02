@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\PrescreenClaimDocument;
 use App\Models\Mosque;
 use App\Models\SystemSetting;
 use App\Models\User;
@@ -71,7 +72,7 @@ class MosqueClaimService
         $documentPath = $data['document']->store('verification', 'local');
 
         try {
-            return VerificationRequest::query()->create([
+            $claim = VerificationRequest::query()->create([
                 'user_id' => $user->id,
                 'mosque_id' => $mosque->id,
                 'document_path' => $documentPath,
@@ -89,6 +90,12 @@ class MosqueClaimService
 
             abort(409, self::DUPLICATE_PENDING_MESSAGE);
         }
+
+        if (config('services.claim_ai.enabled')) {
+            PrescreenClaimDocument::dispatch($claim)->afterCommit();
+        }
+
+        return $claim;
     }
 
     /**

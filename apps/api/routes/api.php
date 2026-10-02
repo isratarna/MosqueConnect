@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\BroadcastController;
 use App\Http\Controllers\Admin\CampaignManagementController;
 use App\Http\Controllers\Admin\ContentModerationController;
 use App\Http\Controllers\Admin\EidJamaatManagementController;
@@ -62,6 +63,7 @@ Route::prefix('auth')->group(function () {
 
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
 Route::get('/eid-season', [EidJamaatController::class, 'season']);
+Route::get('/settings/public', [SystemSettingController::class, 'publicIndex']);
 Route::get('/eid-jamaats/nearby', [EidJamaatController::class, 'nearby']);
 Route::get('/mosques/{mosque}/announcements', [AnnouncementController::class, 'index']);
 Route::get('/mosques/{mosque}', [MosqueController::class, 'show']);
@@ -217,9 +219,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::patch('/claims/{verificationRequest}/reject', [VerificationRequestManagementController::class, 'reject']);
             Route::patch('/claims/{verificationRequest}/request-information', [VerificationRequestManagementController::class, 'requestInformation']);
             Route::get('/users', [UserManagementController::class, 'index']);
+            Route::get('/users/{user}', [UserManagementController::class, 'show']);
             Route::patch('/users/{user}', [UserManagementController::class, 'update']);
             Route::get('/mosques', [MosqueSystemManagementController::class, 'index']);
             Route::get('/mosques/{mosque}', [MosqueManagementController::class, 'show']);
+            Route::patch('/mosques/{mosque}', [MosqueSystemManagementController::class, 'update']);
+            Route::delete('/mosques/{mosque}', [MosqueSystemManagementController::class, 'destroy']);
+            Route::post('/mosques/{mosque}/merge', [MosqueSystemManagementController::class, 'merge']);
             Route::patch('/mosques/{mosque}/verification', [MosqueSystemManagementController::class, 'updateStatus']);
             Route::get('/mosques/{mosque}/members', [SuperAdminMosqueTeamController::class, 'index']);
             Route::post('/mosques/{mosque}/transfer', [SuperAdminMosqueTeamController::class, 'transfer']);
@@ -232,6 +238,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::get('/reports', [ReportManagementController::class, 'index']);
             Route::patch('/reports/{contentReport}', [ReportManagementController::class, 'update']);
             Route::get('/audit-logs', [AuditLogController::class, 'index']);
+            Route::get('/audit-logs/actions', [AuditLogController::class, 'actions']);
+            Route::get('/audit-logs/export', [AuditLogController::class, 'export']);
+            Route::get('/broadcasts', [BroadcastController::class, 'index']);
+            Route::post('/broadcasts', [BroadcastController::class, 'store']);
             Route::get('/settings', [SystemSettingController::class, 'index']);
             Route::patch('/settings', [SystemSettingController::class, 'update']);
         });

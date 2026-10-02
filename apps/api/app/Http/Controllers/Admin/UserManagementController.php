@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminAuditLog;
+use App\Models\ContentReport;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -30,6 +31,51 @@ class UserManagementController extends Controller
             ->paginate($filters['per_page'] ?? 20);
 
         return response()->json($users);
+    }
+
+    /** Everything a super admin needs before acting on an account. */
+    public function show(User $user): JsonResponse
+    {
+        $user->loadCount(['ownedMosques', 'managedMosques', 'followedMosques']);
+
+        return response()->json([
+            'data' => [
+                'user' => $user,
+                'managed_mosques' => $user->managedMosques()->get(['mosques.id', 'mosques.name', 'mosques.verification_status'])
+                    ->map(fn ($mosque) => [...$mosque->only(['id', 'name', 'verification_status']), 'role' => $mosque->pivot?->role]),
+                'claims' => $user->verificationRequests()
+                    ->with('mosque:id,name')
+                    ->latest('submitted_at')
+                    ->limit(20)
+                    ->get(['id', 'mosque_id', 'user_id', 'status', 'ai_score', 'submitted_at', 'reviewed_at', 'review_note']),
+                'reports' => ContentReport::query()
+                    ->where('reporter_id', $user->id)
+                    ->latest('id')
+                    ->limit(20)
+                    ->get(['id', 'reportable_type', 'reportable_id', 'category', 'reason', 'status', 'created_at']),
+                'donations' => $user->campaignDonations()
+                    ->with('campaign:id,title,mosque_id')
+                    ->latest('id')
+                    ->limit(20)
+                    ->get(['id', 'campaign_id', 'user_id', 'amount', 'payment_method', 'status', 'created_at']),
+                'suspension_history' => AdminAuditLog::query()
+                    ->with('actor:id,name')
+                    ->where('action', 'user.updated')
+                    ->where('target_type', 'User')
+                    ->where('target_id', $user->id)
+                    ->latest('id')
+                    ->get()
+                    ->filter(fn (AdminAuditLog $log) => ($log->metadata['before']['account_status'] ?? null) !== ($log->metadata['after']['account_status'] ?? null))
+                    ->map(fn (AdminAuditLog $log) => [
+                        'id' => $log->id,
+                        'status' => $log->metadata['after']['account_status'] ?? null,
+                        'reason' => $log->metadata['after']['suspension_reason'] ?? null,
+                        'actor' => $log->actor?->only(['id', 'name']),
+                        'created_at' => $log->created_at,
+                    ])
+                    ->values(),
+            ],
+        ]);
     }
 
     public function update(Request $request, User $user): JsonResponse

@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    // OCR used to pre-screen mosque-claim documents. The credentials are a
+    // service-account key: a file path, or the raw/base64 JSON (Azure secret).
+    'google_document_ai' => [
+        'project_id' => env('GOOGLE_DOCUMENT_AI_PROJECT_ID'),
+        'location' => env('GOOGLE_DOCUMENT_AI_LOCATION', 'us'),
+        'processor_id' => env('GOOGLE_DOCUMENT_AI_PROCESSOR_ID'),
+        'credentials' => env('GOOGLE_DOCUMENT_AI_CREDENTIALS'),
+    ],
+
+    'claim_ai' => [
+        'enabled' => (bool) env('CLAIM_AI_REVIEW_ENABLED', false),
+    ],
+
 ];

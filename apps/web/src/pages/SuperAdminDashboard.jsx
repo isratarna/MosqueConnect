@@ -6,6 +6,7 @@ import {
   FileCheck2,
   Flag,
   LayoutDashboard,
+  Megaphone,
   PencilLine,
   ScrollText,
   Settings,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import {
   AuditPanel,
+  BroadcastPanel,
   ClaimsPanel,
   CorrectionsPanel,
   ModerationPanel,
@@ -35,6 +37,7 @@ const SECTIONS = [
   { id: "corrections", label: "Corrections", icon: PencilLine },
   { id: "moderation", label: "Moderation", icon: SlidersHorizontal },
   { id: "reports", label: "Reports", icon: Flag },
+  { id: "broadcasts", label: "Broadcasts", icon: Megaphone },
   { id: "statistics", label: "Statistics", icon: Activity },
   { id: "audit", label: "Audit Log", icon: ScrollText },
   { id: "settings", label: "Settings", icon: Settings },
@@ -65,6 +68,7 @@ export default function SuperAdminDashboard() {
       case "corrections": return <CorrectionsPanel />;
       case "moderation": return <ModerationPanel />;
       case "reports": return <ReportsPanel />;
+      case "broadcasts": return <BroadcastPanel />;
       case "statistics": return <StatisticsPanel />;
       case "audit": return <AuditPanel />;
       case "settings": return <SettingsPanel />;

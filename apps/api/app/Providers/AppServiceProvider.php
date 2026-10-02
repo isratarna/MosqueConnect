@@ -17,6 +17,9 @@ use App\Policies\BloodRequestPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\MosquePolicy;
 use App\Policies\VolunteerOpportunityPolicy;
+use App\Services\ClaimReview\ClaimDocumentReviewer;
+use App\Services\ClaimReview\DocumentAiClaimReviewer;
+use App\Services\ClaimReview\GoogleDocumentAiClient;
 use App\Services\Otp\LogSmsOtpSender;
 use App\Services\Otp\MissingSmsOtpSender;
 use App\Services\Otp\SmsOtpSender;
@@ -37,6 +40,9 @@ class AppServiceProvider extends ServiceProvider
             'log' => new LogSmsOtpSender,
             default => new MissingSmsOtpSender,
         });
+
+        $this->app->bind(GoogleDocumentAiClient::class, fn () => new GoogleDocumentAiClient(config('services.google_document_ai', [])));
+        $this->app->bind(ClaimDocumentReviewer::class, DocumentAiClaimReviewer::class);
     }
 
     /**

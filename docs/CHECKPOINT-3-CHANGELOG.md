@@ -513,3 +513,121 @@ Demo accounts. The OTP is `123456` after `php artisan db:seed --class=DemoAuthen
 | `apps/web/src/index.css` | 5794–5897 (also Part 1) |
 
 **Deploy note:** on Azure, run the migrations once or deploy with `RUN_MIGRATIONS=true`.
+
+---
+
+## Issue 4 – Super-admin console upgrades and claim-document pre-screening (9 pts)
+
+Both parts are finished. Part 2 uses **Google Document AI** instead of Claude, because the project has no Anthropic API key.
+
+- **Backend:** 378 of 383 tests pass (34 are new: 15 console, 12 pre-screen, 7 scorer). The 5 failures are the same date-based ones listed under Issue 1, and they fail without these changes too.
+- **Frontend:** all 52 unit tests pass (8 are new, plus 4 new link checks in `notificationUtils.test.js`). The production build succeeds.
+- Both suites were run twice, with the same result each time.
+- **Not done:** an automated browser run. A local security hook blocked starting the dev server, so the screens still need the manual check under "Seeing it yourself" below.
+
+### Part 1 – Super-admin console (6 pts, originally #228)
+
+**What was asked:** replace every `window.prompt`; view claim documents and the AI hints in place; edit, merge and delete mosques; a user detail view; actually show the maintenance notice; decide what to do with `auto_publish_verified_mosques`; broadcasts; audit-log filters and CSV export.
+
+**What was done:**
+- **Dialogs:** a new `ConfirmDialog`, built on `Modal`, has a reason box that is required where the API requires it, shows a character count, validates input and displays server errors inline. It replaces all 5 `window.prompt` calls (claims, users, mosques, moderation, reports) and both `window.confirm` calls (deleting a campaign, deleting an Eid jamaat). A grep finds none left. With stacked dialogs, Escape closes only the top one.
+- **Claims:** a **Review** button opens a side panel with:
+  - the document (a PDF shows in an `<iframe>` from a blob URL, and JPG/PNG shows inline);
+  - the AI score badge, a ✓/✗ for whether the mosque name and the applicant's name were found, the red flags and the findings, all labelled "advice only";
+  - other claims for the same mosque, and the applicant's other claims;
+  - Approve, Reject and More info.
+
+  The table now shows the AI percentage, a red-flag count and a "competing claims" badge.
+- **Inline document:** `GET /api/super-admin/claims/{id}/document?inline=1` returns `Content-Disposition: inline` with the correct MIME type, `nosniff` and `no-store`, and still needs a super-admin login. Without `inline` the file downloads as before.
+- **Mosques:** every row has Edit, Merge and Delete.
+  - `PATCH /api/super-admin/mosques/{id}` edits the mosque.
+  - `POST …/merge {into_mosque_id}` runs in one transaction. It moves followers (keeping a single follow when someone follows both mosques), events, announcements, campaigns, volunteer opportunities, claims, notifications and reports, then deletes the duplicate.
+    - An open claim that would duplicate the same person's open claim on the target is closed automatically, with a note saying why.
+    - Mosques that still have an admin team are refused. Transfer or revoke their admins first, using the existing Team dialog.
+    - The merge dialog searches for the target mosque and asks you to type MERGE.
+  - `DELETE` returns 409 with the content counts unless `?force=1` is sent. The UI then offers a force-delete that lists what will be lost. Former team members lose the mosque-admin role if they have no other mosque.
+  - Edits, merges and deletes are all audited (`mosque.updated`, `mosque.merged`, `mosque.deleted`).
+- **Users:** a **Details** button and `GET /api/super-admin/users/{id}` show managed mosques, claims, reports filed, donations and suspension history (taken from the audit log).
+- **Maintenance notice:** `GET /api/settings/public` needs no login and is cached for 60 seconds. Saving settings clears the cache. It returns `{ maintenance_notice, claims_enabled, reports_enabled, eid_season }`. A yellow banner in `Layout.jsx` shows the notice on every page. A visitor can dismiss it, and it shows again if the text changes.
+- **`auto_publish_verified_mosques`: removed.** Approving a claim already marks the mosque verified, and nothing read this switch. The default, the validation rule, the switch in the UI and the stored row are all gone. An old client that still sends it is simply ignored.
+- **Broadcasts:**
+  - A new **Broadcasts** section and `GET`/`POST /api/super-admin/broadcasts`, with `{ title, message, audience: all | role | district, audience_value, link }`.
+  - Messages are sent as queued `system` notifications in chunks of 500, only to active accounts. Each broadcast is audited as `broadcast.sent`, and a list of past broadcasts shows the recipient count.
+  - "District" means people who follow at least one mosque in that district, because accounts have no district of their own.
+  - A link must start with `/` or `https://`. Clicking the notification opens it.
+  - `notifications.mosque_id` is now nullable, and notifications have a `link` column. Push delivery waits for #240.
+- **Audit log:** filters for action (a dropdown of the actions that exist), admin user ID, from and to dates, plus **Export CSV** (`GET /api/super-admin/audit-logs/export`, using the same filters, up to 10,000 rows). Cells that start with `=`, `+`, `-` or `@` are escaped so spreadsheet apps can't run them as formulas.
+
+### Part 2 – Claim-document pre-screening (3 pts, originally #210)
+
+**What was asked:** fill the unused `ai_score`, `ai_result` and `ai_reviewed` fields with an automatic assessment of each claim document, without ever letting it decide a claim.
+
+**What was done, and how it differs from the issue:**
+- **Claude Opus was replaced with Google Document AI (OCR) plus a scoring step written in PHP**, because there is no Anthropic API key. Document AI reads the text from the PDF or image. `ClaimAssessmentScorer` then checks for:
+  - the mosque name (ignoring words like "masjid" and "jame");
+  - the applicant's name, area or district, and stated role;
+  - the document type (letterhead, committee resolution, NID, utility bill, other), detected from keywords in English and Bangla;
+  - text that is too short, low recognition confidence, an unrelated document, an NID card used as proof of a role, and reviewer-directed instructions such as "approve this claim".
+
+  It returns the fields the issue asked for: `score` (0–1), `document_type`, `mentions_mosque_name`, `mentions_applicant_name`, `findings`, `red_flags` and `summary`. Because no language model is involved, text inside a document can never act as an instruction. It is only matched and flagged.
+- **Trade-off:** this is a text match, not judgement. It catches missing names, unrelated or unreadable files and pasted instructions, but it cannot spot a well-edited forgery the way a language model might. The `ClaimDocumentReviewer` interface means a Claude reviewer can replace it later without touching the job.
+- **No new Composer package.** The REST `:process` endpoint is called with Laravel's `Http` client, using a service-account token (a signed JWT, cached for 50 minutes).
+- **Settings:** `CLAIM_AI_REVIEW_ENABLED` (off by default), plus `GOOGLE_DOCUMENT_AI_PROJECT_ID`, `_LOCATION`, `_PROCESSOR_ID` and `_CREDENTIALS`. Credentials can be a key-file path or the JSON itself, raw or base64, for an Azure secret. They are exposed as `services.google_document_ai` and `services.claim_ai.enabled`, and added to `.env.example` with empty values.
+- **Job:** `App\Jobs\PrescreenClaimDocument`, with `ShouldQueue`, `$tries = 3`, `$backoff = [30, 120]` and `$timeout = 120`.
+  - It is dispatched with `->afterCommit()` from `MosqueClaimService::create()`, only when the flag is on.
+  - **Success:** stores `ai_score` and `ai_result` (the assessment plus provider, page count, characters read and OCR confidence). It sets the status to `ai_reviewed` only if the claim is still `pending`.
+  - **Errors:** 429, 5xx and network failures are retried. Any other 4xx, a bad key, missing settings or an unsupported file are recorded as `{"error": …}` and not retried.
+  - Every write is a conditional `UPDATE … WHERE status IN (open statuses)`, so a super admin's decision made while the job runs is never overwritten. A failure never changes the claim's status.
+- **Privacy:** only the file, the mosque's name and address, and the applicant's name, role and reason are given to the reviewer, never a phone number (a test checks this). The claim form now says documents are screened by Google Document AI and that a person decides. The repo has no Privacy Policy page yet (that is #252), so the policy text still needs adding there.
+- **Refusals:** a Claude-style "refusal" doesn't exist for OCR. Its counterpart, an unreadable document, is stored as a score of 0 with an "Unreadable" red flag, and the claim is left for a person to review.
+
+### Seeing it yourself
+
+1. Run `php artisan migrate` (adds `broadcasts` and `notifications.link`, and makes `notifications.mosque_id` nullable).
+2. Sign in as the super admin and go to **System Administration**.
+3. **Settings:** type a maintenance notice and save. Within a minute a yellow banner appears on every page, including when signed out. Dismiss it, change the text, and it comes back. The "Publish verified mosques automatically" switch is gone.
+4. **Mosque Claims:** click **Review** on a claim. The PDF or image shows inside the panel. Approve or reject it: a dialog asks for the reason, and Reject won't submit while the reason is empty.
+5. **Mosques:** use the pencil to edit. Use the merge icon to search for another mosque, pick it and type MERGE; the duplicate disappears and its followers move. Use the bin to delete: an empty mosque deletes, and one with content asks before a force-delete.
+6. **Users:** click **Details** to see claims, reports, donations and suspension history. Suspend: the dialog requires a reason.
+7. **Broadcasts:** send "Eid moon sighted" to Everyone with link `/eid`. Sign in as a normal user; the notification is there, and clicking it opens `/eid`.
+8. **Audit Log:** filter by action and dates, then click **Export CSV**.
+9. **Pre-screening (needs Google Cloud):**
+   - Create a Document AI **OCR processor** in a project with billing enabled, and a service account with the *Document AI API User* role.
+   - Set the five `GOOGLE_DOCUMENT_AI_*`/`CLAIM_AI_REVIEW_ENABLED=true` values in `apps/api/.env`, then run `php artisan config:clear`.
+   - Submit a claim. With `QUEUE_CONNECTION=sync` the score appears at once; on Azure, run a queue worker.
+   - Check current pricing before turning this on; there is a monthly free allowance, but billing must be enabled.
+
+### Files
+
+| File | Change |
+|---|---|
+| `apps/api/app/Services/ClaimReview/` (7 files) | new: interface, Document AI client, reviewer, scorer, assessment, input, exception |
+| `apps/api/app/Jobs/PrescreenClaimDocument.php` | new file |
+| `apps/api/app/Jobs/SendBroadcast.php`, `app/Models/Broadcast.php` | new files |
+| `apps/api/app/Http/Controllers/Admin/BroadcastController.php` | new file |
+| `apps/api/app/Services/MosqueMergeService.php` | new file (merge and delete) |
+| `apps/api/database/migrations/2026_10_05_000000_add_broadcasts_and_platform_notifications.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/MosqueSystemManagementController.php` | edit, merge and destroy actions |
+| `apps/api/app/Http/Controllers/Admin/VerificationRequestManagementController.php` | inline document, competing claims |
+| `apps/api/app/Http/Controllers/Admin/UserManagementController.php` | `show` |
+| `apps/api/app/Http/Controllers/Admin/AuditLogController.php` | filters, actions list, CSV export |
+| `apps/api/app/Http/Controllers/Admin/SystemSettingController.php`, `app/Models/SystemSetting.php` | public settings with cache; auto-publish removed |
+| `apps/api/app/Services/MosqueClaimService.php` | dispatches the pre-screen job |
+| `apps/api/app/Models/Notification.php`, `app/Http/Resources/NotificationResource.php` | `link`, nullable mosque |
+| `apps/api/app/Providers/AppServiceProvider.php` | reviewer binding |
+| `apps/api/config/services.php`, `.env.example` | Document AI and flag settings |
+| `apps/api/routes/api.php` | 1 public and 9 super-admin routes |
+| `apps/api/tests/Feature/SuperAdminConsoleTest.php`, `ClaimDocumentPrescreenTest.php`, `tests/Unit/ClaimAssessmentScorerTest.php` | new files |
+| `apps/web/src/components/ConfirmDialog.jsx`, `MaintenanceBanner.jsx` | new files |
+| `apps/web/src/components/super-admin/ClaimReviewPanel.jsx`, `MosqueToolsModals.jsx`, `UserDetailModal.jsx` | new files |
+| `apps/web/src/components/super-admin/AdminPanels.jsx` | dialogs, review, mosque tools, user details, broadcasts, audit filters |
+| `apps/web/src/pages/SuperAdminDashboard.jsx` | Broadcasts section |
+| `apps/web/src/components/Layout.jsx`, `Modal.jsx` | banner; Escape closes only the top dialog |
+| `apps/web/src/components/admin/CampaignManager.jsx`, `EidJamaatManager.jsx` | `ConfirmDialog` instead of `window.confirm` |
+| `apps/web/src/components/MosqueClaimForm.jsx` | privacy note |
+| `apps/web/src/utils/adminConsole.js` (+ test), `settingsApi.js`, `systemAdminApi.js`, `notificationUtils.js` (+ test) | helpers and API calls |
+| `apps/web/src/pages/Notifications.jsx` | broadcast links open |
+| `apps/web/src/index.css` | banner, document viewer, stacked dialogs |
+| `apps/web/package.json` | adds `adminConsole.test.js` to `npm test` |
+
+**Deploy note:** run the migrations, run a queue worker (the pre-screen job and broadcasts are queued), and add the Google settings as Azure secrets before setting `CLAIM_AI_REVIEW_ENABLED=true`.
