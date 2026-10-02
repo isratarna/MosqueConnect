@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\VolunteerApplication;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,7 +24,8 @@ class VolunteerOpportunityResource extends JsonResource
             'end_time' => $this->end_time ? substr($this->end_time, 0, 5) : null,
             'location' => $this->location,
             'volunteers_required' => $this->volunteers_required,
-            'registrations_count' => (int) \Illuminate\Support\Facades\DB::table('volunteer_registrations')->where('volunteer_opportunity_id', $this->id)->count(),
+            'registrations_count' => (int) ($this->registrations_count ?? $this->applications()->whereIn('status', [VolunteerApplication::STATUS_PENDING, VolunteerApplication::STATUS_ACCEPTED])->count()),
+            'accepted_count' => (int) ($this->accepted_count ?? $this->applications()->where('status', VolunteerApplication::STATUS_ACCEPTED)->count()),
             'requirements' => $this->requirements,
             'status' => $this->status,
             'mosque' => $this->whenLoaded('mosque', fn (): array => [
@@ -41,6 +43,7 @@ class VolunteerOpportunityResource extends JsonResource
                     'name' => $user->name,
                     'phone' => $user->phone,
                 ],
+                'status' => $user->pivot->status,
                 'created_at' => $user->pivot->created_at?->toJSON(),
             ])),
             'created_at' => $this->created_at?->toJSON(),
