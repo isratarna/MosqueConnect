@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Http\Resources\AnnouncementResource;
 use App\Models\Announcement;
 use App\Models\Mosque;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
 class AnnouncementController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function feed(): AnonymousResourceCollection
     {
         return AnnouncementResource::collection(Announcement::query()->published()
@@ -74,6 +77,8 @@ class AnnouncementController extends Controller
             'published_at' => $this->resolvePublishedAt($validated['status'] ?? Announcement::STATUS_DRAFT),
         ]);
 
+        $this->notifyIfPublished($mosque, $announcement);
+
         return (new AnnouncementResource($announcement->load(['mosque', 'creator'])))
             ->additional(['message' => 'Announcement created successfully.'])
             ->response()
@@ -103,6 +108,10 @@ class AnnouncementController extends Controller
 
         $announcement->save();
 
+        if ($announcement->wasChanged('status')) {
+            $this->notifyIfPublished($mosque, $announcement);
+        }
+
         return (new AnnouncementResource($announcement->refresh()->load(['mosque', 'creator'])))
             ->additional(['message' => 'Announcement updated successfully.']);
     }
@@ -123,6 +132,10 @@ class AnnouncementController extends Controller
         $announcement->published_at = $announcement->published_at ?? now();
         $announcement->save();
 
+        if ($announcement->wasChanged('status')) {
+            $this->notifyIfPublished($mosque, $announcement);
+        }
+
         return (new AnnouncementResource($announcement->refresh()->load(['mosque', 'creator'])))
             ->additional(['message' => 'Announcement published successfully.']);
     }
@@ -137,6 +150,17 @@ class AnnouncementController extends Controller
 
         return (new AnnouncementResource($announcement->refresh()->load(['mosque', 'creator'])))
             ->additional(['message' => 'Announcement unpublished successfully.']);
+    }
+
+    /**
+     * Notify followers the first time an announcement is published. The
+     * notification service skips followers already notified about it.
+     */
+    private function notifyIfPublished(Mosque $mosque, Announcement $announcement): void
+    {
+        if ($announcement->status === Announcement::STATUS_PUBLISHED) {
+            $this->notifications->notifyAnnouncementPublished($mosque, $announcement->id, $announcement->title);
+        }
     }
 
     private function resolvePublishedAt(string $status): ?string

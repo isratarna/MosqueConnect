@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'name',
     'address',
+    'district',
+    'area',
     'latitude',
     'longitude',
     'phone',
@@ -38,6 +40,9 @@ class Mosque extends Model
         self::VERIFICATION_VERIFIED,
         self::VERIFICATION_REJECTED,
     ];
+
+    /** @var list<string> */
+    protected $appends = ['photo_url'];
 
     /**
      * Get the user assigned to administer this mosque.
@@ -158,6 +163,26 @@ class Mosque extends Model
     public function facilities(): HasMany
     {
         return $this->hasMany(MosqueFacility::class)->orderBy('facility_key');
+    }
+
+    /**
+     * Get the mosque's anonymous daily usage counters.
+     */
+    public function dailyStats(): HasMany
+    {
+        return $this->hasMany(MosqueDailyStat::class);
+    }
+
+    /**
+     * Public URL of the uploaded cover photo, versioned so a new upload is not served from cache.
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (! $this->photo_path) {
+            return null;
+        }
+
+        return url("/api/mosques/{$this->id}/photo").'?v='.substr(md5($this->photo_path), 0, 8);
     }
 
     public function isVerified(): bool
