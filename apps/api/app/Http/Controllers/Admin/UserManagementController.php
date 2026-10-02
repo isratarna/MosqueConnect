@@ -22,7 +22,7 @@ class UserManagementController extends Controller
         ]);
 
         $users = User::query()
-            ->withCount(['ownedMosques', 'followedMosques'])
+            ->withCount(['ownedMosques', 'managedMosques', 'followedMosques'])
             ->when($filters['role'] ?? null, fn (Builder $query, string $role) => $query->where('role', $role))
             ->when($filters['account_status'] ?? null, fn (Builder $query, string $status) => $query->where('account_status', $status))
             ->when($filters['search'] ?? null, fn (Builder $query, string $search) => $query->where(fn (Builder $query) => $query->where('name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%")))
@@ -62,7 +62,7 @@ class UserManagementController extends Controller
 
         return response()->json([
             'message' => 'User account updated successfully.',
-            'data' => $user->fresh()->loadCount(['ownedMosques', 'followedMosques']),
+            'data' => $user->fresh()->loadCount(['ownedMosques', 'managedMosques', 'followedMosques']),
         ]);
     }
 }

@@ -287,6 +287,9 @@ export async function fetchFollowedMosques() {
   if (response.status === 401 || response.status === 403) return [];
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.message || "Could not load followed mosques.");
-  return Array.isArray(payload.data) ? payload.data : [];
+  // Same shape as every other mosque in the app, so cards can render them.
+  return Array.isArray(payload.data)
+    ? payload.data.map((record) => normalizeMosque(record, null, { requireDistance: false })).filter(Boolean)
+    : [];
 }
 

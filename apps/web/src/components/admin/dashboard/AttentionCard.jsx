@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { Bell, Check, CheckCircle2, Circle, X } from "lucide-react";
+import { Bell, Check, CheckCircle2, Circle, PencilLine, X } from "lucide-react";
 import DashboardCard from "./DashboardCard";
 import { reviewPledge } from "../../../utils/dashboardApi";
 import { formatCampaignMoney } from "../../../utils/campaignFormat";
 import { formatShortDate } from "../../../utils/dashboardFormat";
+import { can, canUseSection } from "../../../utils/teamRoles";
 
 /**
  * Pending pledges to confirm, open reports and the profile checklist. Each
  * part comes from its own dashboard key, so one failing part leaves the others.
  */
-export default function AttentionCard({ data, loading, error: loadError, failed, onRetry, onReviewed, onNavigate }) {
+export default function AttentionCard({ data, abilities = [], loading, error: loadError, failed, onRetry, onReviewed, onNavigate }) {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState("");
   const [handled, setHandled] = useState({});
@@ -35,8 +36,29 @@ export default function AttentionCard({ data, loading, error: loadError, failed,
     }
   };
 
+  // Each part shows only to roles that can act on it.
+  const content = can(abilities, "content");
+  const settings = can(abilities, "settings");
+  const corrections = canUseSection(abilities, "corrections");
+  const suggestionCount = data?.summary?.pending_suggestions_count || 0;
+
   return (
     <DashboardCard title="Needs your attention" icon={Bell} loading={loading} error={loadError} onRetry={onRetry} skeletonLines={6}>
+      {corrections && (
+        <>
+          <h3 className="mc-dash-subhead">Suggested corrections {suggestionCount > 0 && <span className="badge bg-warning text-dark">{suggestionCount}</span>}</h3>
+          {failed.includes("pending_suggestions") ? (
+            <SectionError onRetry={onRetry} />
+          ) : suggestionCount > 0 ? (
+            <button type="button" className="btn btn-sm btn-outline-mc mb-3" onClick={() => onNavigate("corrections")}>
+              <PencilLine size={14} aria-hidden="true" /> Review {suggestionCount} {suggestionCount === 1 ? "suggestion" : "suggestions"} from visitors
+            </button>
+          ) : (
+            <p className="text-muted small">No corrections from visitors waiting.</p>
+          )}
+        </>
+      )}
+      {content && <>
       <h3 className="mc-dash-subhead">Pending pledges {pledgeCount > 0 && <span className="badge bg-warning text-dark">{pledgeCount}</span>}</h3>
       {failed.includes("pending_pledges") ? (
         <SectionError onRetry={onRetry} />
@@ -79,7 +101,9 @@ export default function AttentionCard({ data, loading, error: loadError, failed,
         <p className="text-muted small">No open reports about your mosque.</p>
       )}
       {reports.length > 0 && <p className="form-text mt-1 mb-0">A super admin reviews each report. Fix the content if the report is right.</p>}
+      </>}
 
+      {settings && <>
       <h3 className="mc-dash-subhead mt-3">Profile {completeness ? `${completeness.percentage}% complete` : ""}</h3>
       {failed.includes("profile_completeness") ? (
         <SectionError onRetry={onRetry} />
@@ -99,6 +123,7 @@ export default function AttentionCard({ data, loading, error: loadError, failed,
           </ul>
         </>
       ) : null}
+      </>}
     </DashboardCard>
   );
 }

@@ -11,6 +11,8 @@ export const DASHBOARD_SECTIONS = [
   { id: "volunteers", label: "Volunteer Work" },
   { id: "profile", label: "Mosque Profile" },
   { id: "facilities", label: "Facilities" },
+  { id: "corrections", label: "Suggested corrections" },
+  { id: "team", label: "Team" },
 ];
 
 /** Old section names that links may still use. */

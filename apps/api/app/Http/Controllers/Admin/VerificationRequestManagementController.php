@@ -77,10 +77,12 @@ class VerificationRequestManagementController extends Controller
                 'review_note' => $validated['review_note'] ?? null,
                 'reviewed_at' => now(),
             ]);
-            $claim->mosque()->update([
+            // A model save (not a query update) so the applicant also becomes
+            // the owner on the mosque's team.
+            $claim->mosque->forceFill([
                 'owner_id' => $claim->user_id,
                 'verification_status' => Mosque::VERIFICATION_VERIFIED,
-            ]);
+            ])->save();
             $claim->user()->update(['role' => User::ROLE_MOSQUE_ADMIN]);
 
             AdminAuditLog::record($request->user(), 'claim.approved', $claim, [

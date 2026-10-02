@@ -301,3 +301,215 @@ Then log in as the demo mosque admin (`+8801711000101`, OTP `123456` after `php 
 | `apps/web/src/pages/MosqueProfile.jsx` | 33, 54, 132–143 |
 
 **Deploy note:** on Azure, run the migrations once or deploy with `RUN_MIGRATIONS=true`.
+
+---
+
+## Issue 3 – Mosque teams and community-suggested corrections (10 pts)
+
+Both parts are finished and working.
+
+- **Backend:** 344 of 349 tests pass (81 are new). The 5 failures are the same ones listed under Issue 1. They also fail without these changes.
+- **Frontend:** all 44 unit tests pass (12 are new).
+- **Manual check:** the production build was run against the local MySQL database and driven in a real browser (Edge), twice. The test signed in as six different real users: the owner, two invitees, a brand-new number, a visitor and the super admin. All 73 checks passed both times, on desktop (1366 px wide) and on a phone screen (390 px). There were no console errors. All test data was removed afterwards.
+- Both test suites were also run twice, with the same result each time.
+
+### Part 1 – Mosque teams: several admins per mosque (6 pts, originally #229)
+
+**What was asked:** a mosque could have only one admin (`mosques.owner_id`). Real mosques are run by committees, and if that one person left, nobody could manage the mosque. The issue asked for:
+- teams with roles (owner, manager, editor, prayer times);
+- invitations by phone number;
+- member management and a Team section in the dashboard;
+- invitations on the profile;
+- super-admin tools to transfer ownership and revoke access, recorded in the audit log.
+
+**What was done:**
+- **Teams:** a new `mosque_members` table holds each mosque's team: who, which role, who invited them, and when they accepted. A row that isn't accepted yet is a pending invitation. Every existing `owner_id` was copied in as an owner. On the local database that was 12 owners, with 0 mismatches.
+- **`owner_id` is kept** for compatibility and always points at one of the mosque's owners. Anything that still sets it (claim approval, seeders, tests) automatically puts that person on the team as owner.
+- **Permissions in one place:** `App\Support\MosqueAbility` holds the role table. `MosquePolicy` and every `Gate::authorize(…, $mosque)` call now go through it:
+
+  | Role | Can use |
+  |---|---|
+  | Owner | everything, including changing a member's role or removing a member |
+  | Manager | everything except changing or removing members (can invite and cancel invitations) |
+  | Editor | announcements, events, volunteering, campaigns (and Insights) |
+  | Prayer times | the prayer schedule: daily times, Jumuah and Eid jamaats |
+
+  Every role can open the dashboard and see the team. A test checks every role against every section (48 combinations).
+- **Invitations:**
+  - `POST /api/admin/mosques/{mosque}/members` with `{ phone, role }` creates a pending invitation and notifies the person. Only an owner can invite another owner.
+  - If the number has no account yet, the invitation is stored with the phone number and attached when that person first signs in.
+  - `GET /api/me/mosque-invites`, plus `POST …/{invite}/accept` and `…/decline`. Accepting makes the person a mosque admin.
+- **Managing the team:**
+  - `PATCH` / `DELETE /api/admin/mosques/{mosque}/members/{member}` are owner-only. The last owner can't be demoted or removed.
+  - `POST /api/admin/mosques/{mosque}/leave` lets anyone leave, except the last owner.
+  - When someone is on no team any more, their account goes back to a normal user.
+- **`GET /api/auth/me`** returns `managed_mosques` with the user's `role` and `abilities` for each mosque, plus `pending_mosque_invites_count`.
+- **Super admin:**
+  - `POST /api/super-admin/mosques/{mosque}/transfer` with `{ user_id }` makes that person the owner. The previous owners stay on as managers, or are removed with `previous_owners: "remove"`.
+  - `DELETE /api/super-admin/mosques/{mosque}/members/{user}` revokes anyone's access, including the last owner's.
+  - Both are recorded in the audit log as `mosque.ownership_transferred` and `mosque.member_revoked`.
+- **Frontend:**
+  - **Team section in the dashboard:** members with their roles, invite by phone number (`01712 345678` works too), change role, remove member, cancel an invitation, leave the mosque, and a "What each role can do" list.
+  - **Sections the role can't use are hidden** from the sidebar and the phone menu. Opening one by URL shows the Overview instead.
+  - **The Overview cards follow the role too.** Editors don't get the prayer **Edit** link. Prayer-times members don't get Quick post, announcements, pledges, events or campaigns.
+  - **This isn't only cosmetic:** the dashboard API also leaves out pledge, campaign and report data for roles without content access.
+  - **Profile → Team Invitations:** Accept / Decline buttons and a count badge. The invitation notification links here.
+  - **Super-admin → Mosques:** each mosque shows its team size and a **Team · transfer / revoke** dialog.
+
+### Part 2 – Community-suggested corrections (4 pts, originally #227)
+
+**What was asked:**
+- Let signed-in visitors suggest fixes to a mosque's times and details.
+- The mosque's admin reviews them, or the super admin for mosques nobody manages.
+- Accepting applies the change the same way the admin editor does, and tells followers if times changed.
+- Count accepted suggestions for a "Trusted contributor" badge.
+- Show "Times confirmed by the community" on the profile.
+
+**What was done:**
+- **Suggestions:** a new `mosque_edit_suggestions` table holds the field, the suggested value, a note, the status, the reviewer and the review note. There is also a new `users.accepted_suggestions_count` column.
+  - `POST /api/mosques/{mosque}/suggestions` works for anyone signed in, up to 10 a day per person.
+  - Each field is validated: prayer time, Jumuah time, phone, address, map location, facilities, or "something else" (which needs a note).
+  - A suggestion that wouldn't change anything is refused.
+  - `GET /api/me/suggestions` lists your own suggestions.
+- **Who reviews:**
+  - **Managed mosques** (verified, with a team): their admins, at `/api/admin/mosques/{mosque}/suggestions`. Time fixes need the Prayer times, Manager or Owner role. Fixes to other details need Manager or Owner.
+  - **Every other mosque:** the super admin, at `/api/super-admin/suggestions`. There is also an "all mosques" option.
+- **One code path:** the admin editor's save logic moved into a new `MosqueEditor` service, and accepting a suggestion goes through it.
+  - If a time actually changed, followers get one notification, for example "Isha jamaat 8:15 PM".
+  - The person who suggested the fix is told whether it was accepted, with the reviewer's note.
+- **Trust:** each accepted suggestion adds to the person's count.
+  - At 3 they get the **Trusted contributor** badge.
+  - Their fixes to mosques nobody manages go live straight away. "Something else" always needs a person to review it.
+  - The threshold, the daily limit and auto-accept can be changed in [config/suggestions.php](../apps/api/config/suggestions.php).
+- **Frontend:**
+  - **"Suggest a correction" links on the mosque profile:** on the prayer card, the Jumuah card, the Facilities and Location cards, and a new **About** card with the address and phone. Each opens a form filled in with the current values. Guests are asked to sign in first.
+  - **"Times confirmed by the community 2 days ago"** shows on the prayer card after an accepted time fix.
+  - **Review queues:** **Suggested corrections** in the dashboard (with a count on the Overview), and **Corrections** in the super-admin console. They show the value before and after, the visitor's note, and how many of the visitor's fixes were accepted before.
+  - **Profile → My Corrections** shows each suggestion's status, and the badge.
+
+### Fixed while testing
+- **The admin's own prayer-time changes never notified followers.** The notification code existed, but nothing called it. Accepted suggestions now share the admin editor's code path, so saving changed times from the dashboard notifies followers too. This only happens when a time actually changed. Saving without changes notifies nobody.
+- **Profile → Followed Mosques crashed for anyone who follows a mosque** ("Cannot read properties of undefined (reading 'slice')"). This bug was already there before checkpoint 3. The followed-mosques list wasn't converted to the same format as every other mosque list, so the card had no facilities list. The crash showed up when a member who left a team landed on their profile.
+- **Claim approval updated the mosque straight in the database**, which skips the model's events. It now saves the model, so the approved applicant is also added to the team as owner.
+
+### Notes
+- Several tickets this work links to aren't merged yet, so small versions were built in, as in Issues 1 and 2:
+  - [F3] Part 1 (About section): a small **About** card on the profile.
+  - [L5] Part 1 (super-admin console): the team dialog and the Corrections section.
+  - [B6] Part 1 (notifications): notifications for invitations and reviews, and the prayer-time fix above.
+- Each invitation is tied to the phone number it was sent to. Users can't change their phone number in this app, so an invitation can't end up with the wrong person.
+- A super admin can revoke the last owner. The mosque then has no owner until ownership is transferred, and its suggestions go to the super-admin queue.
+
+### Seeing it yourself
+
+First run the two new migrations. This is needed once on every database, including Azure:
+
+```powershell
+cd apps/api
+php artisan migrate
+```
+
+Demo accounts. The OTP is `123456` after `php artisan db:seed --class=DemoAuthenticationSeeder`. For the other numbers, `get-otp.ps1` reads the code from the log.
+
+| Account | Phone |
+|---|---|
+| Owner of Baitul Mukarram | `+8801711000101` |
+| Super admin | `+8801700000001` |
+| Normal user (Ayesha) | `+8801812000201` |
+| Normal user (Tanvir) | `+8801812000202` |
+
+| What to check | How |
+|---|---|
+| Invite | As the owner: **Dashboard → Team**, invite `01812000201` as **Editor**. |
+| Accept | As Ayesha: **Profile → Team Invitations → Accept**, then open **Mosque Dashboard**. Only the content sections show. Publish something with **Quick post**. **Team** has no invite form. |
+| Prayer-times role | Invite `01812000202` as **Prayer times** and accept as Tanvir. Only Overview, Prayer & Jamat, Jummah, Eid Jamaat, Suggested corrections and Team show. |
+| Last owner | As the owner, try to change your own role. It says the mosque needs at least one owner. |
+| Transfer and revoke | As the super admin: **Mosques → Team · transfer / revoke** on Baitul Mukarram. Find a user, click **Transfer ownership**, then **Revoke**. Both appear in **Audit Log**. |
+| Suggest | As any user, open a mosque page and click **Wrong time? Suggest a correction**. Change Isha and send. |
+| Review | As the owner: the Overview shows **Review 1 suggestion**. Open it, compare the before and after values, and click **Accept & apply**. The profile then shows the new time and "Times confirmed by the community today", and followers get a notification. |
+| Unmanaged mosques | Suggest a fix on **Star Mosque**, which isn't verified. It appears under **Corrections** in the super-admin console. |
+| Trusted contributor | After 3 accepted fixes, the profile shows the badge, and fixes to unmanaged mosques go live straight away. |
+
+### Files and lines
+
+#### Part 1
+
+| File | Lines |
+|---|---|
+| `apps/api/database/migrations/2026_10_04_000000_create_mosque_members_table.php` | new file |
+| `apps/api/app/Models/MosqueMember.php` | new file |
+| `apps/api/app/Support/MosqueAbility.php` | new file (the role table) |
+| `apps/api/app/Services/MosqueTeamService.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/MosqueTeamController.php` | new file |
+| `apps/api/app/Http/Controllers/MosqueInviteController.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/SuperAdminMosqueTeamController.php` | new file |
+| `apps/api/app/Http/Resources/MosqueMemberResource.php` | new file |
+| `apps/api/app/Policies/MosquePolicy.php` | rewritten |
+| `apps/api/app/Policies/AnnouncementPolicy.php`, `CampaignPolicy.php`, `EventPolicy.php`, `VolunteerOpportunityPolicy.php` | 15, 35 |
+| `apps/api/app/Http/Controllers/AnnouncementController.php` | 37 |
+| `apps/api/app/Http/Controllers/VolunteerOpportunityController.php` | 38 |
+| `apps/api/app/Http/Controllers/Admin/CampaignManagementController.php` | 32 |
+| `apps/api/app/Http/Controllers/Admin/EventManagementController.php` | 24 |
+| `apps/api/app/Http/Controllers/Admin/EidJamaatManagementController.php` | 25, 46, 67, 100, 112 |
+| `apps/api/app/Http/Controllers/Admin/MosqueInsightsController.php` | 17 |
+| `apps/api/app/Http/Controllers/Admin/MosqueDashboardController.php` | 24–27, 36, 38–39, 55, 57–59, 62–64 |
+| `apps/api/app/Http/Resources/Admin/MosqueDashboardResource.php` | 43 |
+| `apps/api/app/Http/Controllers/Auth/PhoneOtpController.php` | 8, 10, 38, 65–67, 119–139 |
+| `apps/api/app/Http/Controllers/Admin/VerificationRequestManagementController.php` | 80–85 |
+| `apps/api/app/Http/Controllers/Admin/MosqueSystemManagementController.php` | 26 |
+| `apps/api/app/Http/Controllers/Admin/UserManagementController.php` | 25, 65 |
+| `apps/api/app/Services/MosqueClaimService.php` | 24 |
+| `apps/api/app/Models/Mosque.php` | 47–72 (owner sync), 81–96 (also Part 2) |
+| `apps/api/app/Models/User.php` | 50, 84–114, 224 (also Part 2) |
+| `apps/api/app/Models/Notification.php` | 38–41, 52–55, 63–64 (also Part 2) |
+| `apps/api/app/Services/NotificationService.php` | 125–148 (also Part 2) |
+| `apps/api/routes/api.php` | 12, 14, 16, 33, 35, 107–116, 149–160, 224–229 (also Part 2) |
+| `apps/api/database/seeders/MosqueSeeder.php` | 6, 161–166 |
+| `apps/api/database/seeders/DemoDataIntegritySeeder.php` | 24–25, 28–36 |
+| `apps/api/tests/Feature/MosqueTeamTest.php` | new file |
+| `apps/web/src/components/admin/TeamManager.jsx` | new file |
+| `apps/web/src/components/super-admin/MosqueTeamModal.jsx` | new file |
+| `apps/web/src/components/Modal.jsx` | new file (also Part 2) |
+| `apps/web/src/utils/teamRoles.js` | new file |
+| `apps/web/src/utils/teamRoles.test.js` | new file |
+| `apps/web/src/utils/teamApi.js` | new file (also Part 2) |
+| `apps/web/src/pages/AdminDashboard.jsx` | 3, 16, 18, 34–37, 51–66, 117, 143–167, 179, 185, 194, 207, 223, 227 (also Part 2) |
+| `apps/web/src/utils/dashboardFormat.js` | 14–15 |
+| `apps/web/src/components/admin/dashboard/DashboardOverview.jsx` | 8, 15, 37–49 |
+| `apps/web/src/components/admin/dashboard/AttentionCard.jsx` | 2, 7, 13, 39–61, 104, 106, 126 (also Part 2) |
+| `apps/web/src/components/admin/dashboard/TodayPrayersCard.jsx` | 25 |
+| `apps/web/src/context/AuthContext.jsx` | 161–173, 194 (`refreshUser`) |
+| `apps/web/src/pages/Profile.jsx` | 2–31, 53–65, 89, 98, 112, 117–138 (also Part 2) |
+| `apps/web/src/components/super-admin/AdminPanels.jsx` | 33–35, 241, 253, 264, 270–271, 274–305 (also Part 2) |
+| `apps/web/src/components/notifications/NotificationList.jsx` | 12–13, 27–28 (also Part 2) |
+| `apps/web/src/utils/notificationUtils.js` | 7–8, 50–53 (also Part 2) |
+| `apps/web/src/utils/notificationUtils.test.js` | 48–53 |
+| `apps/web/src/utils/mosqueDiscovery.js` | 290–293 (followed-mosques crash fix) |
+| `apps/web/package.json` | 10 (new tests added to `npm test`) |
+
+#### Part 2
+
+| File | Lines |
+|---|---|
+| `apps/api/database/migrations/2026_10_04_000100_create_mosque_edit_suggestions_table.php` | new file |
+| `apps/api/app/Models/MosqueEditSuggestion.php` | new file |
+| `apps/api/app/Services/MosqueEditor.php` | new file (the admin editor's save logic, now shared) |
+| `apps/api/app/Services/MosqueSuggestionService.php` | new file |
+| `apps/api/app/Http/Controllers/MosqueSuggestionController.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/SuggestionReviewController.php` | new file |
+| `apps/api/app/Http/Resources/MosqueEditSuggestionResource.php` | new file |
+| `apps/api/config/suggestions.php` | new file |
+| `apps/api/app/Http/Controllers/Admin/MosqueManagementController.php` | 7, 23–36, 68–74 (now uses `MosqueEditor`) |
+| `apps/api/app/Http/Controllers/MosqueController.php` | 7, 103–108 |
+| `apps/api/app/Http/Resources/MosqueResource.php` | 7, 84–86 |
+| `apps/api/app/Providers/AppServiceProvider.php` | 67–77 (10 a day limit) |
+| `apps/api/tests/Feature/MosqueSuggestionTest.php` | new file |
+| `apps/web/src/components/suggestions/SuggestCorrectionModal.jsx` | new file |
+| `apps/web/src/components/suggestions/SuggestionReviewList.jsx` | new file (review queue and badge) |
+| `apps/web/src/utils/suggestionFormat.js` | new file |
+| `apps/web/src/utils/suggestionFormat.test.js` | new file |
+| `apps/web/src/pages/MosqueProfile.jsx` | 1, 5, 7, 17, 37–47, 55–56, 120–121, 199–221, 289–304, 313, 326, 331–346 |
+| `apps/web/src/pages/SuperAdminDashboard.jsx` | 9, 19, 35, 65 |
+| `apps/web/src/index.css` | 5794–5897 (also Part 1) |
+
+**Deploy note:** on Azure, run the migrations once or deploy with `RUN_MIGRATIONS=true`.

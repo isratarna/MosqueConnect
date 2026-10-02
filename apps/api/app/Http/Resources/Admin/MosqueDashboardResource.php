@@ -40,6 +40,7 @@ class MosqueDashboardResource extends JsonResource
                 'active_campaigns_count' => (int) $mosque->active_campaigns_count,
                 'pending_content_reports_count' => (int) $mosque->pending_content_reports_count,
                 'pending_pledges_count' => $mosque->pending_pledges_count === null ? null : (int) $mosque->pending_pledges_count,
+                'pending_suggestions_count' => $mosque->pending_suggestions_count === null ? null : (int) $mosque->pending_suggestions_count,
             ],
             'recent_content' => $mosque->recent_content,
             'pending_content_reports' => $mosque->pending_content_reports,

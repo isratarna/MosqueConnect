@@ -22,7 +22,7 @@ class EidJamaatManagementController extends Controller
 
     public function index(Mosque $mosque): JsonResponse
     {
-        Gate::authorize('view', $mosque);
+        Gate::authorize('managePrayerTimes', $mosque);
 
         $jamaats = $mosque->eidJamaats()
             ->reorder()
@@ -43,7 +43,7 @@ class EidJamaatManagementController extends Controller
 
     public function store(Request $request, Mosque $mosque): JsonResponse
     {
-        Gate::authorize('update', $mosque);
+        Gate::authorize('managePrayerTimes', $mosque);
 
         $validated = $request->validate($this->rules(true));
 
@@ -64,7 +64,7 @@ class EidJamaatManagementController extends Controller
 
     public function update(Request $request, Mosque $mosque, EidJamaat $eidJamaat): JsonResponse
     {
-        Gate::authorize('update', $mosque);
+        Gate::authorize('managePrayerTimes', $mosque);
 
         $validated = $request->validate($this->rules(false));
 
@@ -97,7 +97,7 @@ class EidJamaatManagementController extends Controller
 
     public function destroy(Mosque $mosque, EidJamaat $eidJamaat): JsonResponse
     {
-        Gate::authorize('update', $mosque);
+        Gate::authorize('managePrayerTimes', $mosque);
 
         $eidJamaat->delete();
 
@@ -109,7 +109,7 @@ class EidJamaatManagementController extends Controller
      */
     public function publish(Request $request, Mosque $mosque): JsonResponse
     {
-        Gate::authorize('update', $mosque);
+        Gate::authorize('managePrayerTimes', $mosque);
 
         $validated = $request->validate([
             'eid' => ['required', 'string', Rule::in(EidJamaat::EIDS)],

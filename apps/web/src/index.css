@@ -5791,3 +5791,107 @@ main {
   font-size: 0.82rem;
   pointer-events: none;
 }
+
+/* ---------- mosque teams and community corrections ---------- */
+.mc-team-invite {
+  background: var(--mc-soft);
+}
+
+.mc-trusted-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #fff6e0;
+  color: #7a5310;
+  border: 1px solid var(--mc-gold);
+  font-weight: 600;
+}
+
+.mc-suggestion {
+  background: #fff;
+}
+
+.mc-suggestion__diff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.mc-suggestion__before,
+.mc-suggestion__after {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.mc-suggestion__before {
+  background: #fdf2f0;
+  color: #6b2a1a;
+}
+
+.mc-suggestion__after {
+  background: #e9f5ef;
+  color: var(--mc-green-dark);
+  font-weight: 600;
+}
+
+.mc-suggestion__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.mc-suggestion__arrow {
+  align-self: center;
+  color: var(--mc-muted, #6c757d);
+}
+
+.mc-suggestion__note {
+  margin: 0.5rem 0 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--mc-gold);
+  font-size: 0.9rem;
+  color: #555;
+}
+
+@media (max-width: 575.98px) {
+  .mc-suggestion__diff {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mc-suggestion__arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+}
+
+.mc-about-list {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+}
+
+.mc-about-list dt {
+  font-weight: 600;
+  color: var(--mc-muted, #6c757d);
+}
+
+.mc-about-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.mc-suggest-link {
+  font-size: 0.85rem;
+}
+
+.mc-community-confirmed {
+  display: flex;
+  align-items: center;
+}

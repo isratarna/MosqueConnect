@@ -64,6 +64,17 @@ class AppServiceProvider extends ServiceProvider
                 ->by($request->input('phone', $request->ip()));
         });
 
+        // Each person may suggest a limited number of corrections per day.
+        RateLimiter::for('suggestions', function (Request $request) {
+            $limit = (int) config('suggestions.daily_limit', 10);
+
+            return Limit::perDay($limit)
+                ->by('suggestions|'.($request->user()?->id ?? $request->ip()))
+                ->response(fn () => response()->json([
+                    'message' => "You can suggest up to {$limit} corrections a day. Please try again tomorrow.",
+                ], 429));
+        });
+
         // Usage tracking is public, so each IP may count at most 30 events per mosque per hour.
         RateLimiter::for('mosque-track', function (Request $request) {
             $mosque = $request->route('mosque');

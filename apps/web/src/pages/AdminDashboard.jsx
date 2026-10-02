@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   BarChart3,
   Building2,
@@ -13,7 +13,9 @@ import {
   Megaphone,
   Menu,
   Moon,
+  PencilLine,
   Sun,
+  UsersRound,
   Wrench,
   X,
 } from "lucide-react";
@@ -29,6 +31,10 @@ import { FacilitiesForm, ProfileForm } from "../components/admin/MosqueProfileEd
 import CampaignManager from "../components/admin/CampaignManager";
 import EventManager from "../components/admin/EventManager";
 import EidJamaatManager from "../components/admin/EidJamaatManager";
+import TeamManager from "../components/admin/TeamManager";
+import SuggestionReviewList from "../components/suggestions/SuggestionReviewList";
+import { fetchMosqueSuggestions, reviewMosqueSuggestion } from "../utils/teamApi";
+import { abilitiesOf, allowedSections, canUseSection, roleLabel } from "../utils/teamRoles";
 
 const ICONS = {
   overview: LayoutDashboard,
@@ -42,14 +48,22 @@ const ICONS = {
   volunteers: HeartHandshake,
   profile: Building2,
   facilities: Wrench,
+  corrections: PencilLine,
+  team: UsersRound,
 };
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const managed = user?.managed_mosques || [];
-  const mosqueId = (managed.find((item) => String(item.id) === params.get("mosque")) || managed[0])?.id;
-  const section = dashboardSection(params.get("section"));
+  const membership = managed.find((item) => String(item.id) === params.get("mosque")) || managed[0];
+  const mosqueId = membership?.id;
+  // Only the sections the user's team role can use are shown or opened.
+  const abilities = abilitiesOf(membership);
+  const sections = allowedSections(DASHBOARD_SECTIONS, abilities);
+  const requested = dashboardSection(params.get("section"));
+  const section = canUseSection(abilities, requested) ? requested : "overview";
 
   const [mosque, setMosque] = useState(null);
   const [mosqueError, setMosqueError] = useState("");
@@ -100,7 +114,7 @@ export default function AdminDashboard() {
     return (
       <div className="container py-5" style={{ minHeight: "60vh" }}>
         <h1 className="h3">Mosque Dashboard</h1>
-        <p>No mosque is assigned to this account. <Link to="/profile" state={{ tab: "claims" }}>View applications</Link>.</p>
+        <p>No mosque is assigned to this account. <Link to="/profile" state={{ tab: "claims" }}>View applications</Link>{user?.pending_mosque_invites_count > 0 && <> or <Link to="/profile?tab=invites">answer your team invitations</Link></>}.</p>
       </div>
     );
   }
@@ -126,7 +140,31 @@ export default function AdminDashboard() {
       case "volunteers": return <VolunteerManager mosqueId={mosqueId} />;
       case "profile": return needsMosque((m) => <ProfileForm mosque={m} onSaved={setMosque} />);
       case "facilities": return needsMosque((m) => <FacilitiesForm key={m.updated_at} mosque={m} onSaved={setMosque} />);
-      default: return <DashboardOverview mosqueId={mosqueId} mosqueName={name} onNavigate={goTo} />;
+      case "corrections": return (
+        <>
+          <h2 className="h5 fw-bold mb-1"><PencilLine size={19} className="text-mc me-2" aria-hidden="true" />Suggested corrections</h2>
+          <p className="text-muted small">Visitors' fixes to your prayer times and details. Accepting one updates your mosque straight away and, for time changes, tells your followers.</p>
+          <SuggestionReviewList
+            load={(query, options) => fetchMosqueSuggestions(mosqueId, query, options)}
+            review={(suggestion, action, note) => reviewMosqueSuggestion(mosqueId, suggestion.id, action, note)}
+            onReviewed={() => setMosqueAttempt((n) => n + 1)}
+            emptyText="No corrections from visitors are waiting. Visitors can suggest one from your mosque's public page."
+          />
+        </>
+      );
+      case "team": return (
+        <TeamManager
+          mosqueId={mosqueId}
+          mosqueName={name}
+          onLeft={() => {
+            // Leave the dashboard first, so its route guard doesn't redirect
+            // home once the refreshed user is no longer a mosque admin.
+            navigate("/profile", { replace: true });
+            refreshUser();
+          }}
+        />
+      );
+      default: return <DashboardOverview mosqueId={mosqueId} mosqueName={name} abilities={abilities} onNavigate={goTo} />;
     }
   };
 
@@ -138,13 +176,13 @@ export default function AdminDashboard() {
         </button>
         <div className="me-auto min-w-0">
           <h1 className="h4 fw-bold mb-0 text-truncate">{name}</h1>
-          <p className="small text-muted mb-0">Mosque dashboard · {sectionLabel}</p>
+          <p className="small text-muted mb-0">Mosque dashboard · {sectionLabel}{membership?.role && <> · <span className="badge bg-light text-dark border">{roleLabel(membership.role)}</span></>}</p>
         </div>
         {managed.length > 1 && (
           <div>
             <label className="visually-hidden" htmlFor="admin-mosque">Managed mosque</label>
             <select id="admin-mosque" className="form-select form-select-sm" value={mosqueId} onChange={(e) => updateParams({ mosque: e.target.value })}>
-              {managed.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
+              {managed.map((item) => <option value={item.id} key={item.id}>{item.name}{item.role ? ` (${roleLabel(item.role)})` : ""}</option>)}
             </select>
           </div>
         )}
@@ -153,7 +191,7 @@ export default function AdminDashboard() {
 
       <div className="mc-dash-layout">
         <div className="mc-dash-sidebar d-none d-lg-block">
-          <SectionNav section={section} onSelect={goTo} />
+          <SectionNav sections={sections} section={section} onSelect={goTo} />
         </div>
 
         {/* Phone menu. Rendered into <body> because the page shell has a transform,
@@ -166,7 +204,7 @@ export default function AdminDashboard() {
                 <button type="button" className="btn btn-sm btn-light" aria-label="Close menu" onClick={() => setMenuOpen(false)}><X size={18} aria-hidden="true" /></button>
               </div>
               <div className="offcanvas-body p-2">
-                <SectionNav section={section} onSelect={goTo} />
+                <SectionNav sections={sections} section={section} onSelect={goTo} />
               </div>
             </div>
             <div className="offcanvas-backdrop fade show d-lg-none" onClick={() => setMenuOpen(false)} />
@@ -182,11 +220,11 @@ export default function AdminDashboard() {
   );
 }
 
-function SectionNav({ section, onSelect }) {
+function SectionNav({ sections, section, onSelect }) {
   return (
     <nav aria-label="Dashboard sections">
       <ul className="nav nav-pills flex-column gap-1 w-100">
-        {DASHBOARD_SECTIONS.map(({ id, label }) => {
+        {sections.map(({ id, label }) => {
           const Icon = ICONS[id];
           return (
             <li className="nav-item" key={id}>

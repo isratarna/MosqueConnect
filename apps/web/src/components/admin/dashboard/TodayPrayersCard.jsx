@@ -22,7 +22,7 @@ export default function TodayPrayersCard({ data, loading, error, onRetry, onEdit
       error={error}
       onRetry={onRetry}
       skeletonLines={5}
-      action={<button type="button" className="btn btn-link btn-sm text-mc p-0" onClick={onEdit}>Edit</button>}
+      action={onEdit && <button type="button" className="btn btn-link btn-sm text-mc p-0" onClick={onEdit}>Edit</button>}
     >
       {next && (
         <p className="mc-dash-next mb-3">

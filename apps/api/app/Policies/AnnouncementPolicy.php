@@ -12,7 +12,7 @@ class AnnouncementPolicy
 {
     public function create(User $user, Mosque $mosque): Response
     {
-        return Gate::forUser($user)->inspect('update', $mosque);
+        return Gate::forUser($user)->inspect('manageContent', $mosque);
     }
 
     public function view(User $user, Announcement $announcement): Response
@@ -32,6 +32,6 @@ class AnnouncementPolicy
 
     private function canManage(User $user, Mosque $mosque): Response
     {
-        return Gate::forUser($user)->inspect('update', $mosque);
+        return Gate::forUser($user)->inspect('manageContent', $mosque);
     }
 }

@@ -30,6 +30,9 @@ import {
   updateReport,
   updateSystemSettings,
 } from "../../utils/systemAdminApi";
+import MosqueTeamModal from "./MosqueTeamModal";
+import SuggestionReviewList from "../suggestions/SuggestionReviewList";
+import { fetchSystemSuggestions, reviewSystemSuggestion } from "../../utils/teamApi";
 
 const dateTime = (value) => value ? new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -235,7 +238,7 @@ export function UsersPanel({ currentUser }) {
       <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
         <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0">
           <thead className="table-light"><tr><th>User</th><th>Role</th><th>Status</th><th>Activity</th><th className="text-end">Account control</th></tr></thead>
-          <tbody>{state.data?.data?.map((user) => <tr key={user.id}><td><strong>{user.name}</strong>{user.id === currentUser?.id && <span className="badge bg-primary ms-2">You</span>}<div className="small text-muted">{user.phone}</div></td><td><select className="form-select form-select-sm" value={user.role} disabled={busy === user.id || user.id === currentUser?.id} onChange={(e) => changeRole(user, e.target.value)}>{["normal_user", "mosque_admin", "super_admin"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></td><td><StatusBadge value={user.account_status} />{user.suspension_reason && <div className="small text-danger mt-1">{user.suspension_reason}</div>}</td><td className="small"><div>{user.owned_mosques_count} managed mosque(s)</div><div>{user.followed_mosques_count} followed</div></td><td className="text-end"><button className={`btn btn-sm ${user.account_status === "suspended" ? "btn-outline-success" : "btn-outline-danger"}`} disabled={busy === user.id || user.id === currentUser?.id} onClick={() => toggleStatus(user)}>{user.account_status === "suspended" ? "Reactivate" : "Suspend"}</button></td></tr>)}</tbody>
+          <tbody>{state.data?.data?.map((user) => <tr key={user.id}><td><strong>{user.name}</strong>{user.id === currentUser?.id && <span className="badge bg-primary ms-2">You</span>}<div className="small text-muted">{user.phone}</div></td><td><select className="form-select form-select-sm" value={user.role} disabled={busy === user.id || user.id === currentUser?.id} onChange={(e) => changeRole(user, e.target.value)}>{["normal_user", "mosque_admin", "super_admin"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></td><td><StatusBadge value={user.account_status} />{user.suspension_reason && <div className="small text-danger mt-1">{user.suspension_reason}</div>}</td><td className="small"><div>{user.managed_mosques_count ?? user.owned_mosques_count} managed mosque(s)</div><div>{user.followed_mosques_count} followed</div></td><td className="text-end"><button className={`btn btn-sm ${user.account_status === "suspended" ? "btn-outline-success" : "btn-outline-danger"}`} disabled={busy === user.id || user.id === currentUser?.id} onClick={() => toggleStatus(user)}>{user.account_status === "suspended" ? "Reactivate" : "Suspend"}</button></td></tr>)}</tbody>
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
     </>
@@ -247,6 +250,7 @@ export function MosquesPanel() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(null);
+  const [teamMosque, setTeamMosque] = useState(null);
   const state = useRemoteData((signal) => fetchManagedMosques({ verification_status: status, search, page }, { signal }), [status, search, page]);
 
   const changeStatus = (mosque, nextStatus) => {
@@ -257,16 +261,48 @@ export function MosquesPanel() {
 
   return (
     <>
-      <PanelHeader title="Mosque management" description="Inspect ownership and control platform-wide verification." onRefresh={state.refresh}>
+      <PanelHeader title="Mosque management" description="Inspect ownership, manage each mosque's team and control platform-wide verification." onRefresh={state.refresh}>
         <input className="form-control form-control-sm" style={{ width: 210 }} placeholder="Mosque or address" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         <select className="form-select form-select-sm" style={{ width: 165 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">All statuses</option>{["unverified", "pending", "verified", "rejected"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select>
       </PanelHeader>
       <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
         <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0">
-          <thead className="table-light"><tr><th>Mosque</th><th>Owner</th><th>Status</th><th>Platform activity</th><th>Verification control</th></tr></thead>
-          <tbody>{state.data?.data?.map((mosque) => <tr key={mosque.id}><td><strong>{mosque.name}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 240 }}>{mosque.address}</div></td><td>{mosque.owner ? <><strong>{mosque.owner.name}</strong><div className="small text-muted">{mosque.owner.phone}</div></> : <span className="text-muted">Unassigned</span>}</td><td><StatusBadge value={mosque.verification_status} /></td><td className="small">{mosque.followers_count} followers · {mosque.events_count} events · {mosque.campaigns_count} campaigns</td><td><select className="form-select form-select-sm" value={mosque.verification_status} disabled={busy === mosque.id} onChange={(e) => changeStatus(mosque, e.target.value)}>{["unverified", "pending", "verified", "rejected"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></td></tr>)}</tbody>
+          <thead className="table-light"><tr><th>Mosque</th><th>Owner &amp; team</th><th>Status</th><th>Platform activity</th><th>Verification control</th></tr></thead>
+          <tbody>{state.data?.data?.map((mosque) => <tr key={mosque.id}><td><strong>{mosque.name}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 240 }}>{mosque.address}</div></td><td>{mosque.owner ? <><strong>{mosque.owner.name}</strong><div className="small text-muted">{mosque.owner.phone}</div></> : <span className="text-muted">Unassigned</span>}<div><button type="button" className="btn btn-link btn-sm p-0" onClick={() => setTeamMosque(mosque)}>Team ({mosque.team_count ?? 0}) · transfer / revoke</button></div></td><td><StatusBadge value={mosque.verification_status} /></td><td className="small">{mosque.followers_count} followers · {mosque.events_count} events · {mosque.campaigns_count} campaigns</td><td><select className="form-select form-select-sm" value={mosque.verification_status} disabled={busy === mosque.id} onChange={(e) => changeStatus(mosque, e.target.value)}>{["unverified", "pending", "verified", "rejected"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></td></tr>)}</tbody>
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
+      {teamMosque && <MosqueTeamModal mosque={teamMosque} onClose={() => setTeamMosque(null)} onChanged={state.refresh} />}
+    </>
+  );
+}
+
+/** Suggested corrections. By default only mosques nobody manages; their own admins review the rest. */
+export function CorrectionsPanel() {
+  const [scope, setScope] = useState("unclaimed");
+  const [search, setSearch] = useState("");
+
+  return (
+    <>
+      <PanelHeader title="Suggested corrections" description="Fixes from visitors to mosques that have no admin team. Accepting one updates the mosque, and followers hear about time changes." />
+      <div className="card border-0 shadow-sm"><div className="card-body">
+        <SuggestionReviewList
+          showMosque
+          filterKey={`${scope}|${search}`}
+          load={(query, options) => fetchSystemSuggestions({ ...query, scope, search }, options)}
+          review={(suggestion, action, note) => reviewSystemSuggestion(suggestion.id, action, note)}
+          emptyText="No corrections waiting for mosques without an admin."
+          filters={(
+            <>
+              <label className="visually-hidden" htmlFor="corrections-scope">Mosques</label>
+              <select id="corrections-scope" className="form-select form-select-sm" style={{ width: 230 }} value={scope} onChange={(e) => setScope(e.target.value)}>
+                <option value="unclaimed">Mosques without an admin</option>
+                <option value="all">All mosques</option>
+              </select>
+              <input className="form-control form-control-sm" style={{ width: 190 }} placeholder="Mosque name" aria-label="Search by mosque name" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </>
+          )}
+        />
+      </div></div>
     </>
   );
 }

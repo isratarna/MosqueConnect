@@ -1,19 +1,34 @@
 ﻿import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Check, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useFollowedMosques } from "../context/FollowContext";
 import MosqueCard from "../components/MosqueCard";
 import { apiRequest } from "../utils/api";
 import { formatCampaignMoney as formatMoney } from "../utils/campaignFormat";
+import { respondToInvite } from "../utils/teamApi";
+import { describeValue } from "../utils/suggestionFormat";
+import { roleLabel } from "../utils/teamRoles";
+import { TrustedBadge } from "../components/suggestions/SuggestionReviewList";
 
-const tabs = { followed: "Followed Mosques", activity: "Event Registrations", donations: "Donations", claims: "Mosque Applications", settings: "Settings" };
-const endpoints = { activity: "/api/me/event-registrations", donations: "/api/me/donations", claims: "/api/me/mosque-claims" };
+const tabs = { followed: "Followed Mosques", invites: "Team Invitations", activity: "Event Registrations", donations: "Donations", suggestions: "My Corrections", claims: "Mosque Applications", settings: "Settings" };
+const endpoints = { invites: "/api/me/mosque-invites", activity: "/api/me/event-registrations", donations: "/api/me/donations", suggestions: "/api/me/suggestions", claims: "/api/me/mosque-claims" };
+const emptyText = { invites: "You have no team invitations.", activity: "No event registrations yet.", donations: "No donations yet.", suggestions: "You haven't suggested any corrections yet.", claims: "No mosque applications yet." };
+const SUGGESTION_STATUS = { pending: ["Waiting for review", "bg-warning text-dark"], accepted: ["Accepted", "bg-success"], rejected: ["Not accepted", "bg-secondary"] };
 
 export default function Profile() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, refreshUser } = useAuth();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const follows = useFollowedMosques();
-  const [activeTab, setActiveTab] = useState(location.state?.tab || "followed");
+  const requestedTab = searchParams.get("tab") || location.state?.tab;
+  const [activeTab, setActiveTab] = useState(tabs[requestedTab] ? requestedTab : "followed");
+  const [busyInvite, setBusyInvite] = useState(null);
+
+  // Notification links (?tab=invites) can change the tab while the page is open.
+  useEffect(() => {
+    if (tabs[requestedTab]) setActiveTab(requestedTab);
+  }, [requestedTab]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -34,6 +49,19 @@ export default function Profile() {
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [activeTab, user?.id, revision]);
+
+  async function answerInvite(invite, accept) {
+    setBusyInvite(invite.id);
+    setError("");
+    setMessage("");
+    try {
+      const data = await respondToInvite(invite.id, accept);
+      setItems((current) => current.filter((item) => item.id !== invite.id));
+      setMessage(accept ? `${data.message} You can now open the Mosque Dashboard.` : data.message);
+      await refreshUser();
+    } catch (err) { setError(err.message); }
+    finally { setBusyInvite(null); }
+  }
 
   async function saveProfile(event) {
     event.preventDefault();
@@ -58,6 +86,7 @@ export default function Profile() {
             <h1 className="h4 fw-bold text-break">{user.name}</h1>
             <p className="text-muted text-break">{user.phone}</p>
             <p className="small text-break">{user.email}</p>
+            {user.trusted_contributor && <p><TrustedBadge /></p>}
             {user.role === "mosque_admin" && user.status === "approved" && <Link className="btn btn-mc mb-3" to="/admin/dashboard">Mosque Dashboard</Link>}
             {user.role === "super_admin" && <Link className="btn btn-mc mb-3" to="/super-admin/dashboard">System Dashboard</Link>}
             <Link to="/browse">Find a mosque</Link>
@@ -66,7 +95,7 @@ export default function Profile() {
         <div className="col-lg-9">
           <div className="card border-0 shadow-sm">
             <nav className="nav nav-tabs px-3 pt-3" aria-label="Profile sections">
-              {Object.entries(tabs).map(([key, label]) => <button type="button" key={key} className={`nav-link ${activeTab === key ? "active" : ""}`} aria-current={activeTab === key ? "page" : undefined} onClick={() => setActiveTab(key)}>{label}</button>)}
+              {Object.entries(tabs).map(([key, label]) => <button type="button" key={key} className={`nav-link ${activeTab === key ? "active" : ""}`} aria-current={activeTab === key ? "page" : undefined} onClick={() => setActiveTab(key)}>{label}{key === "invites" && user.pending_mosque_invites_count > 0 && <span className="badge bg-danger ms-1">{user.pending_mosque_invites_count}</span>}</button>)}
             </nav>
             <div className="card-body p-4">
               <h2 className="h5 mb-4">{tabs[activeTab]}</h2>
@@ -80,12 +109,33 @@ export default function Profile() {
               </>}
               {endpoints[activeTab] && <>
                 {loading && <p role="status">Loading...</p>}
-                {!loading && !error && items.length === 0 && <p className="text-muted">No {activeTab === "activity" ? "event registrations" : activeTab === "claims" ? "mosque applications" : "donations"} yet.</p>}
+                {!loading && !error && items.length === 0 && <p className="text-muted">{emptyText[activeTab]}</p>}
                 {!loading && items.map((item) => <div className="border rounded p-3 mb-3" key={item.id}>
                   {activeTab === "activity" && (item.event ? <Link to={`/community/events/${item.event_id}`}>{item.event.title}</Link> : <span>Event registration #{item.event_id}</span>)}
                   {activeTab === "donations" && <><Link to={`/campaigns/${item.campaign_id}`}>{item.campaign?.title || "Campaign"}</Link><p className="mb-0 mt-2">{formatMoney(item.amount, item.campaign?.currency || "BDT")} · {item.status}</p></>}
                   {activeTab === "claims" && <><strong>{item.mosque?.name || `Mosque #${item.mosque_id}`}</strong><p className="mb-0 mt-2">Status: {item.status}</p>{item.review_note && <p className="mb-0">{item.review_note}</p>}</>}
+                  {activeTab === "invites" && <div className="d-flex flex-wrap align-items-center gap-3">
+                    <div className="me-auto min-w-0">
+                      <Link to={`/mosque/${item.mosque_id}`} className="fw-semibold">{item.mosque?.name || `Mosque #${item.mosque_id}`}</Link>
+                      <p className="mb-0 small text-muted">{item.invited_by?.name || "A mosque admin"} invited you to join the team as <strong>{roleLabel(item.role)}</strong>.</p>
+                    </div>
+                    <div className="d-flex gap-2">
+                      <button type="button" className="btn btn-sm btn-mc" disabled={busyInvite !== null} onClick={() => answerInvite(item, true)}><Check size={14} aria-hidden="true" /> Accept</button>
+                      <button type="button" className="btn btn-sm btn-outline-secondary" disabled={busyInvite !== null} onClick={() => answerInvite(item, false)}><X size={14} aria-hidden="true" /> Decline</button>
+                    </div>
+                  </div>}
+                  {activeTab === "suggestions" && <>
+                    <div className="d-flex flex-wrap align-items-center gap-2">
+                      <Link to={`/mosque/${item.mosque_id}`} className="fw-semibold">{item.mosque?.name || `Mosque #${item.mosque_id}`}</Link>
+                      <span className="badge bg-light text-dark border">{item.field_label}</span>
+                      <span className={`badge ms-auto ${SUGGESTION_STATUS[item.status]?.[1] || "bg-secondary"}`}>{item.auto_accepted ? "Accepted automatically" : SUGGESTION_STATUS[item.status]?.[0] || item.status}</span>
+                    </div>
+                    {item.field !== "other" && <p className="mb-0 mt-2 small">{describeValue(item.field, item.before)} → <strong>{describeValue(item.field, { ...(item.before || {}), ...item.payload, source: undefined })}</strong></p>}
+                    {item.note && <p className="mb-0 mt-1 small text-muted">“{item.note}”</p>}
+                    {item.review_note && <p className="mb-0 mt-1 small">Reviewer: {item.review_note}</p>}
+                  </>}
                 </div>)}
+                {activeTab === "suggestions" && <p className="small text-muted">Spotted a wrong time or detail? Open the mosque's page and choose <strong>Suggest a correction</strong>. After 3 accepted corrections you get the <strong>Trusted contributor</strong> badge.</p>}
                 {activeTab === "claims" && <p>To apply as a mosque administrator, open your <Link to="/browse">mosque profile</Link> and submit an application with your supporting document.</p>}
                 {activeTab === "donations" && <p className="small text-muted">Pledges are confirmed by mosque administrators. <Link to="/campaigns">View campaigns</Link>.</p>}
               </>}
