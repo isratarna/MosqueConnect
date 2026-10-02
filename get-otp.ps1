@@ -1,42 +1,48 @@
-# Prints the most recent phone OTP from the deployed MosqueConnect API.
+# Prints the most recent phone OTP from the local Laravel log.
 #
-# The deployed API logs OTP codes instead of sending SMS (OTP_SMS_DRIVER=log,
-# APP_ENV=local). Codes expire 5 minutes after they are issued, so request the
-# code in the browser first, then run this.
+# The API does not send real SMS in development (OTP_SMS_DRIVER=log). It writes
+# each code to apps/api/storage/logs/laravel.log instead. Codes expire 5 minutes
+# after they are issued, so request the code in the browser first, then run this.
 #
-# Usage:  .\get-otp.ps1
+# Usage:  .\get-otp.ps1                       # latest code for any phone
+#         .\get-otp.ps1 -Phone +8801712345678 # latest code for one phone
 
-# Azure CLI installs to a fixed location, but a terminal opened before the
-# install still has the old PATH, so resolve az explicitly rather than assuming
-# the caller's session can see it.
-$az = (Get-Command az -ErrorAction SilentlyContinue).Source
-if (-not $az) {
-    $fallback = "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd"
-    if (Test-Path $fallback) { $az = $fallback }
-}
-if (-not $az) {
-    Write-Host "Azure CLI (az) was not found." -ForegroundColor Red
-    Write-Host "Install it with:  winget install --exact --id Microsoft.AzureCLI"
+param(
+    [string]$Phone
+)
+
+$log = Join-Path $PSScriptRoot "apps\api\storage\logs\laravel.log"
+if (-not (Test-Path $log)) {
+    Write-Host "No log file at $log" -ForegroundColor Red
+    Write-Host "Start the API and request a code on the site first."
     exit 1
 }
 
-$logs = & $az containerapp logs show --name mc-api --resource-group mosqueconnect-rg --tail 200 2>$null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Could not read logs from Azure." -ForegroundColor Red
-    Write-Host "If you are not signed in, run:  az login"
-    exit 1
-}
+# Matches: [2026-10-02 01:06:00] local.INFO: Local phone OTP generated. {"phone":"+880...","otp":"123456"}
+$pattern = '^\[(?<time>[\d\- :]+)\][^\n]*Local phone OTP generated\.\s*\{"phone":"(?<phone>\+\d+)","otp":"(?<otp>\d+)"'
+$found = Select-String -Path $log -Pattern $pattern |
+    ForEach-Object { $_.Matches[0] } |
+    Where-Object { -not $Phone -or $_.Groups['phone'].Value -eq $Phone }
 
-$found = [regex]::Matches(($logs -join "`n"), '\\"phone\\":\\"(\+\d+)\\",\\"otp\\":\\"(\d+)\\"')
-if ($found.Count -eq 0) {
-    Write-Host "No OTP found in the last 200 log lines." -ForegroundColor Yellow
+if (-not $found) {
+    $target = if ($Phone) { " for $Phone" } else { "" }
+    Write-Host "No OTP found$target in laravel.log." -ForegroundColor Yellow
     Write-Host "Request a code on the site first, then run this again."
     exit 1
 }
 
-$last = $found[$found.Count - 1]
+$last = @($found)[-1]
+
+# Laravel logs in the app timezone, which is UTC.
+$issued = [DateTime]::ParseExact($last.Groups['time'].Value, 'yyyy-MM-dd HH:mm:ss', $null)
+$remaining = $issued.AddMinutes(5) - [DateTime]::UtcNow
+
 Write-Host ""
-Write-Host ("  Phone : " + $last.Groups[1].Value)
-Write-Host ("  OTP   : " + $last.Groups[2].Value) -ForegroundColor Green
+Write-Host ("  Phone : " + $last.Groups['phone'].Value)
+Write-Host ("  OTP   : " + $last.Groups['otp'].Value) -ForegroundColor Green
 Write-Host ""
-Write-Host "Expires 5 minutes after it was issued."
+if ($remaining.TotalSeconds -gt 0) {
+    Write-Host ("Expires in {0}m {1:D2}s." -f [int][Math]::Floor($remaining.TotalMinutes), $remaining.Seconds)
+} else {
+    Write-Host "This code has expired. Request a new one on the site." -ForegroundColor Yellow
+}
