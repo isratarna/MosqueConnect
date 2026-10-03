@@ -6649,3 +6649,21 @@ main {
 :root[data-bs-theme="dark"] .mc-skeleton-line {
   background-image: linear-gradient(100deg, rgba(255, 238, 215, 0.08) 25%, rgba(255, 238, 215, 0.16) 45%, rgba(255, 238, 215, 0.08) 65%);
 }
+
+/* Navbar dropdown menus */
+.mc-navbar .mc-nav-menu { border-radius: 0.75rem; margin-top: 0.4rem; min-width: 13rem; }
+.mc-navbar .dropdown > .nav-link.btn { border: 0; text-decoration: none; }
+@media (max-width: 991.98px) {
+  .mc-navbar .mc-nav-menu { background: transparent; border: 0; margin: 0 0 0.25rem; padding: 0 0 0 0.75rem; position: static; }
+  .mc-navbar .mc-nav-menu .dropdown-item { color: inherit; }
+}
+
+/* Info pages: About, FAQ, Privacy, Terms, help */
+.mc-info-page__body { max-width: 52rem; padding: 1.5rem 1.75rem; }
+.mc-info-page__body h2 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
+.mc-info-page__body h2:first-child { margin-top: 0; }
+.mc-faq__item { border-bottom: 1px solid var(--mc-line, rgba(0, 0, 0, 0.12)); padding: 0.75rem 0; }
+.mc-faq__item summary { cursor: pointer; font-weight: 600; }
+.mc-faq__answer { margin-top: 0.5rem; }
+.mc-info-steps { list-style: none; margin: 0; padding: 0; }
+.mc-info-steps li + li { margin-top: 0.5rem; }

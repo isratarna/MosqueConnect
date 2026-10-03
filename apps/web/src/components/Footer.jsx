@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Camera, Globe2, Mail, MapPin, Phone, Play, Send } from "lucide-react";
+import { Mail, MapPin, MessageSquare } from "lucide-react";
+import { CONTACT_EMAIL } from "../config";
 import logo from "../assets/Logo.png";
 
 export default function Footer() {
@@ -16,12 +17,6 @@ export default function Footer() {
               Connecting Muslims with the mosques around them — accurate Jamat times,
               announcements, events, and a hub for community life.
             </p>
-            <div className="d-flex gap-2">
-              <a href="#" className="mc-social" aria-label="Facebook"><Globe2 size={17} aria-hidden="true" /></a>
-              <a href="#" className="mc-social" aria-label="Twitter"><Send size={17} aria-hidden="true" /></a>
-              <a href="#" className="mc-social" aria-label="Instagram"><Camera size={17} aria-hidden="true" /></a>
-              <a href="#" className="mc-social" aria-label="YouTube"><Play size={17} aria-hidden="true" /></a>
-            </div>
           </div>
           <div className="col-6 col-lg-2">
             <h6 className="fw-semibold mb-3">Explore</h6>
@@ -29,6 +24,7 @@ export default function Footer() {
               <li><Link to="/">Home</Link></li>
               <li><Link to="/browse">Browse Mosques</Link></li>
               <li><Link to="/support">Support</Link></li>
+              <li><Link to="/campaigns">Campaigns</Link></li>
               <li><a href="/#impact">Our Impact</a></li>
             </ul>
           </div>
@@ -40,13 +36,24 @@ export default function Footer() {
               <li><Link to="/community?category=event">Events</Link></li>
               <li><Link to="/community?category=blood">Blood Requests</Link></li>
               <li><Link to="/community?category=volunteer">Volunteer</Link></li>
+              <li><Link to="/community?category=lost_found">Lost &amp; Found</Link></li>
             </ul>
           </div>
-          <div className="col-lg-4">
+          <div className="col-6 col-lg-2">
+            <h6 className="fw-semibold mb-3">About</h6>
+            <ul className="list-unstyled mc-foot-links">
+              <li><Link to="/about">About us</Link></li>
+              <li><Link to="/faq">FAQ</Link></li>
+              <li><Link to="/help/mosque-admins">For mosque admins</Link></li>
+              <li><Link to="/privacy">Privacy Policy</Link></li>
+              <li><Link to="/terms">Terms of Use</Link></li>
+            </ul>
+          </div>
+          <div className="col-lg-2">
             <h6 className="fw-semibold mb-3">Contact</h6>
             <ul className="list-unstyled text-white-50 mc-foot-contact">
-              <li><Mail size={15} className="me-2" aria-hidden="true" />hello@mosqueconnect.example</li>
-              <li><Phone size={15} className="me-2" aria-hidden="true" />+880 1700 000000</li>
+              <li><MessageSquare size={15} className="me-2" aria-hidden="true" /><a href="/#about">Send us a message</a></li>
+              {CONTACT_EMAIL && <li><Mail size={15} className="me-2" aria-hidden="true" /><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></li>}
               <li><MapPin size={15} className="me-2" aria-hidden="true" />Dhaka, Bangladesh</li>
             </ul>
           </div>

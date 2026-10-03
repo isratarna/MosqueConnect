@@ -28,6 +28,11 @@ const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
 const Eid = lazy(() => import("./pages/Eid"));
 const Search = lazy(() => import("./pages/Search"));
+const About = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.About })));
+const Faq = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.Faq })));
+const Privacy = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.Privacy })));
+const Terms = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.Terms })));
+const MosqueAdminHelp = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.MosqueAdminHelp })));
 const Journey = lazy(() => import("./pages/Journey"));
 
 function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
@@ -70,6 +75,11 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/faq" element={<Faq />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/help/mosque-admins" element={<MosqueAdminHelp />} />
           <Route path="/eid" element={<Eid />} />
           <Route path="/journey" element={<Journey />} />
           <Route path="/journey/:id" element={<Journey />} />

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, Search, ShieldCheck, UserRound } from "lucide-react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Bell, CheckCheck, ChevronDown, Heart, Landmark, LogOut, Menu, Search, ShieldCheck, UserRound } from "lucide-react";
 import GlobalSearch from "./GlobalSearch";
 import NotificationList from "./notifications/NotificationList";
 import ThemeSwitcher from "./ThemeSwitcher";
@@ -66,6 +66,7 @@ export default function Navbar() {
   };
 
   const navLinkClass = ({ isActive }) => "nav-link" + (isActive ? " active" : "");
+  const toggleDropdown = (id) => setActiveDropdown((current) => (current === id ? null : id));
 
   return (
     <nav className={`navbar navbar-expand-lg navbar-dark mc-navbar sticky-top${isScrolled ? " is-scrolled" : ""}`}>
@@ -100,30 +101,50 @@ export default function Navbar() {
 
         <div className={"collapse navbar-collapse mt-1 mt-lg-0" + (open ? " show" : "")}>
           <ul className="navbar-nav ms-auto align-items-start align-items-lg-center gap-1 gap-lg-1 py-1 py-lg-0">
+            <NavDropdown
+              label="Prayer Times"
+              id="prayer"
+              isOpen={activeDropdown === "prayer"}
+              onToggle={toggleDropdown}
+              onClose={closeDropdowns}
+              onNavigate={() => { close(); closeDropdowns(); }}
+              items={[
+                { to: "/", label: "Jamat near me", hash: "map" },
+                { to: "/journey", label: "Journey planner" },
+                { to: "/eid", label: "Eid jamaats" },
+              ]}
+            />
             <li className="nav-item">
-              <NavLink end className={navLinkClass} to="/" onClick={close}>Home</NavLink>
+              <NavLink className={navLinkClass} to="/browse" onClick={close}>Mosques</NavLink>
             </li>
-            <li className="nav-item">
-              <NavLink className={navLinkClass} to="/browse" onClick={close}>Browse Mosques</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={navLinkClass} to="/journey" onClick={close}>Journey</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={navLinkClass} to="/support" onClick={close}>Support</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={navLinkClass} to="/campaigns" onClick={close}>Campaigns</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={navLinkClass} to="/community" onClick={close}>Community</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={navLinkClass} to="/blood-donation" onClick={close}>Blood Donation</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={navLinkClass} to="/volunteers" onClick={close}>Volunteers</NavLink>
-            </li>
+            <NavDropdown
+              label="Community"
+              id="community"
+              isOpen={activeDropdown === "community"}
+              onToggle={toggleDropdown}
+              onClose={closeDropdowns}
+              onNavigate={() => { close(); closeDropdowns(); }}
+              items={[
+                { to: "/community", label: "Community hub" },
+                { to: "/community?category=announcement", label: "Announcements" },
+                { to: "/community?category=event", label: "Events" },
+                { to: "/blood-donation", label: "Blood donation" },
+                { to: "/volunteers", label: "Volunteers" },
+                { to: "/community?category=lost_found", label: "Lost & Found" },
+              ]}
+            />
+            <NavDropdown
+              label="Donate"
+              id="donate"
+              isOpen={activeDropdown === "donate"}
+              onToggle={toggleDropdown}
+              onClose={closeDropdowns}
+              onNavigate={() => { close(); closeDropdowns(); }}
+              items={[
+                { to: "/support", label: "Support a mosque" },
+                { to: "/campaigns", label: "Campaigns" },
+              ]}
+            />
 
             <li className="nav-item mc-navbar__appearance mt-1 mt-lg-0">
               <ThemeSwitcher />
@@ -169,6 +190,52 @@ export default function Navbar() {
       )}
       <span className="mc-navbar__progress" aria-hidden="true" />
     </nav>
+  );
+}
+
+/** A top-level nav item with a small menu; closes on Escape (handled by Navbar), outside click and navigation. */
+function NavDropdown({ label, id, items, isOpen, onToggle, onClose, onNavigate }) {
+  const ref = useRef(null);
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onPointerDown = (event) => { if (!ref.current?.contains(event.target)) onClose(); };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [isOpen, onClose]);
+
+  const isCurrent = (item) => {
+    const [path, query = ""] = item.to.split("?");
+    return pathname === path && (query ? search.includes(query) : !search);
+  };
+  const active = items.some((item) => pathname === item.to.split("?")[0] && !item.hash);
+
+  return (
+    <li className="nav-item dropdown" ref={ref}>
+      <button
+        type="button"
+        className={"nav-link btn btn-link d-inline-flex align-items-center gap-1" + (active ? " active" : "")}
+        aria-expanded={isOpen}
+        aria-controls={`nav-menu-${id}`}
+        onClick={() => onToggle(id)}
+      >
+        {label} <ChevronDown size={14} aria-hidden="true" />
+      </button>
+      <ul id={`nav-menu-${id}`} className={"dropdown-menu mc-nav-menu" + (isOpen ? " show" : "")}>
+        {items.map((item) => (
+          <li key={item.to + (item.hash || "")}>
+            <Link
+              className={"dropdown-item" + (isCurrent(item) ? " active" : "")}
+              to={item.hash ? { pathname: item.to, hash: `#${item.hash}` } : item.to}
+              onClick={onNavigate}
+            >
+              {item.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </li>
   );
 }
 
