@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Clock3, Heart, MapPin, Navigation, Star } from "lucide-react";
+import { FALLBACK_PHOTO } from "../config";
 import { directionsUrl } from "../utils/mosqueDiscovery";
 import { isEstimatedPrayer, nextJamaatLabel } from "../utils/prayerTime";
 import { useNow } from "../hooks/useNow";
@@ -28,7 +29,7 @@ export default function MosqueCard({ mosque }) {
         loading="lazy"
         onError={(event) => {
           event.currentTarget.onerror = null;
-          event.currentTarget.src = "/uiRef.jpeg";
+          event.currentTarget.src = FALLBACK_PHOTO;
         }}
       />
 
