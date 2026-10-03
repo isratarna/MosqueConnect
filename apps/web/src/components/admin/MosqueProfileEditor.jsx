@@ -87,6 +87,17 @@ export function ProfileForm({ mosque, onSaved }) {
 
   const input = (key) => ({ id: `mosque-${key}`, name: key, value: values[key] ?? "", onChange: (e) => setValues((v) => ({ ...v, [key]: e.target.value })) });
 
+  // The picker also reports address, district and area for the pin; copy whatever it found into the form.
+  const onLocation = ({ lat, lng, address, district, area }) => {
+    setPoint({ lat, lng });
+    setValues((current) => ({
+      ...current,
+      ...(address ? { address } : {}),
+      ...(district ? { district } : {}),
+      ...(area ? { area } : {}),
+    }));
+  };
+
   const onSubmit = (event) => {
     event.preventDefault();
     if (!Number.isFinite(point?.lat) || !Number.isFinite(point?.lng)) return;
@@ -136,7 +147,7 @@ export function ProfileForm({ mosque, onSaved }) {
           </div>
           <div className="col-12">
             <span className="form-label d-block">Map location</span>
-            <LocationPicker value={point} onChange={setPoint} idPrefix="mosque-location" hint="Click the map or drag the pin to the mosque's entrance." />
+            <LocationPicker value={point} onChange={onLocation} idPrefix="mosque-location" hint="Click the map or drag the pin to the mosque's entrance." />
           </div>
         </div>
         {error && <div className="alert alert-danger mt-3" role="alert">{error}</div>}

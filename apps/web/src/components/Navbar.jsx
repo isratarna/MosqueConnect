@@ -112,6 +112,7 @@ export default function Navbar() {
                 { to: "/", label: "Jamat near me", hash: "map" },
                 { to: "/journey", label: "Journey planner" },
                 { to: "/eid", label: "Eid jamaats" },
+                { to: "/qibla", label: "Qibla compass" },
               ]}
             />
             <li className="nav-item">

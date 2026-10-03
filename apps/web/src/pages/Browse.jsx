@@ -4,10 +4,10 @@ import { List as ListIcon, Map as MapIcon, MapPin, RefreshCw, Search, SlidersHor
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
 import { FACILITY_META } from "../data/mosques";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
-import { DISCOVERY_RADIUS_KM, filterMosques } from "../utils/mosqueDiscovery";
+import { DISCOVERY_RADIUS_KM, fetchMosquesInBounds, filterMosques } from "../utils/mosqueDiscovery";
+import BrowseMapLayout from "../components/browse/BrowseMapLayout";
 import FacilityIcon from "../components/FacilityIcon";
 import MosqueCard from "../components/MosqueCard";
-import MapView from "../components/MapView";
 import { MosqueCardSkeleton, SkeletonRegion } from "../components/skeletons";
 
 const BATCH_SIZE = 12;
@@ -16,18 +16,21 @@ const SKELETON_COUNT = 6;
 export default function Browse() {
   const origin = useGeolocation();
   const discovery = useMosqueDiscovery(origin);
-  const all = discovery.mosques;
+  const nearbyMosques = discovery.mosques;
 
   const [searchParams, setSearchParams] = useSearchParams();
   const urlSearch = searchParams.get("search") ?? "";
 
   const [search, setSearch] = useState(urlSearch);
-  const [facilities, setFacilities] = useState(() => new Set());
+  const [facilities, setFacilities] = useState(() => new Set((searchParams.get("facilities") || "").split(",").filter((key) => key in FACILITY_META)));
   const [maxDistance, setMaxDistance] = useState(null);
   const [sort, setSort] = useState("distance");
-  const [view, setView] = useState("list");
-  const [selectedDistrict, setSelectedDistrict] = useState("");
-  const [selectedArea, setSelectedArea] = useState("");
+  const [view, setView] = useState(() => (searchParams.get("view") === "map" ? "map" : "list"));
+  const [selectedDistrict, setSelectedDistrict] = useState(() => searchParams.get("district") || "");
+  const [selectedArea, setSelectedArea] = useState(() => searchParams.get("area") || "");
+  // "Search this area" results; null means the usual nearby mosques.
+  const [areaState, setAreaState] = useState({ mosques: null, loading: false, error: "" });
+  const all = areaState.mosques ?? nearbyMosques;
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const gridRef = useRef(null);
   const focusIndexRef = useRef(null);
@@ -72,6 +75,31 @@ export default function Browse() {
   useEffect(() => {
     setSearch(urlSearch);
   }, [urlSearch]);
+
+  // Keep the shareable parts of the view in the URL: ?search=&facilities=a,b&district=&area=&view=map
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    const put = (key, value) => (value ? next.set(key, value) : next.delete(key));
+    put("search", search);
+    put("facilities", [...facilities].sort().join(","));
+    put("district", selectedDistrict);
+    put("area", selectedArea);
+    put("view", view === "map" ? "map" : "");
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
+    // searchParams is only read to preserve unrelated keys
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, facilities, selectedDistrict, selectedArea, view]);
+
+  const searchArea = async (bounds) => {
+    setAreaState((current) => ({ ...current, loading: true, error: "" }));
+    try {
+      const mosques = await fetchMosquesInBounds(bounds, origin);
+      setAreaState({ mosques, loading: false, error: "" });
+    } catch (error) {
+      setAreaState((current) => ({ ...current, loading: false, error: error.message }));
+    }
+  };
+  const resetArea = () => setAreaState({ mosques: null, loading: false, error: "" });
 
   const clearFilters = () => {
     setSearch("");
@@ -136,18 +164,46 @@ export default function Browse() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, visibleCount, view]);
 
+  // Forget the selection when it drops out of the results.
   useEffect(() => {
-    if (!paginatedResults.length) {
-      setSelectedMosqueId(null);
-      return;
-    }
-    setSelectedMosqueId((current) => {
-      if (current != null && paginatedResults.some((mosque) => String(mosque.id) === String(current))) {
-        return current;
-      }
-      return paginatedResults[0].id;
-    });
-  }, [paginatedResults]);
+    setSelectedMosqueId((current) => (current != null && results.some((mosque) => String(mosque.id) === String(current)) ? current : null));
+  }, [results]);
+
+  const fitKey = areaState.mosques
+    ? null
+    : [search, [...facilities].sort().join(","), selectedDistrict, selectedArea, maxDistance, nearbyMosques.length ? "ready" : "wait"].join("|");
+
+  const viewToggle = (
+    <div className="btn-group" role="group" aria-label="View toggle">
+      <button type="button" aria-pressed={view === "list"} className={"btn btn-sm " + (view === "list" ? "btn-mc" : "btn-outline-mc")} onClick={() => setView("list")}>
+        <ListIcon size={15} className="me-1" aria-hidden="true" />List
+      </button>
+      <button type="button" aria-pressed={view === "map"} className={"btn btn-sm " + (view === "map" ? "btn-mc" : "btn-outline-mc")} onClick={() => setView("map")}>
+        <MapIcon size={15} className="me-1" aria-hidden="true" />Map
+      </button>
+    </div>
+  );
+
+  if (view === "map") {
+    return (
+      <section className="mc-browse-map-section">
+        <BrowseMapLayout
+          mosques={results}
+          origin={origin}
+          search={search}
+          onSearchChange={setSearch}
+          facilities={facilities}
+          onToggleFacility={toggleFacility}
+          onClearFilters={clearFilters}
+          selectedMosqueId={selectedMosqueId}
+          onSelect={setSelectedMosqueId}
+          fitKey={fitKey}
+          viewToggle={viewToggle}
+          area={{ active: Boolean(areaState.mosques), loading: areaState.loading, error: areaState.error, onSearch: searchArea, onReset: resetArea }}
+        />
+      </section>
+    );
+  }
 
   return (
     <>
@@ -284,24 +340,7 @@ export default function Browse() {
                   {`Showing ${paginatedResults.length} of ${totalResults} mosques`}
                 </div>
                 <div className="mc-browse-results-actions">
-                  <div className="btn-group" role="group" aria-label="View toggle">
-                    <button
-                      type="button"
-                      aria-pressed={view === "list"}
-                      className={"btn btn-sm " + (view === "list" ? "btn-mc" : "btn-outline-mc")}
-                      onClick={() => setView("list")}
-                    >
-                      <ListIcon size={15} className="me-1" aria-hidden="true" />List
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={view === "map"}
-                      className={"btn btn-sm " + (view === "map" ? "btn-mc" : "btn-outline-mc")}
-                      onClick={() => setView("map")}
-                    >
-                      <MapIcon size={15} className="me-1" aria-hidden="true" />Map
-                    </button>
-                  </div>
+                  {viewToggle}
                 </div>
               </div>
 
@@ -335,16 +374,7 @@ export default function Browse() {
                       No mosques match your filters. Try clearing some.
                     </div>
                   )
-                ) : (
-                  <MapView
-                    center={origin}
-                    zoom={12}
-                    mosques={paginatedResults}
-                    userPos={origin.fallback ? null : { lat: origin.lat, lng: origin.lng }}
-                    selectedMosqueId={selectedMosqueId}
-                    onMosqueSelect={setSelectedMosqueId}
-                  />
-                )}
+                ) : null}
               </div>
 
               {hasMore && (

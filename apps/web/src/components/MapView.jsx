@@ -4,8 +4,8 @@
  * Uses @react-google-maps/api. The script is loaded once by GoogleMapsProvider.
  * If no API key is configured it renders a friendly placeholder instead of crashing.
  */
-import { Component, useCallback, useMemo, useState } from "react";
-import { GoogleMap, MarkerF, InfoWindowF } from "@react-google-maps/api";
+import { Component, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { GoogleMap, MarkerClustererF, MarkerF, InfoWindowF } from "@react-google-maps/api";
 import { Link } from "react-router-dom";
 import { Map, TriangleAlert } from "lucide-react";
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
@@ -21,6 +21,19 @@ const MAP_OPTIONS = {
   streetViewControl: false,
   fullscreenControl: true,
   clickableIcons: false,
+};
+
+const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+// Teardrop pin used in enhanced mode so a hovered or selected pin can grow.
+const pinIcon = (color, width) => {
+  const height = Math.round(width * 1.35);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 24 32"><path d="M12 0C5.4 0 0 5.2 0 11.7 0 20.5 12 32 12 32s12-11.5 12-20.3C24 5.2 18.6 0 12 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="11.5" r="4.5" fill="#fff"/></svg>`;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new window.google.maps.Size(width, height),
+    anchor: new window.google.maps.Point(width / 2, height),
+  };
 };
 
 function MapPlaceholder({ className, icon, title, message }) {
@@ -59,6 +72,13 @@ class MapErrorBoundary extends Component {
   }
 }
 
+/*
+ * Optional "enhanced" mode (used by the Browse map view) adds:
+ *   - marker clustering and grow-on-hover pins (hoveredMosqueId)
+ *   - fitKey: fit the map to all pins whenever this value changes (null = don't)
+ *   - onUserMove: called after the user pans or zooms (not after our own moves)
+ *   - controlRef: receives { panTo(position, minZoom), getBounds() }
+ */
 export default function MapView({
   center = DEFAULT_CENTER,
   zoom = DEFAULT_ZOOM,
@@ -67,9 +87,13 @@ export default function MapView({
   className = "mc-map",
   selectedMosqueId,
   onMosqueSelect,
+  enhanced = false,
+  hoveredMosqueId = null,
+  fitKey = null,
+  onUserMove,
+  controlRef,
 }) {
   const { disabled, isLoaded, loadError } = useGoogleMapsLoader();
-  const now = useNow();
 
   if (disabled) {
     return (
@@ -119,12 +143,23 @@ export default function MapView({
         className={className}
         selectedMosqueId={selectedMosqueId}
         onMosqueSelect={onMosqueSelect}
+        enhanced={enhanced}
+        hoveredMosqueId={hoveredMosqueId}
+        fitKey={fitKey}
+        onUserMove={onUserMove}
+        controlRef={controlRef}
       />
     </MapErrorBoundary>
   );
 }
 
-function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId, onMosqueSelect }) {
+function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId, onMosqueSelect, enhanced, hoveredMosqueId, fitKey, onUserMove, controlRef }) {
+  const now = useNow();
+  const mapRef = useRef(null);
+  // Moves we make ourselves (panTo, fitBounds) must not count as the user moving the map.
+  const programmaticUntil = useRef(0);
+  const onUserMoveRef = useRef(onUserMove);
+  onUserMoveRef.current = onUserMove;
   const [internalActiveId, setInternalActiveId] = useState(null);
   const [mapReady, setMapReady] = useState(false);
   const isControlled = selectedMosqueId !== undefined;
@@ -153,47 +188,71 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
     onMosqueSelect?.(mosque?.id ?? null);
   };
 
-  const handleMapLoad = useCallback(() => {
+  const handleMapLoad = useCallback((map) => {
+    mapRef.current = map;
     setMapReady(true);
   }, []);
 
   const handleMapUnmount = useCallback(() => {
+    mapRef.current = null;
     setMapReady(false);
   }, []);
 
-  return (
-    <div className={className}>
-      <GoogleMap
-        mapContainerStyle={{ width: "100%", height: "100%", minHeight: "inherit" }}
-        center={safeCenter}
-        zoom={zoom}
-        options={MAP_OPTIONS}
-        onLoad={handleMapLoad}
-        onUnmount={handleMapUnmount}
-      >
-        {mapReady && safeUserPosition && window.google?.maps?.SymbolPath && (
-          <MarkerF
-            position={safeUserPosition}
-            title="You are here"
-            icon={{
-              path: window.google.maps.SymbolPath.CIRCLE,
-              scale: 8,
-              fillColor: "#1a73e8",
-              fillOpacity: 1,
-              strokeColor: "#fff",
-              strokeWeight: 2,
-            }}
-          />
-        )}
-        {mapReady && mappedMosques.map(({ mosque, position }) => {
+  const markProgrammatic = () => { programmaticUntil.current = Date.now() + 1500; };
+  const reportUserMove = () => {
+    if (Date.now() > programmaticUntil.current) onUserMoveRef.current?.();
+  };
+
+  useImperativeHandle(controlRef, () => ({
+    panTo(position, minZoom = 15) {
+      const map = mapRef.current;
+      if (!map || !position) return;
+      markProgrammatic();
+      if (prefersReducedMotion()) map.setCenter(position);
+      else map.panTo(position);
+      if ((map.getZoom() ?? 0) < minZoom) map.setZoom(minZoom);
+    },
+    getBounds() {
+      const bounds = mapRef.current?.getBounds();
+      if (!bounds) return null;
+      const northEast = bounds.getNorthEast();
+      const southWest = bounds.getSouthWest();
+      return { south: southWest.lat(), west: southWest.lng(), north: northEast.lat(), east: northEast.lng() };
+    },
+  }), []);
+
+  // Fit to every pin (plus the user's position) when fitKey changes, e.g. on first load and when filters change.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!enhanced || !mapReady || !map || fitKey === null || !window.google?.maps?.LatLngBounds) return;
+    const points = [...mappedMosques.map((item) => item.position), ...(safeUserPosition ? [safeUserPosition] : [])];
+    if (!points.length) return;
+    markProgrammatic();
+    if (points.length === 1) {
+      map.setCenter(points[0]);
+      map.setZoom(15);
+      return;
+    }
+    const bounds = new window.google.maps.LatLngBounds();
+    points.forEach((point) => bounds.extend(point));
+    map.fitBounds(bounds, 48);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enhanced, mapReady, fitKey]);
+
+  const renderMarkers = (clusterer) => mappedMosques.map(({ mosque, position }) => {
           const isActive = String(mosque.id) === String(activeId);
+          const isHovered = enhanced && String(mosque.id) === String(hoveredMosqueId);
+          const grown = isActive || isHovered;
 
           return (
             <MarkerF
               key={mosque.id}
               position={position}
               title={mosque.name}
-              zIndex={isActive ? 10 : 1}
+              zIndex={isHovered ? 100 : isActive ? 10 : 1}
+              clusterer={clusterer}
+              noClustererRedraw
+              icon={enhanced ? pinIcon(grown ? "#b64512" : "#d9692b", grown ? 40 : 28) : undefined}
               onClick={() => selectMosque(mosque)}
             >
               {isActive && active?.position && (
@@ -227,7 +286,37 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
               )}
             </MarkerF>
           );
-        })}
+        });
+
+  return (
+    <div className={className}>
+      <GoogleMap
+        mapContainerStyle={{ width: "100%", height: "100%", minHeight: "inherit" }}
+        center={safeCenter}
+        zoom={zoom}
+        options={MAP_OPTIONS}
+        onLoad={handleMapLoad}
+        onUnmount={handleMapUnmount}
+        onDragEnd={reportUserMove}
+        onZoomChanged={reportUserMove}
+      >
+        {mapReady && safeUserPosition && window.google?.maps?.SymbolPath && (
+          <MarkerF
+            position={safeUserPosition}
+            title="You are here"
+            icon={{
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: "#1a73e8",
+              fillOpacity: 1,
+              strokeColor: "#fff",
+              strokeWeight: 2,
+            }}
+          />
+        )}
+        {mapReady && (enhanced
+          ? <MarkerClustererF>{(clusterer) => <>{renderMarkers(clusterer)}</>}</MarkerClustererF>
+          : renderMarkers(undefined))}
       </GoogleMap>
     </div>
   );

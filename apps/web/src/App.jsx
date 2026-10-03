@@ -29,6 +29,7 @@ const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
 const Eid = lazy(() => import("./pages/Eid"));
 const Search = lazy(() => import("./pages/Search"));
+const Qibla = lazy(() => import("./pages/Qibla"));
 const About = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.About })));
 const Faq = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.Faq })));
 const Privacy = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.Privacy })));
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/qibla" element={<Qibla />} />
           <Route path="/about" element={<About />} />
           <Route path="/faq" element={<Faq />} />
           <Route path="/privacy" element={<Privacy />} />
