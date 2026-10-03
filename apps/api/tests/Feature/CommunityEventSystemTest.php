@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Event;
 use App\Models\Mosque;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -71,6 +72,82 @@ class CommunityEventSystemTest extends TestCase
             ->assertJsonPath('data.mosque.id', $event->mosque_id)
             ->assertJsonPath('data.mosque.address', $event->mosque->address)
             ->assertJsonPath('data.creator.id', $event->created_by);
+    }
+
+    public function test_recurring_event_expands_weekly_occurrences_and_respects_until(): void
+    {
+        $firstFriday = CarbonImmutable::parse(today()->toDateString())->next(CarbonImmutable::FRIDAY);
+        $until = $firstFriday->addWeeks(3);
+        $event = Event::factory()->published()->create([
+            'event_date' => $firstFriday->toDateString(),
+            'start_time' => '18:00',
+            'recurrence_rule' => 'FREQ=WEEKLY;BYDAY=FR;UNTIL='.$until->format('Ymd'),
+            'recurrence_until' => $until->toDateString(),
+        ]);
+
+        $this->getJson('/api/events?from='.$firstFriday->toDateString().'&to='.$until->toDateString())
+            ->assertOk()
+            ->assertJsonCount(4, 'data')
+            ->assertJsonPath('data.0.id', $event->id)
+            ->assertJsonPath('data.0.occurrence_date', $firstFriday->toDateString())
+            ->assertJsonPath('data.3.occurrence_date', $until->toDateString());
+
+        $this->getJson('/api/events?from='.$firstFriday->toDateString().'&to='.$firstFriday->addMonths(7)->toDateString())
+            ->assertUnprocessable();
+    }
+
+    public function test_recurring_event_occurrence_expansion_is_capped_at_one_hundred(): void
+    {
+        $start = today()->addDay();
+        Event::factory()->published()->create([
+            'event_date' => $start->toDateString(),
+            'recurrence_rule' => 'FREQ=DAILY',
+        ]);
+
+        $this->getJson('/api/events?from='.$start->toDateString().'&to='.$start->addMonths(6)->toDateString())
+            ->assertOk()
+            ->assertJsonCount(100, 'data');
+    }
+
+    public function test_event_calendar_export_contains_timezone_url_escaped_text_and_crlf(): void
+    {
+        $event = Event::factory()->published()->create([
+            'title' => 'Friday, prayer; gathering',
+            'description' => "Line one\nLine two",
+            'location' => 'Hall; east wing',
+            'event_date' => today()->addWeek()->toDateString(),
+            'recurrence_rule' => 'FREQ=WEEKLY;BYDAY=FR',
+            'recurrence_until' => today()->addMonth()->toDateString(),
+        ]);
+
+        $response = $this->get("/api/events/{$event->id}/calendar.ics");
+
+        $response->assertOk()->assertHeader('Content-Type', 'text/calendar; charset=utf-8');
+        $this->assertStringContainsString('DTSTART;TZID=Asia/Dhaka:', $response->getContent());
+        $this->assertStringContainsString('SUMMARY:Friday\, prayer\; gathering', $response->getContent());
+        $this->assertStringContainsString('DESCRIPTION:Line one\\nLine two', $response->getContent());
+        $this->assertStringContainsString('LOCATION:Hall\; east wing', $response->getContent());
+        $this->assertStringContainsString('URL:', $response->getContent());
+        $this->assertStringContainsString('UNTIL=', $response->getContent());
+        $this->assertStringContainsString("\r\n", $response->getContent());
+        $this->assertStringNotContainsString("\n", str_replace("\r\n", '', $response->getContent()));
+    }
+
+    public function test_event_creation_rejects_unsupported_rrule_and_end_dates_over_one_year(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_MOSQUE_ADMIN]);
+        $mosque = Mosque::factory()->create(['owner_id' => $admin->id, 'verification_status' => Mosque::VERIFICATION_VERIFIED]);
+        Sanctum::actingAs($admin);
+
+        $this->postJson("/api/admin/mosques/{$mosque->id}/events", $this->validPayload([
+            'recurrence_rule' => 'FREQ=YEARLY',
+        ]))->assertUnprocessable()->assertJsonValidationErrors('recurrence_rule');
+
+        $date = today()->addDay();
+        $this->postJson("/api/admin/mosques/{$mosque->id}/events", $this->validPayload([
+            'event_date' => $date->toDateString(),
+            'recurrence_rule' => 'FREQ=WEEKLY;UNTIL='.$date->addYear()->addDay()->format('Ymd'),
+        ]))->assertUnprocessable()->assertJsonValidationErrors('recurrence_until');
     }
 
     public function test_public_event_filters_can_be_combined_without_exposing_drafts(): void

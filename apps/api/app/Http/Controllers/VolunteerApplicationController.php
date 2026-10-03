@@ -45,9 +45,10 @@ class VolunteerApplicationController extends Controller
 
     public function store(Request $request, VolunteerOpportunity $volunteerOpportunity): JsonResponse
     {
+        $validated = $request->validate(['note' => ['sometimes', 'nullable', 'string', 'max:500']]);
         $userId = $request->user()->id;
 
-        $application = DB::transaction(function () use ($volunteerOpportunity, $userId) {
+        $application = DB::transaction(function () use ($volunteerOpportunity, $userId, $validated) {
             /** @var VolunteerOpportunity $lockedOpportunity */
             $lockedOpportunity = VolunteerOpportunity::query()->lockForUpdate()->findOrFail($volunteerOpportunity->id);
 
@@ -66,6 +67,7 @@ class VolunteerApplicationController extends Controller
                     $existing->reviewed_by = null;
                     $existing->reviewed_at = null;
                     $existing->cancelled_at = null;
+                    $existing->note = $validated['note'] ?? null;
                     $existing->save();
 
                     return $existing;
@@ -86,6 +88,7 @@ class VolunteerApplicationController extends Controller
             return $lockedOpportunity->applications()->create([
                 'user_id' => $userId,
                 'status' => VolunteerApplication::STATUS_PENDING,
+                'note' => $validated['note'] ?? null,
             ]);
         });
 
