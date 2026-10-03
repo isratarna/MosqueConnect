@@ -19,6 +19,12 @@ export function createAnnouncement(mosqueId, body) {
 }
 
 export function updateAnnouncement(mosqueId, id, body) {
+  // [Urmee · F9] PHP does not read multipart bodies on a real PATCH, so a FormData update (the editor, which may
+  // carry an image) goes out as POST with Laravel's `_method=PATCH` override. JSON updates are unchanged.
+  if (body instanceof FormData) {
+    body.append("_method", "PATCH");
+    return apiRequest(`${base(mosqueId)}/announcements/${id}`, { method: "POST", body }).then((response) => response.data);
+  }
   return apiRequest(`${base(mosqueId)}/announcements/${id}`, { method: "PATCH", body }).then((response) => response.data);
 }
 

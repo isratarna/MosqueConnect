@@ -3,11 +3,26 @@ import { Megaphone } from "lucide-react";
 import DashboardCard from "./DashboardCard";
 import { fetchAdminAnnouncements, setAnnouncementPublished } from "../../../utils/dashboardApi";
 import { formatShortDate } from "../../../utils/dashboardFormat";
+import { announcementState, formatDhaka } from "../../../utils/announcementForm";
+import { useLocale } from "../../../hooks/useLocale";
 
-export function AnnouncementStatusChip({ status }) {
-  return status === "published"
-    ? <span className="badge bg-success-subtle text-success border border-success-subtle">Published</span>
-    : <span className="badge bg-warning-subtle text-dark border border-warning-subtle">Draft</span>;
+const CHIP_CLASS = {
+  draft: "bg-warning-subtle text-dark border border-warning-subtle",
+  scheduled: "bg-info-subtle text-info-emphasis border border-info-subtle",
+  published: "bg-success-subtle text-success border border-success-subtle",
+  expired: "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle",
+};
+
+// [Urmee · F9] Status chip with the four states an admin cares about: Draft, Scheduled for <Fri 6:00 AM>,
+// Published, Expired. `status` is the derived state (announcementState); `publishAt` labels a scheduled one.
+export function AnnouncementStatusChip({ status, publishAt }) {
+  const { t, locale } = useLocale();
+  const state = CHIP_CLASS[status] ? status : "draft";
+  return (
+    <span className={`badge ${CHIP_CLASS[state]}`}>
+      {state === "scheduled" && publishAt ? t("announcementEditor.state.scheduledFor", { when: formatDhaka(publishAt, locale) }) : t(`announcementEditor.state.${state}`)}
+    </span>
+  );
 }
 
 /** The five latest announcements, with publish/unpublish in place. */
@@ -58,7 +73,7 @@ export default function AnnouncementsCard({ mosqueId, revision, onViewAll }) {
               <div className="min-w-0">
                 <div className="fw-semibold text-truncate">{item.title}</div>
                 <div className="small text-muted d-flex flex-wrap gap-2 align-items-center">
-                  <AnnouncementStatusChip status={item.status} />
+                  <AnnouncementStatusChip status={announcementState(item)} publishAt={item.publish_at} />
                   {item.urgency === "high" && <span className="badge bg-danger">Urgent</span>}
                   {item.moderation_status && item.moderation_status !== "approved" && <span className="badge bg-secondary">Moderation: {item.moderation_status}</span>}
                   <span>{formatShortDate(item.published_at || item.created_at)}</span>

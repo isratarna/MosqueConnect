@@ -141,7 +141,7 @@ export default function AdminDashboard() {
   const renderSection = () => {
     switch (section) {
       case "insights": return <InsightsPanel mosqueId={mosqueId} />;
-      case "announcements": return <AnnouncementManager mosqueId={mosqueId} />;
+      case "announcements": return <AnnouncementManager mosqueId={mosqueId} mosqueName={name} />;
       case "prayer": return <DailyPrayersForm mosqueId={mosqueId} />;
       case "jummah": return <JumuahForm mosqueId={mosqueId} />;
       case "eid": return needsMosque((m) => <EidJamaatManager mosqueId={mosqueId} mosque={m} />);

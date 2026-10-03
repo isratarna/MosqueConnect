@@ -6971,3 +6971,14 @@ body:lang(bn) {
 }
 .mc-ramadan-banner:hover { color: #fff; filter: brightness(1.05); }
 .mc-ramadan-editor__table { max-height: 420px; overflow-y: auto; }
+
+/* [Urmee · F9] Announcements: janazah notices (calm, respectful), images, admin preview and list thumbnail */
+.mc-announcement--janazah {
+  background: var(--bs-tertiary-bg);
+  border-left: 4px solid var(--bs-secondary-color);
+  border-radius: 0.5rem;
+}
+.mc-announcement-image { border-radius: 0.5rem; display: block; max-height: 220px; max-width: 100%; object-fit: cover; }
+.mc-announcement-image--hero { max-height: 360px; width: 100%; }
+.mc-announcement-preview { background: var(--bs-body-bg); border: 1px dashed var(--bs-border-color); border-radius: 0.5rem; padding: 0.75rem 1rem; }
+.mc-announcement-thumb { border-radius: 0.5rem; height: 72px; object-fit: cover; width: 96px; }

@@ -167,6 +167,9 @@ const DYNAMIC_FAMILIES = {
   "profile.empty": ["activity", "claims", "donations", "invites", "suggestions", "feedback", "lostfound"],
   "prayer": ["fajr", "dhuhr", "asr", "maghrib", "isha", "jumuah", "jummah"],
   "superAdmin.roles": ["normal_user", "mosque_admin", "super_admin"],
+  // [Urmee · F9] Announcement categories (editor, list filter, public pages) and the status chip states.
+  "announcement.categories": ["general", "janazah", "jumuah", "eid", "ramadan", "donation_request", "event", "other"],
+  "announcementEditor.state": ["draft", "scheduled", "published", "expired"],
   "superAdmin.auditModels": ["mosque", "prayer_time", "jumuah_session", "announcement", "event", "campaign", "campaign_donation", "volunteer_opportunity"],
   "superAdmin.auditEvents": ["created", "updated", "deleted"],
   "superAdmin.actions": ["claim_approved", "claim_information_requested", "claim_rejected", "content_moderated", "mosque_verification_updated", "report_updated", "settings_updated", "user_updated"],
