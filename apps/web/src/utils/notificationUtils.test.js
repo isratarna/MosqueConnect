@@ -3,15 +3,15 @@ import test from "node:test";
 import {
   formatNotificationTime,
   getNotificationPath,
-  getNotificationTypeLabel,
+  getNotificationTypeKey,
   isNotificationRead,
   normalizeNotification,
 } from "./notificationUtils.js";
 
-test("notification types use the supported labels", () => {
-  assert.equal(getNotificationTypeLabel("event"), "Event");
-  assert.equal(getNotificationTypeLabel("prayer_schedule"), "Prayer schedule");
-  assert.equal(getNotificationTypeLabel("unknown"), "Notification");
+test("notification types map to translation keys", () => {
+  assert.equal(getNotificationTypeKey("event"), "notification.types.event");
+  assert.equal(getNotificationTypeKey("prayer_schedule"), "notification.types.prayer_schedule");
+  assert.equal(getNotificationTypeKey("unknown"), "notification.types.default");
 });
 
 test("Laravel is_read values are normalized consistently", () => {
@@ -47,13 +47,13 @@ test("notification timestamps are human readable", () => {
 
 test("Eid notifications open the mosque's Eid jamaat card", () => {
   assert.equal(getNotificationPath({ type: "eid", mosque_id: 4, reference_id: 9 }), "/mosque/4#eid-jamaat");
-  assert.equal(getNotificationTypeLabel("eid"), "Eid");
+  assert.equal(getNotificationTypeKey("eid"), "notification.types.eid");
 });
 
 test("Team and correction notifications open the matching profile tab", () => {
   assert.equal(getNotificationPath({ type: "team", mosque_id: 4, reference_id: 9 }), "/profile?tab=invites");
   assert.equal(getNotificationPath({ type: "suggestion", mosque_id: 4, reference_id: 2 }), "/profile?tab=suggestions");
-  assert.equal(getNotificationTypeLabel("team"), "Mosque team");
+  assert.equal(getNotificationTypeKey("team"), "notification.types.team");
 });
 
 test("feedback and goods donation notifications open the right page", () => {

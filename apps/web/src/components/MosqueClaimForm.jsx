@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Trans } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+import { useLocale } from "../hooks/useLocale";
 import { apiRequest } from "../utils/api";
 
 export default function MosqueClaimForm({ mosqueId }) {
+  const { t } = useLocale();
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -25,15 +28,15 @@ export default function MosqueClaimForm({ mosqueId }) {
   // [Urmee · F3 Part 1] Now a small "Is this your mosque?" link inside the About card instead of a big
   // box at the top of the page.
   return <details className="card p-3 mb-4">
-    <summary className="fw-semibold text-mc">Manage this mosque? Apply for administrator access</summary>
+    <summary className="fw-semibold text-mc">{t("claim.summary")}</summary>
     <div className="pt-3">
       {/* [Urmee · F6 Part 3] Tab links use the URL (?tab=) instead of router state, so they can be opened from anywhere. */}
-      {!user ? <Link to="/login" state={{ from: `/mosque/${mosqueId}` }}>Log in to submit your application</Link> : submitted ? <p role="status">Your application was submitted for review. <Link to="/profile?tab=claims">Track your application</Link>.</p> : <form onSubmit={submit}>
+      {!user ? <Link to="/login" state={{ from: `/mosque/${mosqueId}` }}>{t("claim.login")}</Link> : submitted ? <p role="status"><Trans i18nKey="claim.submitted" components={{ track: <Link to="/profile?tab=claims" /> }} /></p> : <form onSubmit={submit}>
         {error && <div className="alert alert-danger" role="alert">{error}</div>}
-        <div className="mb-3"><label htmlFor="claim-role" className="form-label">Your role at the mosque</label><input id="claim-role" name="role_at_mosque" className="form-control" required maxLength={255} /></div>
-        <div className="mb-3"><label htmlFor="claim-reason" className="form-label">Reason for requesting access</label><textarea id="claim-reason" name="verification_reason" className="form-control" required maxLength={5000} /></div>
-        <div className="mb-3"><label htmlFor="claim-document" className="form-label">Supporting document (PDF, JPG or PNG, up to 10 MB)</label><input id="claim-document" name="document" type="file" className="form-control" accept=".pdf,.jpg,.jpeg,.png" required aria-describedby="claim-document-privacy" /><div id="claim-document-privacy" className="form-text">Your document is checked by an automated text-recognition service (Google Document AI) to help our team review it faster. Only the document, the mosque name and your name are sent, never your phone number. A person always makes the final decision.</div></div>
-        <button className="btn btn-mc" disabled={busy}>{busy ? "Submitting..." : "Submit application"}</button>
+        <div className="mb-3"><label htmlFor="claim-role" className="form-label">{t("claim.role")}</label><input id="claim-role" name="role_at_mosque" className="form-control" required maxLength={255} /></div>
+        <div className="mb-3"><label htmlFor="claim-reason" className="form-label">{t("claim.reason")}</label><textarea id="claim-reason" name="verification_reason" className="form-control" required maxLength={5000} /></div>
+        <div className="mb-3"><label htmlFor="claim-document" className="form-label">{t("claim.document")}</label><input id="claim-document" name="document" type="file" className="form-control" accept=".pdf,.jpg,.jpeg,.png" required aria-describedby="claim-document-privacy" /><div id="claim-document-privacy" className="form-text">{t("claim.privacy")}</div></div>
+        <button className="btn btn-mc" disabled={busy}>{busy ? t("claim.submitting") : t("claim.submit")}</button>
       </form>}
     </div>
   </details>;

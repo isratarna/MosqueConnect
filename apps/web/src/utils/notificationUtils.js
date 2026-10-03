@@ -1,18 +1,21 @@
+import { DEFAULT_LOCALE } from "./intl.js";
+
+// Translation keys for each notification type, resolved with t() where shown.
 export const NOTIFICATION_TYPES = {
-  event: { label: "Event" },
-  announcement: { label: "Announcement" },
-  prayer_schedule: { label: "Prayer schedule" },
-  campaign: { label: "Campaign" },
-  eid: { label: "Eid" },
-  team: { label: "Mosque team" },
-  suggestion: { label: "Your correction" },
-  complaint: { label: "Your feedback" },
-  goods_donation: { label: "Goods donation" },
-  system: { label: "System" },
+  event: { labelKey: "notification.types.event" },
+  announcement: { labelKey: "notification.types.announcement" },
+  prayer_schedule: { labelKey: "notification.types.prayer_schedule" },
+  campaign: { labelKey: "notification.types.campaign" },
+  eid: { labelKey: "notification.types.eid" },
+  team: { labelKey: "notification.types.team" },
+  suggestion: { labelKey: "notification.types.suggestion" },
+  complaint: { labelKey: "notification.types.complaint" },
+  goods_donation: { labelKey: "notification.types.goods_donation" },
+  system: { labelKey: "notification.types.system" },
 };
 
-export function getNotificationTypeLabel(type) {
-  return NOTIFICATION_TYPES[type]?.label || "Notification";
+export function getNotificationTypeKey(type) {
+  return NOTIFICATION_TYPES[type]?.labelKey || "notification.types.default";
 }
 
 export function isNotificationRead(notificationOrValue) {
@@ -72,7 +75,7 @@ export function getNotificationPath(notification) {
   }
 }
 
-export function formatNotificationTime(value, now = new Date()) {
+export function formatNotificationTime(value, now = new Date(), { locale = DEFAULT_LOCALE, justNow = "Just now" } = {}) {
   const date = value instanceof Date ? value : new Date(value);
   const current = now instanceof Date ? now : new Date(now);
 
@@ -80,14 +83,14 @@ export function formatNotificationTime(value, now = new Date()) {
 
   const seconds = Math.round((date.getTime() - current.getTime()) / 1000);
   const absoluteSeconds = Math.abs(seconds);
-  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
-  if (absoluteSeconds < 45) return "Just now";
+  if (absoluteSeconds < 45) return justNow;
   if (absoluteSeconds < 60 * 60) return formatter.format(Math.round(seconds / 60), "minute");
   if (absoluteSeconds < 24 * 60 * 60) return formatter.format(Math.round(seconds / 3600), "hour");
   if (absoluteSeconds < 7 * 24 * 60 * 60) return formatter.format(Math.round(seconds / 86400), "day");
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
     year: date.getFullYear() === current.getFullYear() ? undefined : "numeric",

@@ -2,14 +2,16 @@
 
 /** "Updated today / yesterday / 3 days ago / on 4 Oct 2026" from an ISO timestamp, or "" when unknown. */
 // [Urmee · F3 Part 1] "Updated 3 days ago" for the prayer-times card, from schedule_updated_at.
-export function updatedAgoLabel(value, now = new Date()) {
+// With a `t` function (and the active locale) the text follows the interface language.
+export function updatedAgoLabel(value, now = new Date(), t, locale = "en-GB") {
   const date = new Date(value);
   if (!value || Number.isNaN(date.getTime())) return "";
   const days = Math.floor((now.getTime() - date.getTime()) / 86400000);
-  if (days <= 0) return "Updated today";
-  if (days === 1) return "Updated yesterday";
-  if (days < 30) return `Updated ${days} days ago`;
-  return `Updated on ${date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  if (days <= 0) return t ? t("mosque.updatedToday") : "Updated today";
+  if (days === 1) return t ? t("mosque.updatedYesterday") : "Updated yesterday";
+  if (days < 30) return t ? t("mosque.updatedDaysAgo", { count: days }) : `Updated ${days} days ago`;
+  const formatted = date.toLocaleDateString(t ? locale : "en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return t ? t("mosque.updatedOn", { date: formatted }) : `Updated on ${formatted}`;
 }
 
 /** https://wa.me link for a Bangladeshi number typed as 017…, +88017… or 88017…; null if it isn't one. */

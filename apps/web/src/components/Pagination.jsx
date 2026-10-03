@@ -1,6 +1,10 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLocale } from "../hooks/useLocale";
+import { formatNumber } from "../utils/intl";
 
 export default function Pagination({ currentPage, totalPages, onPageChange }) {
+  const { t, locale } = useLocale();
+
   const getPageNumbers = () => {
     const pages = [];
     if (totalPages <= 7) {
@@ -41,7 +45,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
   const pages = getPageNumbers();
 
   return (
-    <nav className="d-flex justify-content-center align-items-center gap-2 mt-4 flex-wrap" aria-label="Pagination">
+    <nav className="d-flex justify-content-center align-items-center gap-2 mt-4 flex-wrap" aria-label={t("pagination.label")}>
       <button
         type="button"
         className="btn btn-sm btn-outline-mc d-flex align-items-center gap-1"
@@ -49,7 +53,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
         onClick={() => onPageChange(currentPage - 1)}
       >
         <ChevronLeft size={16} aria-hidden="true" />
-        <span className="d-none d-sm-inline">Previous</span>
+        <span className="d-none d-sm-inline">{t("common.previous")}</span>
       </button>
 
       {pages.map((p, index) => {
@@ -68,7 +72,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
             aria-current={p === currentPage ? "page" : undefined}
             onClick={() => onPageChange(p)}
           >
-            {p}
+            {formatNumber(p, locale)}
           </button>
         );
       })}
@@ -79,7 +83,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        <span className="d-none d-sm-inline">Next</span>
+        <span className="d-none d-sm-inline">{t("common.next")}</span>
         <ChevronRight size={16} aria-hidden="true" />
       </button>
     </nav>
