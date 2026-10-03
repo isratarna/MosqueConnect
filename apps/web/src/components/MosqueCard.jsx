@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { Clock3, Heart, MapPin, Navigation, Star } from "lucide-react";
+import { useLocale } from "../hooks/useLocale";
 import { FALLBACK_PHOTO } from "../config";
+import { formatNumber } from "../utils/intl";
 import { directionsUrl } from "../utils/mosqueDiscovery";
 import { isEstimatedPrayer, nextJamaatLabel } from "../utils/prayerTime";
 import { useNow } from "../hooks/useNow";
@@ -11,10 +13,11 @@ import VerifiedBadge from "./VerifiedBadge";
 
 // A mosque result card used on the Browse page.
 export default function MosqueCard({ mosque }) {
+  const { t, locale } = useLocale();
   const { isFollowing: following, toggleFollow } = useFollow(mosque?.id);
   const directions = directionsUrl(mosque);
   // [Urmee · F1 Part 3] useNow() re-renders each minute so "Next jamat" moves on by itself.
-  const nextJamaat = nextJamaatLabel(mosque.prayer, useNow());
+  const nextJamaat = nextJamaatLabel(mosque.prayer, useNow(), { locale, t });
 
   return (
     <div className="card mc-card h-100">
@@ -40,7 +43,7 @@ export default function MosqueCard({ mosque }) {
           </div>
 
           <span className="badge mc-badge ms-2 text-nowrap">
-            {mosque.distance} km
+            {t("common.distanceKm", { distance: mosque.distance })}
           </span>
         </div>
 
@@ -53,7 +56,7 @@ export default function MosqueCard({ mosque }) {
           {mosque.rating !== null && (
             <>
               <Star size={14} className="text-warning me-1" fill="currentColor" aria-hidden="true" />
-              {mosque.rating}
+              {formatNumber(mosque.rating, locale)}
             </>
           )}
           {mosque.verified && <VerifiedBadge className={mosque.rating !== null ? "ms-1" : "ms-0"} />}
@@ -74,7 +77,7 @@ export default function MosqueCard({ mosque }) {
 
           {mosque.facilities.length > 3 && (
             <span className="badge mc-badge">
-              +{mosque.facilities.length - 3}
+              {t("mosque.moreFacilities", { count: mosque.facilities.length - 3 })}
             </span>
           )}
         </div>
@@ -84,7 +87,7 @@ export default function MosqueCard({ mosque }) {
             to={`/mosque/${mosque.id}`}
             className="btn btn-mc btn-sm flex-fill"
           >
-            View
+            {t("mosque.view")}
           </Link>
 
           {directions && (
@@ -93,8 +96,8 @@ export default function MosqueCard({ mosque }) {
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline-mc btn-sm"
-              title="Get directions"
-              aria-label={`Get directions to ${mosque.name} (opens in a new tab)`}
+              title={t("mosque.getDirections")}
+              aria-label={`${t("mosque.getDirections")} · ${mosque.name}`}
             >
               <Navigation size={16} aria-hidden="true" />
             </a>
@@ -104,8 +107,8 @@ export default function MosqueCard({ mosque }) {
             className={`btn btn-sm ${
               following ? "btn-danger" : "btn-outline-secondary"
             }`}
-            title={following ? "Unfollow" : "Follow"}
-            aria-label={following ? `Unfollow ${mosque.name}` : `Follow ${mosque.name}`}
+            title={following ? t("mosque.unfollow") : t("mosque.follow")}
+            aria-label={`${following ? t("mosque.unfollow") : t("mosque.follow")} · ${mosque.name}`}
             aria-pressed={following}
             onClick={(e) => {
               e.preventDefault();

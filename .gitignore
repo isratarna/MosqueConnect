@@ -60,6 +60,9 @@ docker-compose.override.yml
 
 # React build output (served by Laravel) and deploy keys
 /apps/api/public/app
+/apps/api/REVISION
 deploy_key
 deploy_key.pub
 cse3100_deploy*
+s20230204056
+s20230204056.pub

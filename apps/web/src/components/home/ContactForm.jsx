@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useLocale } from "../../hooks/useLocale";
 import { sendContactMessage } from "../../utils/communityHubApi";
 
 const EMPTY = { name: "", email: "", message: "", website: "" };
 
 export default function ContactForm() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const [values, setValues] = useState(EMPTY);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState(null); // { ok, text }
@@ -36,14 +38,14 @@ export default function ContactForm() {
     try {
       const data = await sendContactMessage({ name: values.name.trim(), email: values.email.trim(), message: values.message.trim(), website: values.website });
       setValues((current) => ({ ...EMPTY, name: current.name, email: current.email }));
-      setNotice({ ok: true, text: data.message || "Thanks! Your message has been sent." });
+      setNotice({ ok: true, text: data.message || t("home.about.sent") });
     } catch (error) {
       if (error.status === 422) {
         setErrors(error.errors || {});
-        setNotice({ ok: false, text: "Please fix the highlighted fields." });
+        setNotice({ ok: false, text: t("home.about.fixFields") });
       } else if (error.status === 429) {
         // [Urmee · F5 Part 4] The API throttles contact messages (3 per 10 min), so 429 gets its own message.
-        setNotice({ ok: false, text: "Too many messages, please try again later." });
+        setNotice({ ok: false, text: t("home.about.rateLimited") });
       } else {
         setNotice({ ok: false, text: error.message });
       }
@@ -55,17 +57,17 @@ export default function ContactForm() {
   return (
     <form onSubmit={onSubmit}>
       <div className="mb-3">
-        <label className="form-label" htmlFor="contact-name">Your name</label>
+        <label className="form-label" htmlFor="contact-name">{t("home.about.namePlaceholder")}</label>
         <input className="form-control" required maxLength={100} autoComplete="name" {...bind("name")} {...invalid("name")} />
         {fieldError("name")}
       </div>
       <div className="mb-3">
-        <label className="form-label" htmlFor="contact-email">Your email</label>
+        <label className="form-label" htmlFor="contact-email">{t("home.about.emailPlaceholder")}</label>
         <input type="email" className="form-control" required maxLength={255} autoComplete="email" {...bind("email")} {...invalid("email")} />
         {fieldError("email")}
       </div>
       <div className="mb-3">
-        <label className="form-label" htmlFor="contact-message">Your message</label>
+        <label className="form-label" htmlFor="contact-message">{t("home.about.messagePlaceholder")}</label>
         <textarea className="form-control" rows="3" required minLength={10} maxLength={3000} {...bind("message")} {...invalid("message")} />
         {fieldError("message")}
       </div>
@@ -75,7 +77,7 @@ export default function ContactForm() {
         <input tabIndex={-1} autoComplete="off" {...bind("website")} />
       </div>
       {notice && <div className={`alert ${notice.ok ? "alert-success" : "alert-danger"} py-2 small`} role={notice.ok ? "status" : "alert"}>{notice.text}</div>}
-      <button className="btn btn-mc w-100" type="submit" disabled={sending}>{sending ? "Sending…" : "Send message"}</button>
+      <button className="btn btn-mc w-100" type="submit" disabled={sending}>{sending ? t("home.about.sending") : t("home.about.send")}</button>
     </form>
   );
 }

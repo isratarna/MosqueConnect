@@ -46,6 +46,8 @@ class Notification extends Model
 
     public const TYPE_BLOOD = 'blood';
 
+    public const TYPE_VOLUNTEER = 'volunteer';
+
     public const REFERENCE_EVENT = 'event';
 
     public const REFERENCE_ANNOUNCEMENT = 'announcement';
@@ -66,6 +68,8 @@ class Notification extends Model
 
     public const REFERENCE_GOODS_DONATION = 'goods_donation';
 
+    public const REFERENCE_VOLUNTEER_APPLICATION = 'volunteer_application';
+
     public const TYPES = [
         self::TYPE_EVENT,
         self::TYPE_ANNOUNCEMENT,
@@ -78,6 +82,7 @@ class Notification extends Model
         self::TYPE_COMPLAINT,
         self::TYPE_GOODS_DONATION,
         self::TYPE_BLOOD,
+        self::TYPE_VOLUNTEER,
     ];
 
     /**

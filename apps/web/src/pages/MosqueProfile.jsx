@@ -25,19 +25,22 @@ import {
   Share2,
   Star,
   Sun,
-  TriangleAlert, MessageSquareText, PackageOpen, UsersRound } from "lucide-react";
+  TriangleAlert, MessageSquareText, PackageOpen, UsersRound, Pin } from "lucide-react";
 import { urgencyClass } from "../data/mosques";
 import { getAnnouncementDetailsPath } from "../data/announcements";
 import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import PrayerTimeline from "../components/PrayerTimeline";
+import RamadanCard from "../components/RamadanCard";
 import MosqueEventsSection from "../components/events/MosqueEventsSection";
 import MosqueCampaignsSection from "../components/campaigns/MosqueCampaignsSection";
 import { directionsUrl, fetchMosqueById } from "../utils/mosqueDiscovery";
+import { formatApiDate } from "../utils/intl";
 import { formatClockTime } from "../utils/prayerTime";
 import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
+import { useLocale } from "../hooks/useLocale";
 import MosqueClaimForm from "../components/MosqueClaimForm";
 import EidJamaatCard from "../components/eid/EidJamaatCard";
 import { trackMosqueEvent, trackMosqueView } from "../utils/trackMosque";
@@ -56,21 +59,22 @@ import { Stars } from "../components/profile/Stars";
 // [Urmee · F3 Part 1] Section anchors for the in-page nav. The ids match the existing links
 // (/mosque/5#prayer-schedule), so old URLs keep working.
 const SECTIONS = [
-  ["overview", "Overview"],
-  ["prayer-schedule", "Prayer times"],
-  ["announcements", "Announcements"],
-  ["events", "Events"],
-  ["donations", "Donations"],
-  ["photos", "Photos"],
-  ["reviews", "Reviews"],
-  ["about", "About"],
+  ["overview", "mosque.sections.overview"],
+  ["prayer-schedule", "mosque.sections.prayer"],
+  ["announcements", "mosque.sections.announcements"],
+  ["events", "mosque.sections.events"],
+  ["donations", "mosque.sections.donations"],
+  ["photos", "mosque.sections.photos"],
+  ["reviews", "mosque.sections.reviews"],
+  ["about", "mosque.sections.about"],
 ];
 
 /** Small "Suggest a correction" link shown on each card with editable details. */
-function SuggestLink({ onClick, label = "Suggest a correction" }) {
+function SuggestLink({ onClick, label }) {
+  const { t } = useLocale();
   return (
     <button type="button" className="btn btn-link btn-sm p-0 text-mc text-decoration-none mc-suggest-link" onClick={onClick}>
-      <PencilLine size={14} className="me-1" aria-hidden="true" />{label}
+      <PencilLine size={14} className="me-1" aria-hidden="true" />{label || t("mosque.suggestCorrection")}
     </button>
   );
 }
@@ -92,31 +96,39 @@ function Linkified({ text }) {
 // [Urmee · F3 Part 1] One announcement with a "Show more" for long text and a Pinned badge.
 function AnnouncementItem({ announcement }) {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useLocale();
   const { text, clamped } = clampText(announcement.body);
   const publishedOn = announcement.date || (announcement.published_at || "").slice(0, 10);
   const detailsPath = getAnnouncementDetailsPath(announcement.id);
   const pinned = Boolean(announcement.pinned || announcement.is_pinned);
+  // [Urmee · F9] Janazah notices get calm, distinct styling (no alarm colours) instead of the urgency colours.
+  const janazah = announcement.category === "janazah";
 
   return (
-    <div className={`border-start border-4 border-${urgencyClass(announcement.urgency)} ps-3 mb-3`}>
+    <div className={janazah ? "mc-announcement--janazah ps-3 py-2 mb-3" : `border-start border-4 border-${urgencyClass(announcement.urgency)} ps-3 mb-3`}>
+      {/* [Urmee · F9] Image from the editor, with the title as alt text. */}
+      {announcement.image_url && <img src={announcement.image_url} alt={t("announcement.imageAlt", { title: announcement.title })} className="mc-announcement-image mb-2" loading="lazy" />}
       <div className="d-flex justify-content-between gap-2">
         <strong>
           <Link to={detailsPath} className="text-body text-decoration-none">{announcement.title}</Link>
-          {pinned && <span className="badge text-bg-secondary ms-2">Pinned</span>}
+          {/* [Urmee · F9] Pin icon next to the Pinned badge. */}
+          {pinned && <span className="badge text-bg-secondary ms-2"><Pin size={11} aria-hidden="true" /> {t("mosque.pinned")}</span>}
         </strong>
-        <span className={`badge bg-${urgencyClass(announcement.urgency)} text-uppercase align-self-start`}>{announcement.urgency}</span>
+        {janazah
+          ? <span className="badge text-bg-light border align-self-start">{t("announcement.categories.janazah")}</span>
+          : <span className={`badge bg-${urgencyClass(announcement.urgency)} text-uppercase align-self-start`}>{announcement.urgency}</span>}
       </div>
       <p className="mb-1 small text-muted"><Linkified text={expanded ? announcement.body : text} /></p>
       {clamped && (
         <button type="button" className="btn btn-link btn-sm p-0 mb-1" onClick={() => setExpanded((open) => !open)} aria-expanded={expanded}>
-          {expanded ? "Show less" : "Show more"}
+          {expanded ? t("mosque.showLess") : t("mosque.showMore")}
         </button>
       )}
       <div className="d-flex align-items-center gap-3">
         {publishedOn && (
           <small className="text-muted"><CalendarDays size={14} className="me-1" aria-hidden="true" />{publishedOn}</small>
         )}
-        <Link to={detailsPath} className="small text-mc text-decoration-none">Read details</Link>
+        <Link to={detailsPath} className="small text-mc text-decoration-none">{t("mosque.readDetails")}</Link>
       </div>
     </div>
   );
@@ -126,6 +138,7 @@ function AnnouncementItem({ announcement }) {
 // [Urmee · F3 Part 1] Tap-to-call, WhatsApp, email, website and Facebook; only details the mosque
 // listed are shown.
 function ContactLinks({ mosque }) {
+  const { t } = useLocale();
   const whatsapp = whatsappUrl(mosque.whatsapp);
   const website = mosque.website_url ? safeWebUrl(mosque.website_url) : null;
   const facebook = mosque.facebook_url ? safeWebUrl(mosque.facebook_url) : null;
@@ -136,7 +149,7 @@ function ContactLinks({ mosque }) {
     website && { href: website, icon: Globe, label: "Website", external: true },
     facebook && { href: facebook, icon: ExternalLink, label: "Facebook", external: true },
   ].filter(Boolean);
-  if (!links.length) return <p className="small text-muted mb-0">No contact details listed yet.</p>;
+  if (!links.length) return <p className="small text-muted mb-0">{t("mosque.noContact")}</p>;
 
   return (
     <ul className="list-inline mb-0 mc-contact-links">
@@ -159,6 +172,9 @@ function ContactLinks({ mosque }) {
 export default function MosqueProfile() {
   const { id } = useParams();
   const { user } = useAuth();
+  // [Urmee · i18n restore] The mosque profile (rebuilt in F3) is translated again; times and dates use
+  // the active locale.
+  const { t, locale } = useLocale();
   const [mosque, setMosque] = useState(null);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
@@ -187,7 +203,7 @@ export default function MosqueProfile() {
         if (!active) return;
         setMosque(null);
         setStatus("error");
-        setError(requestError.message || "Mosque details could not be loaded.");
+        setError(requestError.message || t("mosque.loadFailedFull"));
       });
 
     return () => {
@@ -212,7 +228,7 @@ export default function MosqueProfile() {
 
   if (status === "loading") {
     return (
-      <SkeletonRegion label="Loading mosque profile…" delay={0}>
+      <SkeletonRegion label={t("mosque.loading")} delay={0}>
         <ProfileSkeleton />
       </SkeletonRegion>
     );
@@ -222,15 +238,15 @@ export default function MosqueProfile() {
     return (
       <div className="container py-5 text-center">
         <TriangleAlert size={42} className="text-warning" aria-hidden="true" />
-        <h4 className="mt-3">Mosque not found</h4>
-        <p className="text-muted">{error || "This mosque could not be loaded."}</p>
+        <h4 className="mt-3">{t("mosque.notFound")}</h4>
+        <p className="text-muted">{error || t("mosque.loadFailed")}</p>
         <div className="d-flex justify-content-center gap-2 flex-wrap">
           <button type="button" className="btn btn-outline-mc" onClick={() => setRetryKey((value) => value + 1)}>
-            Try again
+            {t("common.tryAgain")}
           </button>
           <Link to="/browse" className="btn btn-mc">
             <ArrowLeft size={16} aria-hidden="true" />
-            Back to Browse
+            {t("mosque.backToBrowse")}
           </Link>
         </div>
       </div>
@@ -248,18 +264,18 @@ export default function MosqueProfile() {
   const hasDailyPrayer = Object.values(prayer).some(Boolean) || prayerSchedule.length > 0;
   const directions = directionsUrl(mosque);
   const confirmedLabel = communityConfirmedLabel(mosque.times_confirmed_by_community_at);
-  const freshness = updatedAgoLabel(mosque.schedule_updated_at);
+  const freshness = updatedAgoLabel(mosque.schedule_updated_at, new Date(), t, locale);
   const place = [mosque.area, mosque.district].filter(Boolean).join(", ");
   // The claim box only helps where a claim can succeed: no admin yet, and the viewer is a visitor or a normal user.
   // [Urmee · F3 Part 1] The claim box only appears where a claim can succeed: the mosque has no admin
   // yet and the viewer is a visitor or a normal user (admins and super admins would get a 409).
   const canClaim = mosque.has_admin === false && (!user || user.role === "normal_user");
   const details = [
-    ["Capacity", mosque.capacity ? `${mosque.capacity} people` : null],
-    ["Established", mosque.established_year],
-    ["Khutbah language", mosque.khutbah_language],
-    ["Women's area", mosque.women_facility_notes],
-    ["Accessibility", mosque.accessibility_notes],
+    [t("mosque.detail.capacity"), mosque.capacity ? t("mosque.detail.people", { count: mosque.capacity }) : null],
+    [t("mosque.detail.established"), mosque.established_year],
+    [t("mosque.detail.khutbahLanguage"), mosque.khutbah_language],
+    [t("mosque.detail.womenArea"), mosque.women_facility_notes],
+    [t("mosque.detail.accessibility"), mosque.accessibility_notes],
   ].filter(([, value]) => value);
 
   const copy = async (text, key) => {
@@ -286,10 +302,10 @@ export default function MosqueProfile() {
 
   return (
     <div className="container py-4 mc-motion-stagger mc-profile-page">
-      <nav aria-label="breadcrumb" className="mb-3">
+      <nav aria-label={t("common.breadcrumb")} className="mb-3">
         <ol className="breadcrumb small">
-          <li className="breadcrumb-item"><Link to="/" className="text-mc text-decoration-none">Home</Link></li>
-          <li className="breadcrumb-item"><Link to="/browse" className="text-mc text-decoration-none">Browse</Link></li>
+          <li className="breadcrumb-item"><Link to="/" className="text-mc text-decoration-none">{t("nav.home")}</Link></li>
+          <li className="breadcrumb-item"><Link to="/browse" className="text-mc text-decoration-none">{t("mosque.breadcrumbBrowse")}</Link></li>
           <li className="breadcrumb-item active">{mosque.name}</li>
         </ol>
       </nav>
@@ -297,11 +313,11 @@ export default function MosqueProfile() {
       {mosque.has_admin === false && (
         <div className="alert alert-warning d-flex align-items-start gap-2 py-2 small" role="note">
           <TriangleAlert size={16} className="mt-1 flex-shrink-0" aria-hidden="true" />
-          <span>No administrator yet — information may be outdated.</span>
+          <span>{t("mosque.noAdmin")}</span>
         </div>
       )}
 
-      <div className="mc-profile-hero mb-3" role="img" aria-label={`Photo of ${mosque.name}`} style={{ backgroundImage: `url('${mosque.photo}')` }}>
+      <div className="mc-profile-hero mb-3" role="img" aria-label={t("mosque.photoOf", { name: mosque.name })} style={{ backgroundImage: `url('${mosque.photo}')` }}>
         <div className="mc-profile-title">
           <h1 className="h3 fw-bold mb-1">{mosque.name}</h1>
           <div><MapPin size={15} className="me-1" aria-hidden="true" />{mosque.address}</div>
@@ -311,7 +327,7 @@ export default function MosqueProfile() {
                 <Star size={14} fill="currentColor" aria-hidden="true" />{mosque.rating.toFixed(1)} <span className="opacity-75">({mosque.reviews_count})</span>
               </a>
             )}
-            <span className="d-inline-flex align-items-center gap-1"><UsersRound size={14} aria-hidden="true" />{mosque.followers_count ?? 0} follower{mosque.followers_count === 1 ? "" : "s"}</span>
+            <span className="d-inline-flex align-items-center gap-1"><UsersRound size={14} aria-hidden="true" />{t("mosque.followers", { count: mosque.followers_count ?? 0 })}</span>
             {mosque.verified && <VerifiedBadge />}
           </div>
         </div>
@@ -319,7 +335,7 @@ export default function MosqueProfile() {
 
       {/* [Urmee · F3 Part 1] Sticky action bar: under the navbar on desktop, fixed to the bottom of the screen on phones so Follow and Directions stay reachable. */}
       {/* Action bar: sticks under the navbar on desktop and to the bottom of the screen on phones. */}
-      <div className="mc-profile-actions" role="toolbar" aria-label="Mosque actions">
+      <div className="mc-profile-actions" role="toolbar" aria-label={t("mosque.actionsLabel")}>
         <button
           type="button"
           className={"btn btn-sm " + (following ? "btn-danger" : "btn-outline-mc")}
@@ -327,40 +343,43 @@ export default function MosqueProfile() {
           aria-pressed={following}
         >
           <Heart size={16} fill={following ? "currentColor" : "none"} aria-hidden="true" />
-          {following ? "Following" : "Follow"}
+          {following ? t("mosque.following") : t("mosque.follow")}
         </button>
         {directions && (
           <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-mc btn-sm" onClick={() => trackMosqueEvent(mosque.id, "directions")}>
-            <Navigation size={16} aria-hidden="true" /> Directions
+            <Navigation size={16} aria-hidden="true" /> {t("mosque.getDirectionsButton")}
           </a>
         )}
         {mosque.phone && (
           <a href={`tel:${mosque.phone.replace(/\s/g, "")}`} className="btn btn-outline-secondary btn-sm" onClick={() => trackMosqueEvent(mosque.id, "call")}>
-            <Phone size={16} aria-hidden="true" /> Call
+            <Phone size={16} aria-hidden="true" /> {t("mosque.call")}
           </a>
         )}
         <button type="button" className="btn btn-outline-secondary btn-sm" onClick={share}>
-          {copied === "link" ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />} {copied === "link" ? "Link copied" : "Share"}
+          {copied === "link" ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />} {copied === "link" ? t("mosque.linkCopied") : t("mosque.share")}
         </button>
       </div>
 
-      <nav className="mc-profile-nav" aria-label="Sections of this page">
-        {SECTIONS.map(([anchor, label]) => <a key={anchor} href={`#${anchor}`}>{label}</a>)}
+      <nav className="mc-profile-nav" aria-label={t("mosque.pageSections")}>
+        {SECTIONS.map(([anchor, label]) => <a key={anchor} href={`#${anchor}`}>{t(label)}</a>)}
       </nav>
 
-      <section id="overview" className="mc-profile-section mb-4" aria-label="Overview">
+      <section id="overview" className="mc-profile-section mb-4" aria-label={t("mosque.sections.overview")}>
         {mosque.description && <p className="text-muted mb-3"><Linkified text={mosque.description} /></p>}
         <ContactLinks mosque={mosque} />
         <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
           <span className="small text-muted"><MapPin size={14} className="me-1" aria-hidden="true" />{mosque.address}</span>
           <button type="button" className="btn btn-link btn-sm p-0 text-decoration-none d-inline-flex align-items-center gap-1" onClick={() => copy(mosque.address, "address")}>
-            {copied === "address" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />} {copied === "address" ? "Copied" : "Copy address"}
+            {copied === "address" ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />} {copied === "address" ? t("mosque.copied") : t("mosque.copyAddress")}
           </button>
         </div>
       </section>
 
       <div className="row g-4">
         <div className="col-lg-8">
+          {/* [Urmee · F4] Ramadan card first while the mosque is in a Ramadan period; nothing Ramadan-specific otherwise. */}
+          {mosque.period?.is_ramadan && <RamadanCard mosqueId={mosque.id} />}
+
           {eidJamaats.length > 0 && (
             <div className="card mc-card mc-eid-card mb-4" id="eid-jamaat">
               <div className="card-body">
@@ -371,7 +390,7 @@ export default function MosqueProfile() {
                 <div className="d-grid gap-3">
                   {eidJamaats.map((jamaat) => <EidJamaatCard key={jamaat.id} jamaat={jamaat} />)}
                 </div>
-                <Link to="/eid" className="small text-mc text-decoration-none d-inline-block mt-3">Find other Eid jamaats near you</Link>
+                <Link to="/eid" className="small text-mc text-decoration-none d-inline-block mt-3">{t("mosque.findEid")}</Link>
               </div>
             </div>
           )}
@@ -379,13 +398,16 @@ export default function MosqueProfile() {
           <div className="card mc-card mb-4" id="prayer-schedule">
             <div className="card-body">
               <div className="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
-                <h5 className="fw-bold mb-0"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />Prayer &amp; Jamat Times</h5>
-                <SuggestLink onClick={() => setSuggestField("prayer_time")} label="Times wrong? Suggest a correction" />
+                <h5 className="fw-bold mb-0"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.prayerTimes")}</h5>
+                <SuggestLink onClick={() => setSuggestField("prayer_time")} label={t("mosque.suggestTime")} />
               </div>
+              {mosque.period && (
+                <p className="small text-muted mb-2" data-testid="period-label">{t("mosque.periodLabel", { name: mosque.period.name, date: formatApiDate(mosque.period.ends_on, locale) })}</p>
+              )}
               {hasDailyPrayer ? (
                 <PrayerTimeline prayers={prayer} schedule={prayerSchedule} />
               ) : (
-                <p className="text-muted mb-0">Prayer times have not been published for this mosque yet.</p>
+                <p className="text-muted mb-0">{t("mosque.prayerNotPublished")}</p>
               )}
               {freshness && <p className="small text-muted mt-2 mb-0">{freshness}</p>}
               {confirmedLabel && (
@@ -399,7 +421,7 @@ export default function MosqueProfile() {
           <div className="card mc-card mb-4">
             <div className="card-body">
               <div className="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
-                <h5 className="fw-bold mb-0"><Sun size={18} className="text-mc me-2" aria-hidden="true" />Jummah Prayer</h5>
+                <h5 className="fw-bold mb-0"><Sun size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.jummahPrayer")}</h5>
                 <SuggestLink onClick={() => setSuggestField("jumuah")} />
               </div>
               {jumuahSessions.length ? (
@@ -408,9 +430,9 @@ export default function MosqueProfile() {
                     <div className="col" key={session.id || session.sequence || session.label}>
                       <div className="mc-prayer-cell bg-light rounded-3">
                         <small className="text-muted d-block">{session.label}</small>
-                        <span className="h5">{formatClockTime(session.jamaat_time)}</span>
+                        <span className="h5">{formatClockTime(session.jamaat_time, locale)}</span>
                         {session.khutbah_time && (
-                          <small className="text-muted d-block">Khutbah {formatClockTime(session.khutbah_time)}</small>
+                          <small className="text-muted d-block">{t("mosque.khutbah", { time: formatClockTime(session.khutbah_time, locale) })}</small>
                         )}
                         {session.notes && (
                           <small className="text-muted d-block">{session.notes}</small>
@@ -420,7 +442,7 @@ export default function MosqueProfile() {
                   ))}
                 </div>
               ) : (
-                <p className="text-muted mb-0">Jumuah times have not been published for this mosque yet.</p>
+                <p className="text-muted mb-0">{t("mosque.jumuahNotPublished")}</p>
               )}
             </div>
           </div>
@@ -428,15 +450,15 @@ export default function MosqueProfile() {
           <div className="card mc-card mb-4" id="announcements">
             <div className="card-body">
               <div className="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
-                <h5 className="fw-bold mb-0"><Megaphone size={18} className="text-mc me-2" aria-hidden="true" />Announcements</h5>
+                <h5 className="fw-bold mb-0"><Megaphone size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.announcements")}</h5>
                 {announcements.length > 0 && (
-                  <Link to={`/community?category=announcement&mosque=${encodeURIComponent(mosque.name)}`} className="small text-mc text-decoration-none">View all</Link>
+                  <Link to={`/community?category=announcement&mosque=${encodeURIComponent(mosque.name)}`} className="small text-mc text-decoration-none">{t("mosque.viewAll")}</Link>
                 )}
               </div>
               {shownAnnouncements.length ? (
                 shownAnnouncements.map((announcement) => <AnnouncementItem key={announcement.id} announcement={announcement} />)
               ) : (
-                <p className="text-muted mb-0">No announcements right now.</p>
+                <p className="text-muted mb-0">{t("mosque.noAnnouncements")}</p>
               )}
             </div>
           </div>
@@ -446,8 +468,8 @@ export default function MosqueProfile() {
 
           <div className="card mc-card mb-4" id="photos">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><Images size={18} className="text-mc me-2" aria-hidden="true" />Photos</h5>
-              {photos.length ? <PhotoGallery photos={photos} mosqueName={mosque.name} /> : <p className="text-muted mb-0">No photos yet.</p>}
+              <h5 className="fw-bold mb-3"><Images size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.sections.photos")}</h5>
+              {photos.length ? <PhotoGallery photos={photos} mosqueName={mosque.name} /> : <p className="text-muted mb-0">{t("mosque.noPhotos")}</p>}
             </div>
           </div>
 
@@ -457,29 +479,29 @@ export default function MosqueProfile() {
         <div className="col-lg-4">
           <div className="card mc-card mb-4" id="about">
             <div className="card-body">
-              <h6 className="fw-bold mb-3"><Info size={18} className="text-mc me-2" aria-hidden="true" />About</h6>
+              <h6 className="fw-bold mb-3"><Info size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.sections.about")}</h6>
               <dl className="mc-about-list small mb-3">
-                <dt>Address</dt>
+                <dt>{t("mosque.address")}</dt>
                 <dd>{mosque.address}{place && <span className="d-block text-muted">{place}</span>}</dd>
                 {details.map(([label, value]) => (
                   <div key={label}><dt>{label}</dt><dd className="mc-prewrap">{value}</dd></div>
                 ))}
               </dl>
               <div className="d-flex flex-wrap gap-3">
-                <SuggestLink onClick={() => setSuggestField("address")} label="Fix the address" />
-                <SuggestLink onClick={() => setSuggestField("phone")} label="Fix the phone number" />
-                <SuggestLink onClick={() => setSuggestField("other")} label="Something else" />
+                <SuggestLink onClick={() => setSuggestField("address")} label={t("mosque.fixAddress")} />
+                <SuggestLink onClick={() => setSuggestField("phone")} label={t("mosque.fixPhone")} />
+                <SuggestLink onClick={() => setSuggestField("other")} label={t("mosque.somethingElse")} />
               </div>
               <div className="mt-2">
-                <ReportButton type="mosque" id={mosque.id} label="Report incorrect info" className="btn btn-link btn-sm p-0 text-muted text-decoration-none d-inline-flex align-items-center gap-1" />
+                <ReportButton type="mosque" id={mosque.id} label={t("mosque.reportIncorrect")} className="btn btn-link btn-sm p-0 text-muted text-decoration-none d-inline-flex align-items-center gap-1" />
               </div>
               <hr />
               <button type="button" className="btn btn-sm btn-outline-mc w-100" onClick={() => setFeedbackOpen(true)}>
-                <MessageSquareText size={15} aria-hidden="true" /> Send feedback to this mosque
+                <MessageSquareText size={15} aria-hidden="true" /> {t("mosque.sendFeedback")}
               </button>
-              <p className="form-text">Private: only the mosque's admins read it. You can send it anonymously.</p>
+              <p className="form-text">{t("mosque.feedbackPrivate")}</p>
               <button type="button" className="btn btn-sm btn-outline-mc w-100" onClick={() => setGoodsOpen(true)}>
-                <PackageOpen size={15} aria-hidden="true" /> Donate goods to this mosque
+                <PackageOpen size={15} aria-hidden="true" /> {t("mosque.donateGoods")}
               </button>
               {canClaim && <div className="mt-3"><MosqueClaimForm key={id} mosqueId={id} /></div>}
             </div>
@@ -487,18 +509,18 @@ export default function MosqueProfile() {
           <MosqueLostFoundCard mosque={mosque} />
           <div className="card mc-card mb-4">
             <div className="card-body">
-              <h6 className="fw-bold mb-3"><Building2 size={18} className="text-mc me-2" aria-hidden="true" />Facilities</h6>
+              <h6 className="fw-bold mb-3"><Building2 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.facilities")}</h6>
               {facilities.length ? (
                 <div>{facilities.map((facility) => <FacilityBadge key={facility} facilityKey={facility} />)}</div>
               ) : (
-                <p className="text-muted mb-0 small">Facility details have not been published yet.</p>
+                <p className="text-muted mb-0 small">{t("mosque.facilitiesNotPublished")}</p>
               )}
               <div className="mt-2"><SuggestLink onClick={() => setSuggestField("facilities")} /></div>
             </div>
           </div>
           <div className="card mc-card">
             <div className="card-body">
-              <h6 className="fw-bold mb-3"><MapIcon size={18} className="text-mc me-2" aria-hidden="true" />Location</h6>
+              <h6 className="fw-bold mb-3"><MapIcon size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.location")}</h6>
               <MapView
                 center={{ lat: mosque.lat, lng: mosque.lng }}
                 zoom={15}
@@ -506,7 +528,7 @@ export default function MosqueProfile() {
                 selectedMosqueId={mosque.id}
                 className="mc-map mc-map--sm"
               />
-              <div className="mt-2"><SuggestLink onClick={() => setSuggestField("location")} label="Pin in the wrong place?" /></div>
+              <div className="mt-2"><SuggestLink onClick={() => setSuggestField("location")} label={t("mosque.pinWrong")} /></div>
             </div>
           </div>
         </div>

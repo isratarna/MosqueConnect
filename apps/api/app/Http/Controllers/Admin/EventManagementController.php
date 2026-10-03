@@ -8,7 +8,9 @@ use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Http\Resources\EventResource;
 use App\Jobs\NotifyMosqueFollowers;
+use App\Jobs\NotifyEventRegistrants;
 use App\Models\Event;
+use App\Models\EventRegistration;
 use App\Models\Notification;
 use App\Models\Mosque;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +28,7 @@ class EventManagementController extends Controller
 
         $events = $mosque->events()
             ->with(['mosque', 'creator'])
-            ->withCount('registrations')
+            ->withCount(['registrations as registrations_count' => fn ($query) => $query->whereIn('status', [EventRegistration::STATUS_REGISTERED, EventRegistration::STATUS_ATTENDED])])
             ->filter($filters)
             ->orderByDesc('event_date')
             ->orderByDesc('start_time')
@@ -76,6 +78,20 @@ class EventManagementController extends Controller
 
         $event->save();
 
+        if ($event->wasChanged(['event_date', 'start_time', 'location'])) {
+            dispatch(new NotifyEventRegistrants(
+                $event->id,
+                'event_changed',
+                'Event details changed',
+                "The date, time or location for {$event->title} has changed. Please review the updated event details.",
+                (int) ($event->updated_at?->timestamp ?? now()->timestamp),
+            ))->afterCommit();
+        }
+
+        if ($event->wasChanged('status') && $event->status === Event::STATUS_CANCELLED) {
+            $this->notifyCancellation($event);
+        }
+
         if ($event->wasChanged('status') && $event->status === Event::STATUS_PUBLISHED) {
             $this->dispatchPublished($event);
         }
@@ -122,6 +138,10 @@ class EventManagementController extends Controller
             $this->dispatchPublished($event);
         }
 
+        if ($event->wasChanged('status') && $event->status === Event::STATUS_CANCELLED) {
+            $this->notifyCancellation($event);
+        }
+
         return (new EventResource($event->refresh()->load(['mosque', 'creator'])->loadCount('registrations')))
             ->additional(['message' => $message]);
     }
@@ -135,6 +155,16 @@ class EventManagementController extends Controller
             "New Event: {$event->title}",
             "{$event->mosque->name} published a new event: {$event->title}.",
             ['type' => Notification::REFERENCE_EVENT, 'id' => $event->id],
+        ))->afterCommit();
+    }
+
+    private function notifyCancellation(Event $event): void
+    {
+        dispatch(new NotifyEventRegistrants(
+            $event->id,
+            'event_cancelled',
+            'Event cancelled',
+            "{$event->title} has been cancelled.",
         ))->afterCommit();
     }
 }

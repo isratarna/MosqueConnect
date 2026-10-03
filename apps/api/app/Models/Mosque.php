@@ -282,6 +282,8 @@ class Mosque extends Model
     {
         return $this->announcements()
             ->published()
+            // [Urmee · F9] Pinned first, so the profile's "latest 5" never drops a pinned notice.
+            ->orderByDesc('is_pinned')
             ->orderByDesc('published_at')
             ->orderByDesc('id');
     }

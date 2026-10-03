@@ -29,6 +29,7 @@ use App\Services\ClaimReview\DocumentAiClaimReviewer;
 use App\Services\ClaimReview\GoogleDocumentAiClient;
 use App\Services\Journey\GeoapifyRoutingClient;
 use App\Services\Journey\RoutesClient;
+use App\Services\Otp\DemoSmsOtpSender;
 use App\Services\Otp\LogSmsOtpSender;
 use App\Services\Otp\MissingSmsOtpSender;
 use App\Services\Otp\SmsOtpSender;
@@ -47,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(SmsOtpSender::class, fn () => match (config('otp.sms.driver')) {
             'log' => new LogSmsOtpSender,
+            'demo' => new DemoSmsOtpSender,
             default => new MissingSmsOtpSender,
         });
 
@@ -111,6 +113,18 @@ class AppServiceProvider extends ServiceProvider
                 : Limit::perHour((int) $limits['guest_per_hour'])->by('journey|ip|'.$request->ip());
 
             return $limit->response(fn () => response()->json(['message' => $message], 429));
+        });
+
+        // Blood requests are time-critical and public, so one person may only
+        // post a few a day.
+        RateLimiter::for('blood-requests', function (Request $request) {
+            $limit = (int) config('blood.daily_request_limit', 5);
+
+            return Limit::perDay($limit)
+                ->by('blood-request|'.($request->user()?->id ?? $request->ip()))
+                ->response(fn () => response()->json([
+                    'message' => "You can post up to {$limit} blood requests a day. Please try again tomorrow.",
+                ], 429));
         });
 
         // Usage tracking is public, so each IP may count at most 30 events per mosque per hour.

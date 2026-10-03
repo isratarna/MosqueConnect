@@ -25,6 +25,8 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useGeolocation, requestGeolocation, hasLocation } from "../hooks/useGeolocation";
+import { useLocale } from "../hooks/useLocale";
+import { eventCategoryLabel } from "../utils/labels";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import { useAuth } from "../context/AuthContext";
@@ -37,6 +39,7 @@ import { fetchEventCollection } from "../utils/eventApi";
 import { formatEventDate, formatEventTimeRange, getEventMosqueName, isEventPast } from "../utils/eventFilters";
 import EstimatedBadge from "../components/EstimatedBadge";
 import EidBanner from "../components/EidBanner";
+import RamadanBanner from "../components/home/RamadanBanner";
 import CatchableJamaatCard, { JourneyEntryCard } from "../components/journey/CatchableJamaatCard";
 import { EventCardSkeleton, SkeletonRegion } from "../components/skeletons";
 
@@ -70,6 +73,7 @@ function usePrefersReducedMotion() {
 }
 
 export default function Home() {
+  const { t } = useLocale();
   const { user, loading: authLoading } = useAuth();
   const origin = useGeolocation();
   const discovery = useMosqueDiscovery(origin);
@@ -93,12 +97,14 @@ export default function Home() {
   }, [nearby, nearest]);
 
   if (authLoading) {
-    return <div className="mc-home-auth-loading" aria-label="Loading homepage" />;
+    return <div className="mc-home-auth-loading" aria-label={t("home.loadingAria")} />;
   }
 
   return (
     <>
       <EidBanner />
+      {/* [Urmee · F4] "Iftar in 1h 12m at your nearest mosque", only while that mosque is in a Ramadan period. */}
+      <RamadanBanner mosque={nearest} />
       {user ? (
         <div className="mc-auth-experience mc-auth-nearby-experience">
           <MyMosques />
@@ -163,6 +169,7 @@ function JourneyCards({ origin }) {
 }
 
 function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMosqueSelect, onManualLocationClick }) {
+  const { t } = useLocale();
   const { mosques, status: apiStatus, error: apiError, retry: retryApi } = discovery;
 
   useEffect(() => {
@@ -192,42 +199,42 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
 
           <div className="mc-auth-home-map__label">
             <MapPin size={14} aria-hidden="true" />
-            <h1 id="nearby-map-title">Nearby mosques</h1>
+            <h1 id="nearby-map-title">{t("home.nearbyMosques")}</h1>
           </div>
           <Link to="/browse" className="mc-auth-home-map__browse btn btn-sm">
-            Browse mosques <ChevronRight size={14} aria-hidden="true" />
+            {t("home.browseMosques")} <ChevronRight size={14} aria-hidden="true" />
           </Link>
 
           <div className="mc-auth-home-map__feedback-stack">
             {(isFindingLocation || isLoadingMosques) && (
               <MapFeedback
                 icon={<LoaderCircle className="spin" size={20} aria-hidden="true" />}
-                title={isFindingLocation ? "Finding your location" : "Finding nearby mosques"}
-                message={isFindingLocation ? "Your browser may ask for location permission." : "Checking mosques closest to you."}
+                title={isFindingLocation ? t("home.findingLocation") : t("home.findingNearby")}
+                message={isFindingLocation ? t("home.permissionPrompt") : t("home.checkingClosest")}
               />
             )}
 
             {origin.status === "failure" && (
               <MapFeedback
                 icon={<TriangleAlert size={21} aria-hidden="true" />}
-                title={origin.errorCode === "denied" ? "Location permission denied" : "Location unavailable"}
-                message={origin.message || "We could not determine your current location."}
+                title={origin.errorCode === "denied" ? t("home.locationDenied") : t("home.locationUnavailable")}
+                message={origin.errorCode ? t(`geo.${origin.errorCode}`) : t("home.locationFallback")}
               >
                 <button type="button" className="btn btn-mc btn-sm" onClick={() => requestGeolocation({ force: true })}>
-                  <RefreshCw size={14} aria-hidden="true" /> Try again
+                  <RefreshCw size={14} aria-hidden="true" /> {t("home.tryAgain")}
                 </button>
-                <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse manually</Link>
+                <Link to="/browse" className="btn btn-outline-mc btn-sm">{t("home.browseManually")}</Link>
               </MapFeedback>
             )}
 
             {apiStatus === "error" && hasLocation(origin) && (
               <MapFeedback
                 icon={<TriangleAlert size={21} aria-hidden="true" />}
-                title="Could not load nearby mosques"
+                title={t("home.loadError")}
                 message={apiError}
               >
                 <button type="button" className="btn btn-mc btn-sm" onClick={retryApi}>
-                  <RefreshCw size={14} aria-hidden="true" /> Retry
+                  <RefreshCw size={14} aria-hidden="true" /> {t("home.retry")}
                 </button>
               </MapFeedback>
             )}
@@ -235,10 +242,10 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
             {apiStatus === "success" && mosques.length === 0 && (
               <MapFeedback
                 icon={<Landmark size={21} aria-hidden="true" />}
-                title="No nearby mosques found"
-                message="There are no mosque records near this location yet."
+                title={t("home.noNearby")}
+                message={t("home.noNearbyMessage")}
               >
-                <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse all mosques</Link>
+                <Link to="/browse" className="btn btn-outline-mc btn-sm">{t("home.browseAll")}</Link>
               </MapFeedback>
             )}
           </div>
@@ -265,6 +272,7 @@ function MapFeedback({ icon, title, message, children }) {
 // [Urmee · F5 Part 1] Hijri date uses Intl's islamic-umalqura calendar. Moon sighting in Bangladesh
 // can differ by a day, hence the "(approx.)" label.
 function HeroDates() {
+  const { t, locale: activeLocale } = useLocale();
   const { gregorian, hijri } = useMemo(() => {
     const now = new Date();
     const format = (locale) => {
@@ -275,10 +283,10 @@ function HeroDates() {
       }
     };
     return {
-      gregorian: format("en-GB"),
-      hijri: format("en-u-ca-islamic-umalqura"),
+      gregorian: format(activeLocale),
+      hijri: format(`${activeLocale}-u-ca-islamic-umalqura`),
     };
-  }, []);
+  }, [activeLocale]);
 
   return (
     <div className="mc-hero__dates">
@@ -292,7 +300,7 @@ function HeroDates() {
         <span className="mc-date-chip mc-date-chip--hijri">
           <Moon size={14} aria-hidden="true" />
           <span>{hijri}</span>
-          <span className="mc-date-chip__approx">(approx.)</span>
+          <span className="mc-date-chip__approx">({t("home.hero.approx")})</span>
         </span>
       )}
     </div>
@@ -300,18 +308,20 @@ function HeroDates() {
 }
 
 function Hero({ origin, nearby, nearest, onRequestLocation, onManualLocationClick }) {
+  const { t } = useLocale();
+
   return (
     <header className="mc-hero mc-home-hero" data-mc-parallax="0.26">
       <div className="container mc-hero__inner">
         <div className="mc-hero__content">
           <HeroDates />
-          <h1>Find. Connect. Pray.</h1>
+          <h1>{t("home.hero.title")}</h1>
           <p className="mc-hero__copy">
-            Discover mosques near you and stay connected to your faith and community.
+            {t("home.hero.copy")}
           </p>
           <div className="mc-hero__search">
-            <GlobalSearch id="hero-search" variant="hero" placeholder="Search mosques, events, campaigns…" />
-            <a href="#map" className="mc-hero__nearby" title="Find nearby" aria-label="Find nearby">
+            <GlobalSearch id="hero-search" variant="hero" placeholder={t("home.hero.searchPlaceholder")} />
+            <a href="#map" className="mc-hero__nearby" title={t("home.hero.findNearby")} aria-label={t("home.hero.findNearby")}>
               <LocateFixed size={17} aria-hidden="true" />
             </a>
           </div>
@@ -319,12 +329,12 @@ function Hero({ origin, nearby, nearest, onRequestLocation, onManualLocationClic
         <div className="mc-location-card">
           <div className="mc-location-card__icon"><MapPin size={22} aria-hidden="true" /></div>
           <div>
-            <h2>Enable your location</h2>
-            <p>Find mosques, prayer times, and nearby Islamic facilities around you.</p>
+            <h2>{t("home.hero.enableLocation")}</h2>
+            <p>{t("home.hero.enableLocationCopy")}</p>
           </div>
           <LocationControls origin={origin} nearby={nearby} nearest={nearest} onRequest={onRequestLocation} onManualLocationClick={onManualLocationClick} />
           <button type="button" onClick={onManualLocationClick} className="btn btn-light mc-location-card__secondary w-100">
-            Enter location manually
+            {t("home.hero.enterManually")}
           </button>
         </div>
       </div>
@@ -333,6 +343,7 @@ function Hero({ origin, nearby, nearest, onRequestLocation, onManualLocationClic
 }
 
 function LocationControls({ origin, nearby, nearest, onRequest, onManualLocationClick }) {
+  const { t } = useLocale();
   const handleClick = (e) => {
     e.preventDefault();
     onRequest();
@@ -341,31 +352,32 @@ function LocationControls({ origin, nearby, nearest, onRequest, onManualLocation
   return (
     <div>
       <div className="mb-2" aria-live="polite">
-        {origin.status === "idle" && <small className="text-muted">Location not set</small>}
-        {origin.status === "requesting" && <small className="text-muted">Requesting permission…</small>}
-        {origin.status === "locating" && <small className="text-muted">Locating…</small>}
+        {origin.status === "idle" && <small className="text-muted">{t("home.location.notSet")}</small>}
+        {origin.status === "requesting" && <small className="text-muted">{t("home.location.requesting")}</small>}
+        {origin.status === "locating" && <small className="text-muted">{t("home.location.locating")}</small>}
         {origin.status === "success" && (
           <div>
-            <div className="fw-semibold">{nearby.length} mosques nearby</div>
-            <div className="small text-muted">Closest: {nearest ? nearest.name : "—"}</div>
+            <div className="fw-semibold">{t("home.location.mosquesNearby", { count: nearby.length })}</div>
+            <div className="small text-muted">{t("home.location.closest", { name: nearest ? nearest.name : t("common.dash") })}</div>
           </div>
         )}
         {origin.status === "manual" && (
           <div>
-            <div className="fw-semibold">Showing mosques near {origin.areaName || "you"} · <button type="button" className="btn btn-link p-0 text-decoration-none fw-semibold" onClick={onManualLocationClick}>Change</button></div>
+            <div className="fw-semibold">{t("home.location.showingNear", { area: origin.areaName || t("home.location.you") })} · <button type="button" className="btn btn-link p-0 text-decoration-none fw-semibold" onClick={onManualLocationClick}>{t("home.location.change")}</button></div>
           </div>
         )}
-        {origin.status === "failure" && <small className="text-danger">Location unavailable — try manual search</small>}
+        {origin.status === "failure" && <small className="text-danger">{t("home.location.unavailableManual")}</small>}
       </div>
 
       <button className="btn btn-mc w-100 mb-2" onClick={handleClick} aria-pressed={origin.status === "success"}>
-        <LocateFixed size={16} aria-hidden="true" /> {origin.status === "success" ? "Location set" : "Use my location"}
+        <LocateFixed size={16} aria-hidden="true" /> {origin.status === "success" ? t("home.location.set") : t("home.location.use")}
       </button>
     </div>
   );
 }
 
 function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosqueId, onMosqueSelect }) {
+  const { t, locale } = useLocale();
   const [activeIndex, setActiveIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isInteracting, setIsInteracting] = useState(false);
@@ -497,9 +509,9 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
       <div className="container">
         {showMap && (
           <div className="mc-section-heading">
-            <h2>Nearby mosques</h2>
+            <h2>{t("home.nearbyMosques")}</h2>
             <Link to="/browse" className="btn btn-outline-mc btn-sm">
-              Browse mosques <ChevronRight size={15} aria-hidden="true" />
+              {t("home.browseMosques")} <ChevronRight size={15} aria-hidden="true" />
             </Link>
           </div>
         )}
@@ -533,8 +545,8 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
               if (!event.currentTarget.contains(event.relatedTarget)) setIsFocused(false);
             }}
           >
-            <div className="mc-nearby-showcase__controls" aria-label="Nearby mosque controls">
-              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToPrevious} aria-label="Previous mosque">
+            <div className="mc-nearby-showcase__controls" aria-label={t("home.carousel.controls")}>
+              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToPrevious} aria-label={t("home.carousel.previous")}>
                 <ChevronRight size={14} aria-hidden="true" className="mc-rotate-180" />
               </button>
               {!reducedMotion && (
@@ -542,14 +554,14 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                   type="button"
                   className="btn btn-outline-mc btn-sm"
                   onClick={() => setIsPaused((paused) => !paused)}
-                  aria-label={isPaused ? "Resume nearby mosques" : "Pause nearby mosques"}
+                  aria-label={isPaused ? t("home.carousel.resume") : t("home.carousel.pause")}
                   aria-pressed={isPaused}
-                  title={isPaused ? "Resume nearby mosques" : "Pause nearby mosques"}
+                  title={isPaused ? t("home.carousel.resume") : t("home.carousel.pause")}
                 >
                   {isPaused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}
                 </button>
               )}
-              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToNext} aria-label="Next mosque">
+              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToNext} aria-label={t("home.carousel.next")}>
                 <ChevronRight size={14} aria-hidden="true" />
               </button>
             </div>
@@ -575,7 +587,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                 const absOffset = Math.abs(normalizedOffset);
                 const isActive = normalizedOffset === 0;
                 const isVisible = absOffset <= maxOffset;
-                const nextJamaat = nextJamaatLabel(mosque.prayer, now);
+                const nextJamaat = nextJamaatLabel(mosque.prayer, now, { locale, t });
 
                 if (!isVisible) return null;
 
@@ -616,7 +628,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                             <div className="d-flex align-items-center gap-2 min-w-0">
                               <h5 className="mb-0 mc-nearby-card__title text-truncate">{mosque.name}</h5>
                             </div>
-                            <span className="badge mc-badge flex-shrink-0">{mosque.distance} km</span>
+                            <span className="badge mc-badge flex-shrink-0">{t("common.distanceKm", { distance: mosque.distance })}</span>
                           </div>
 
                           <div className="text-muted small mb-2 mc-nearby-card__meta">
@@ -626,18 +638,18 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                           <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2 mc-nearby-card__status">
                             <span className="mc-distance">
-                              <Navigation size={13} aria-hidden="true" />{mosque.distance} km away
+                              <Navigation size={13} aria-hidden="true" />{t("home.carousel.kmAway", { distance: mosque.distance })}
                             </span>
                             <span className="d-flex align-items-center gap-1">
                               {mosque.verified && <VerifiedBadge />}
-                              {mosque.rating !== null ? `${mosque.rating} rating` : "Not rated"}
+                              {mosque.rating !== null ? t("common.rating", { rating: mosque.rating }) : t("common.notRated")}
                             </span>
                           </div>
 
                           <div className="mc-next-prayer mb-2">
-                            <span>Next Jamat</span>
+                            <span>{t("home.carousel.nextJamat")}</span>
                             <strong>
-                              {nextJamaat?.text || "Times unavailable"}
+                              {nextJamaat?.text || t("home.carousel.timesUnavailable")}
                               {nextJamaat && isEstimatedPrayer(mosque.prayer_sources, nextJamaat.prayer) && <EstimatedBadge className="ms-1" />}
                             </strong>
                           </div>
@@ -649,7 +661,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                             className="btn btn-mc btn-sm flex-fill"
                             onClick={(event) => event.stopPropagation()}
                           >
-                            View profile
+                            {t("home.carousel.viewProfile")}
                           </Link>
                           {directionsUrl(mosque) && (
                             <a
@@ -657,8 +669,8 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                               target="_blank"
                               rel="noopener noreferrer"
                               className="btn btn-outline-mc btn-sm mc-icon-button"
-                              title="Get directions"
-                              aria-label={`Get directions to ${mosque.name}`}
+                              title={t("home.carousel.getDirections")}
+                              aria-label={t("home.carousel.getDirectionsTo", { name: mosque.name })}
                               onClick={(event) => event.stopPropagation()}
                             >
                               <Navigation size={16} aria-hidden="true" />
@@ -679,20 +691,21 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 }
 
 function SupportSection() {
+  const { t } = useLocale();
   const items = [
-    { icon: HandHeart, title: "Money Donation", type: "money", desc: "Support a mosque or a specific cause securely." },
-    { icon: Heart, title: "Blood Donation", type: "blood", desc: "Respond to live blood requests or register as a donor." },
-    { icon: UsersRound, title: "Volunteer", type: "volunteer", desc: "Join events, charity drives and mosque services." },
-    { icon: Landmark, title: "Goods Donation", type: "goods", desc: "Donate essential goods mosques currently need." },
+    { icon: HandHeart, title: t("home.support.money.title"), type: "money", desc: t("home.support.money.desc") },
+    { icon: Heart, title: t("home.support.blood.title"), type: "blood", desc: t("home.support.blood.desc") },
+    { icon: UsersRound, title: t("home.support.volunteer.title"), type: "volunteer", desc: t("home.support.volunteer.desc") },
+    { icon: Landmark, title: t("home.support.goods.title"), type: "goods", desc: t("home.support.goods.desc") },
   ];
 
   return (
     <section id="support" className="mc-support-section mc-motion-section mc-atmospheric-section" data-mc-parallax="0.16">
       <div className="container">
         <div className="mc-support-intro">
-          <p className="mc-kicker">Support</p>
-          <h2>Support the community</h2>
-          <p>Contribute in the way that suits you best.</p>
+          <p className="mc-kicker">{t("home.support.kicker")}</p>
+          <h2>{t("home.support.title")}</h2>
+          <p>{t("home.support.copy")}</p>
         </div>
         <div className="row g-4 mc-motion-stagger">
           {items.map((it) => (
@@ -709,11 +722,11 @@ function SupportSection() {
         <div className="mc-custom-support">
           <div className="mc-custom-support__icon"><Heart size={24} fill="currentColor" aria-hidden="true" /></div>
           <div className="mc-custom-support__copy">
-            <h3>Have another way to help?</h3>
-            <p>Choose your own contribution amount and support the community in your own way.</p>
+            <h3>{t("home.support.otherTitle")}</h3>
+            <p>{t("home.support.otherCopy")}</p>
           </div>
           <Link to="/support?type=custom#custom" className="btn btn-outline-mc mc-custom-support__action">
-            Custom Support <ChevronRight size={16} aria-hidden="true" />
+            {t("home.support.custom")} <ChevronRight size={16} aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -722,28 +735,24 @@ function SupportSection() {
 }
 
 function AboutSection() {
+  const { t } = useLocale();
   return (
     <section id="about" className="py-5 mc-motion-section mc-atmospheric-section" data-mc-parallax="0.16">
       <div className="container">
         <div className="row g-5 align-items-center">
           <div className="col-lg-6">
-            <p className="mc-kicker">About MosqueConnect</p>
-            <h2>Bringing scattered mosque information together</h2>
-            <p className="mc-about-copy">
-              Jamat times, Jummah announcements, events and donation campaigns are usually
-              shared by word of mouth, posters, or group chats, often incomplete or outdated.
-              MosqueConnect gives every mosque a verified profile that only approved
-              administrators can edit, so the community always has one accurate source of truth.
-            </p>
+            <p className="mc-kicker">{t("home.about.kicker")}</p>
+            <h2>{t("home.about.title")}</h2>
+            <p className="mc-about-copy">{t("home.about.copy")}</p>
             <ul className="mc-trust-list">
-              <li><ShieldCheck size={20} aria-hidden="true" />Verified, trustworthy mosque profiles</li>
-              <li><UsersRound size={20} aria-hidden="true" />Family-friendly facility filters</li>
-              <li><Clock3 size={20} aria-hidden="true" />Notifications for the mosques you follow</li>
+              <li><ShieldCheck size={20} aria-hidden="true" />{t("home.about.trustVerified")}</li>
+              <li><UsersRound size={20} aria-hidden="true" />{t("home.about.trustFamily")}</li>
+              <li><Clock3 size={20} aria-hidden="true" />{t("home.about.trustNotifications")}</li>
             </ul>
           </div>
           <div className="col-lg-6">
             <div className="card mc-card p-4">
-              <h3 className="mc-form-title">Get in touch</h3>
+              <h3 className="mc-form-title">{t("home.about.contactTitle")}</h3>
               <ContactForm />
             </div>
           </div>
@@ -754,6 +763,7 @@ function AboutSection() {
 }
 
 function UpcomingEventsSection() {
+  const { t, locale } = useLocale();
   const [state, setState] = useState({ status: "loading", events: [], error: "" });
   const [attempt, setAttempt] = useState(0);
 
@@ -769,7 +779,7 @@ function UpcomingEventsSection() {
       })
       .catch((error) => {
         if (error?.name === "AbortError") return;
-        setState({ status: "error", events: [], error: error?.message || "Could not load upcoming events." });
+        setState({ status: "error", events: [], error: error?.message || t("home.events.loadError") });
       });
 
     return () => controller.abort();
@@ -779,14 +789,14 @@ function UpcomingEventsSection() {
     <section id="upcoming-events" className="mc-upcoming-events mc-motion-section" aria-labelledby="upcoming-events-title">
       <div className="container">
         <div className="mc-section-heading">
-          <h2 id="upcoming-events-title">Upcoming events</h2>
+          <h2 id="upcoming-events-title">{t("home.events.title")}</h2>
           <Link to="/community" className="btn btn-outline-mc btn-sm">
-            All events <ChevronRight size={15} aria-hidden="true" />
+            {t("home.events.all")} <ChevronRight size={15} aria-hidden="true" />
           </Link>
         </div>
 
         {state.status === "loading" && (
-          <SkeletonRegion label="Loading upcoming events…" delay={0}>
+          <SkeletonRegion label={t("home.events.loading")} delay={0}>
             <div className="row g-3">
               {Array.from({ length: UPCOMING_EVENTS_COUNT }, (_, index) => (
                 <div className="col-md-6 col-lg-4" key={index}><EventCardSkeleton /></div>
@@ -800,13 +810,13 @@ function UpcomingEventsSection() {
             <TriangleAlert size={28} className="d-block mx-auto mb-2 text-danger" aria-hidden="true" />
             <div className="mb-3">{state.error}</div>
             <button type="button" className="btn btn-outline-mc btn-sm" onClick={() => setAttempt((n) => n + 1)}>
-              <RefreshCw size={14} aria-hidden="true" /> Retry
+              <RefreshCw size={14} aria-hidden="true" /> {t("common.retry")}
             </button>
           </div>
         )}
 
         {state.status === "success" && state.events.length === 0 && (
-          <p className="text-center text-muted py-4 mb-0">No upcoming events yet. Check back soon.</p>
+          <p className="text-center text-muted py-4 mb-0">{t("home.events.empty")}</p>
         )}
 
         {state.status === "success" && state.events.length > 0 && (
@@ -817,26 +827,26 @@ function UpcomingEventsSection() {
                 <div className="col-md-6 col-lg-4" key={event.id}>
                   <article className="mc-event-card mc-card h-100">
                     <div className="mc-event-card__meta">
-                      <span className="mc-event-card__category">{event.category || "Other"}</span>
+                      <span className="mc-event-card__category">{eventCategoryLabel(t, event.category)}</span>
                     </div>
                     <h3><Link className="mc-event-card__title-link" to={detailsPath}>{event.title}</Link></h3>
-                    <p className="mc-event-card__mosque">{getEventMosqueName(event)}</p>
+                    <p className="mc-event-card__mosque">{getEventMosqueName(event, t("event.mosqueTbd"))}</p>
                     <dl className="mc-event-card__details">
                       <div>
-                        <dt><CalendarDays size={15} aria-hidden="true" /><span className="visually-hidden">Date</span></dt>
-                        <dd>{formatEventDate(event.event_date, { compact: true })}</dd>
+                        <dt><CalendarDays size={15} aria-hidden="true" /><span className="visually-hidden">{t("event.date")}</span></dt>
+                        <dd>{formatEventDate(event.event_date, { compact: true, locale, fallback: t("event.dateTbd") })}</dd>
                       </div>
                       <div>
-                        <dt><Clock3 size={15} aria-hidden="true" /><span className="visually-hidden">Time</span></dt>
-                        <dd>{formatEventTimeRange(event)}</dd>
+                        <dt><Clock3 size={15} aria-hidden="true" /><span className="visually-hidden">{t("event.time")}</span></dt>
+                        <dd>{formatEventTimeRange(event, locale, t("event.timeTbd"))}</dd>
                       </div>
                       <div>
-                        <dt><MapPin size={15} aria-hidden="true" /><span className="visually-hidden">Location</span></dt>
-                        <dd>{event.location || "Location to be announced"}</dd>
+                        <dt><MapPin size={15} aria-hidden="true" /><span className="visually-hidden">{t("event.location")}</span></dt>
+                        <dd>{event.location || t("event.locationTbd")}</dd>
                       </div>
                     </dl>
                     <div className="mc-event-card__footer">
-                      <Link className="mc-event-card__details-link" to={detailsPath}>View details</Link>
+                      <Link className="mc-event-card__details-link" to={detailsPath}>{t("common.viewDetails")}</Link>
                     </div>
                   </article>
                 </div>

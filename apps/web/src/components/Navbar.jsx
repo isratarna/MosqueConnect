@@ -1,18 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Bell, CheckCheck, ChevronDown, Heart, Landmark, LogOut, Menu, Search, ShieldCheck, UserRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import GlobalSearch from "./GlobalSearch";
+import LanguageSwitcher from "./LanguageSwitcher";
 import NotificationList from "./notifications/NotificationList";
 import ThemeSwitcher from "./ThemeSwitcher";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { fetchNotifications } from "../utils/notificationApi";
 import { getNotificationPath, isNotificationRead } from "../utils/notificationUtils";
+import { statusLabel } from "../utils/labels";
 import logo from "../assets/Logo.png";
 
 const NAVBAR_NOTIFICATION_LIMIT = 6;
 
 export default function Navbar() {
+  // [Urmee · i18n restore] Every label in the navbar now goes through t(), so it switches with the
+  // language toggle.
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false); // mobile collapse
@@ -81,10 +87,10 @@ export default function Navbar() {
         <button
           type="button"
           className={"mc-nav-search-toggle ms-auto ms-lg-2 order-lg-last" + (searchOpen ? " is-active" : "")}
-          aria-label="Search"
+          aria-label={t("nav.search")}
           aria-expanded={searchOpen}
           aria-keyshortcuts="/"
-          title="Search (/)"
+          title={t("nav.searchHint")}
           onClick={() => setSearchOpen((value) => !value)}
         >
           <Search size={18} aria-hidden="true" />
@@ -93,7 +99,7 @@ export default function Navbar() {
         <button
           className="navbar-toggler ms-2 ms-lg-0"
           type="button"
-          aria-label="Toggle navigation"
+          aria-label={t("common.toggleNavigation")}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
@@ -103,63 +109,65 @@ export default function Navbar() {
         <div className={"collapse navbar-collapse mt-1 mt-lg-0" + (open ? " show" : "")}>
           <ul className="navbar-nav ms-auto align-items-start align-items-lg-center gap-1 gap-lg-1 py-1 py-lg-0">
             <NavDropdown
-              label="Prayer Times"
+              label={t("nav.prayerTimes")}
               id="prayer"
               isOpen={activeDropdown === "prayer"}
               onToggle={toggleDropdown}
               onClose={closeDropdowns}
               onNavigate={() => { close(); closeDropdowns(); }}
               items={[
-                { to: "/", label: "Jamat near me", hash: "map" },
-                { to: "/journey", label: "Journey planner" },
-                { to: "/eid", label: "Eid jamaats" },
-                { to: "/qibla", label: "Qibla compass" },
+                { to: "/", label: t("nav.jamatNearMe"), hash: "map" },
+                { to: "/journey", label: t("nav.journeyPlanner") },
+                { to: "/eid", label: t("nav.eidJamaats") },
+                { to: "/qibla", label: t("nav.qibla") },
               ]}
             />
             <li className="nav-item">
-              <NavLink className={navLinkClass} to="/browse" onClick={close}>Mosques</NavLink>
+              <NavLink className={navLinkClass} to="/browse" onClick={close}>{t("nav.mosques")}</NavLink>
             </li>
             <NavDropdown
-              label="Community"
+              label={t("nav.community")}
               id="community"
               isOpen={activeDropdown === "community"}
               onToggle={toggleDropdown}
               onClose={closeDropdowns}
               onNavigate={() => { close(); closeDropdowns(); }}
               items={[
-                { to: "/community", label: "Community hub" },
-                { to: "/community?category=announcement", label: "Announcements" },
-                { to: "/community?category=event", label: "Events" },
-                { to: "/blood-donation", label: "Blood donation" },
-                { to: "/volunteers", label: "Volunteers" },
-                { to: "/community?category=lost_found", label: "Lost & Found" },
+                { to: "/community", label: t("footer.communityHub") },
+                { to: "/community?category=announcement", label: t("footer.announcements") },
+                { to: "/community?category=event", label: t("footer.events") },
+                { to: "/blood-donation", label: t("nav.bloodDonation") },
+                { to: "/volunteers", label: t("nav.volunteers") },
+                { to: "/community?category=lost_found", label: t("footer.lostFound") },
               ]}
             />
             <NavDropdown
-              label="Donate"
+              label={t("nav.donate")}
               id="donate"
               isOpen={activeDropdown === "donate"}
               onToggle={toggleDropdown}
               onClose={closeDropdowns}
               onNavigate={() => { close(); closeDropdowns(); }}
               items={[
-                { to: "/support", label: "Support a mosque" },
-                { to: "/campaigns", label: "Campaigns" },
+                { to: "/support", label: t("nav.supportMosque") },
+                { to: "/campaigns", label: t("nav.campaignsPlural") },
               ]}
             />
 
-            <li className="nav-item mc-navbar__appearance mt-1 mt-lg-0">
+            <li className="nav-item mc-navbar__appearance d-flex align-items-center gap-2 mt-1 mt-lg-0">
+              {/* [Urmee · i18n restore] Language switcher (EN | বাং) sits right beside the theme switcher; on small screens both live inside the collapsed menu. */}
+              <LanguageSwitcher />
               <ThemeSwitcher />
             </li>
 
             {!user ? (
               <>
                 <li className="nav-item ms-lg-2 mt-1 mt-lg-0">
-                  <Link className="btn btn-outline-mc btn-sm w-100 w-lg-auto" to="/login" onClick={close}>Login</Link>
+                  <Link className="btn btn-outline-mc btn-sm w-100 w-lg-auto" to="/login" onClick={close}>{t("nav.login")}</Link>
                 </li>
                 <li className="nav-item mt-1 mt-lg-0">
                   <Link className="btn btn-warning btn-sm text-dark fw-semibold w-100 w-lg-auto" to="/register" onClick={close}>
-                    Register
+                    {t('nav.register')}
                   </Link>
                 </li>
               </>
@@ -244,6 +252,7 @@ function NavDropdown({ label, id, items, isOpen, onToggle, onClose, onNavigate }
 }
 
 function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
+  const { t } = useTranslation();
   const wrapperRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -272,12 +281,12 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       .catch((requestError) => {
         if (requestError.name === "AbortError") return;
         handleRequestError(requestError);
-        setError(requestError.message || "Notifications could not be loaded.");
+        setError(requestError.message || t('notification.loadError'));
       })
       .finally(() => {
         if (!signal?.aborted) setLoading(false);
       });
-  }, [handleRequestError]);
+  }, [handleRequestError, t]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -332,7 +341,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
         setNotifications((current) => current.map((item) => (
           item.id === notification.id ? { ...item, is_read: 0 } : item
         )));
-        setActionError(requestError.message || "The notification could not be marked as read.");
+        setActionError(requestError.message || t('notification.markReadError'));
       }
     }
 
@@ -352,7 +361,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       await markAllAsRead();
     } catch (requestError) {
       setNotifications(previous);
-      setActionError(requestError.message || "Notifications could not be marked as read.");
+      setActionError(requestError.message || t('notification.markAllReadError'));
     } finally {
       setMarkingAll(false);
     }
@@ -366,15 +375,15 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       <button
         type="button"
         className="nav-link mc-notification-trigger position-relative"
-        title="Notifications"
-        aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"}
+        title={t('notification.title')}
+        aria-label={unreadCount ? t('notification.ariaLabelUnread', { unread: unreadCount }) : t('notification.title')}
         aria-expanded={isOpen}
         aria-haspopup="true"
         onClick={onToggle}
       >
         <Bell size={18} aria-hidden="true" />
         {unreadCount > 0 && <span className="mc-notification-badge" aria-hidden="true">{displayCount}</span>}
-        {unreadLoading && <span className="visually-hidden" role="status">Loading unread count</span>}
+        {unreadLoading && <span className="visually-hidden" role="status">{t('notification.loadingUnread')}</span>}
       </button>
       <div
         ref={dropdownRef}
@@ -383,8 +392,8 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       >
         <div className="mc-notif-menu__header">
           <div>
-            <strong>Notifications</strong>
-            {unreadCount > 0 && <span>{unreadCount} unread</span>}
+            <strong>{t('notification.title')}</strong>
+            {unreadCount > 0 && <span>{t('notification.unreadCount', { unread: unreadCount })}</span>}
           </div>
           <button
             type="button"
@@ -393,7 +402,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
             disabled={!hasUnread || markingAll}
           >
             <CheckCheck size={14} aria-hidden="true" />
-            {markingAll ? "Marking..." : "Mark all read"}
+            {markingAll ? t('notification.marking') : t('notification.markAllRead')}
           </button>
         </div>
         {actionError && <div className="mc-notif-menu__error" role="alert">{actionError}</div>}
@@ -408,7 +417,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
           />
         </div>
         <div className="mc-notif-menu__footer">
-          <Link to="/notifications" onClick={onNavigate}>View all notifications</Link>
+          <Link to="/notifications" onClick={onNavigate}>{t('notification.viewAll')}</Link>
         </div>
       </div>
     </li>
@@ -416,6 +425,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
 }
 
 function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
+  const { t } = useTranslation();
   const wrapperRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -455,17 +465,17 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
           {user.name}
           {isAdminApproved && (
             <span className="badge bg-success-subtle text-success border border-success-subtle ms-1" style={{ fontSize: "10px" }}>
-              Admin
+              {t('nav.admin')}
             </span>
           )}
           {isAdminPending && (
             <span className="badge bg-warning-subtle text-warning border border-warning-subtle text-dark ms-1" style={{ fontSize: "10px" }}>
-              Pending
+              {statusLabel(t, 'pending')}
             </span>
           )}
           {isSuperAdmin && (
             <span className="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" style={{ fontSize: "10px" }}>
-              Super Admin
+              {t('profile.superAdminBadge')}
             </span>
           )}
         </span>
@@ -479,31 +489,31 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
           <div className="fw-bold small">{user.fullName || user.name}</div>
           <div className="text-muted" style={{ fontSize: "11px" }}>
             {isSuperAdmin ? (
-              <span>System Administrator</span>
+              <span>{t('profile.systemAdministrator')}</span>
             ) : user.role === "mosque_admin" ? (
               <div className="mt-0.5">
-                <div>Admin: <strong>{user.mosqueName}</strong></div>
+                <div>{t('profile.adminLabel')}: <strong>{user.mosqueName}</strong></div>
                 <div className="mt-1">
-                  Status:{" "}
+                  {t('profile.status')}:{" "}
                   <span className={`badge py-0.5 px-1 bg-${user.status === "approved" ? "success" : user.status === "rejected" ? "danger" : "warning text-dark"}`}>
-                    {user.status}
+                    {statusLabel(t, user.status)}
                   </span>
                 </div>
               </div>
             ) : (
-              <span>Community Member</span>
+              <span>{t('profile.communityMember')}</span>
             )}
           </div>
         </li>
 
         <li>
           <Link className="dropdown-item d-flex align-items-center" to="/profile" onClick={onClose}>
-            <UserRound size={15} className="me-2" aria-hidden="true" />My Profile
+            <UserRound size={15} className="me-2" aria-hidden="true" />{t('profile.myProfile')}
           </Link>
         </li>
         <li>
           <Link className="dropdown-item d-flex align-items-center" to="/profile" onClick={onClose}>
-            <Heart size={15} className="me-2" aria-hidden="true" />Followed Mosques
+            <Heart size={15} className="me-2" aria-hidden="true" />{t('profile.followedMosques')}
           </Link>
         </li>
 
@@ -512,7 +522,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
             <li><hr className="dropdown-divider" /></li>
             <li>
               <Link className="dropdown-item d-flex align-items-center text-success fw-bold" to="/admin/dashboard" onClick={onClose}>
-                <Landmark size={15} className="me-2" aria-hidden="true" />Mosque Dashboard
+                <Landmark size={15} className="me-2" aria-hidden="true" />{t('profile.mosqueDashboard')}
               </Link>
             </li>
           </>
@@ -523,7 +533,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
             <li><hr className="dropdown-divider" /></li>
             <li>
               <Link className="dropdown-item d-flex align-items-center text-danger fw-bold" to="/super-admin/dashboard" onClick={onClose}>
-                <ShieldCheck size={15} className="me-2" aria-hidden="true" />System Dashboard
+                <ShieldCheck size={15} className="me-2" aria-hidden="true" />{t('profile.systemDashboard')}
               </Link>
             </li>
           </>
@@ -541,7 +551,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
               onLogout();
             }}
           >
-            <LogOut size={15} className="me-2" aria-hidden="true" />Logout
+            <LogOut size={15} className="me-2" aria-hidden="true" />{t('profile.logout')}
           </button>
         </li>
       </ul>
