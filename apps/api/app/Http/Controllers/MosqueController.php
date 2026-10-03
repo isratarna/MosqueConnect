@@ -70,6 +70,7 @@ class MosqueController extends Controller
             'jumuahSessions',
             'photos',
             'publishedAnnouncements' => fn ($query) => $query->limit(5),
+            'paymentMethods' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('id'),
         ]);
         $mosque->loadCount([
             'followers',

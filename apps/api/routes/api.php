@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BroadcastController;
 use App\Http\Controllers\Admin\CampaignManagementController;
+use App\Http\Controllers\Admin\CampaignUpdateManagementController;
 use App\Http\Controllers\Admin\ComplaintManagementController;
 use App\Http\Controllers\Admin\ContactMessageManagementController;
 use App\Http\Controllers\Admin\ContentModerationController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Admin\MosqueDashboardController;
 use App\Http\Controllers\Admin\MosqueInsightsController;
 use App\Http\Controllers\Admin\MosqueManagementController;
 use App\Http\Controllers\Admin\MosquePhotoManagementController;
+use App\Http\Controllers\Admin\MosquePaymentMethodController;
 use App\Http\Controllers\Admin\MosqueSuggestionManagementController;
 use App\Http\Controllers\Admin\MosqueSystemManagementController;
 use App\Http\Controllers\Admin\MosqueTeamController;
@@ -123,6 +125,8 @@ Route::get('/events/{event}', [EventController::class, 'show']);
 Route::get('/events/{event}/calendar.ics', [EventController::class, 'exportIcs']);
 Route::get('/verify/volunteer/{code}', [VolunteerRegistrationController::class, 'verifyCertificate']);
 Route::get('/campaigns', [CampaignController::class, 'index']);
+Route::get('/campaigns/{campaign}/supporters', [CampaignController::class, 'supporters']);
+Route::get('/campaigns/{campaign}/updates', [CampaignController::class, 'updates']);
 Route::get('/campaigns/{campaign}', [CampaignController::class, 'show']);
 Route::get('/search', SearchController::class)->middleware('throttle:60,1');
 Route::get('/stats/public', [StatsController::class, 'public']);
@@ -149,6 +153,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/volunteer-opportunities/{volunteerOpportunity}/applications', [VolunteerApplicationController::class, 'store']);
     Route::delete('/volunteer-opportunities/{volunteerOpportunity}/register', [VolunteerRegistrationController::class, 'destroy']);
     Route::get('/me/donations', [CampaignDonationController::class, 'index']);
+    Route::get('/me/donations/{donation}/receipt', [CampaignDonationController::class, 'receipt']);
     Route::get('/me/blood-responses', [BloodRequestController::class, 'responses']);
     Route::post('/events/{event}/register', [EventRegistrationController::class, 'store']);
     Route::delete('/events/{event}/register', [EventRegistrationController::class, 'destroy']);
@@ -227,6 +232,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::get('/mosques/{mosque}/insights', [MosqueInsightsController::class, 'show']);
             Route::post('/mosques/{mosque}/photo', [MosquePhotoController::class, 'store']);
             Route::delete('/mosques/{mosque}/photo', [MosquePhotoController::class, 'destroy']);
+            Route::get('/mosques/{mosque}/payment-methods', [MosquePaymentMethodController::class, 'index']);
+            Route::post('/mosques/{mosque}/payment-methods', [MosquePaymentMethodController::class, 'store']);
+            Route::patch('/mosques/{mosque}/payment-methods/{paymentMethod}', [MosquePaymentMethodController::class, 'update']);
+            Route::delete('/mosques/{mosque}/payment-methods/{paymentMethod}', [MosquePaymentMethodController::class, 'destroy']);
             Route::get('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'prayerSchedule']);
             Route::put('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'updatePrayerSchedule']);
             Route::get('/mosques/{mosque}/schedule-periods', [PrayerSchedulePeriodController::class, 'index']);
@@ -312,9 +321,14 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
                 Route::patch('/mosques/{mosque}/campaigns/{campaign}/expire', [CampaignManagementController::class, 'expire']);
                 Route::delete('/mosques/{mosque}/campaigns/{campaign}', [CampaignManagementController::class, 'destroy']);
                 Route::get('/mosques/{mosque}/campaigns/{campaign}/donations', [CampaignManagementController::class, 'donationIndex']);
+                Route::get('/mosques/{mosque}/campaigns/{campaign}/donations/export', [CampaignManagementController::class, 'exportDonations']);
                 Route::post('/mosques/{mosque}/campaigns/{campaign}/donations', [CampaignManagementController::class, 'recordDonation']);
                 Route::patch('/mosques/{mosque}/campaigns/{campaign}/donations/{donation}/confirm', [CampaignManagementController::class, 'confirmDonation']);
                 Route::patch('/mosques/{mosque}/campaigns/{campaign}/donations/{donation}/reject', [CampaignManagementController::class, 'rejectDonation']);
+                Route::get('/mosques/{mosque}/campaigns/{campaign}/updates', [CampaignUpdateManagementController::class, 'index']);
+                Route::post('/mosques/{mosque}/campaigns/{campaign}/updates', [CampaignUpdateManagementController::class, 'store']);
+                Route::patch('/mosques/{mosque}/campaigns/{campaign}/updates/{update}', [CampaignUpdateManagementController::class, 'update']);
+                Route::delete('/mosques/{mosque}/campaigns/{campaign}/updates/{update}', [CampaignUpdateManagementController::class, 'destroy']);
             });
         });
 

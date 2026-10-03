@@ -36,6 +36,7 @@ class StoreCampaignRequest extends FormRequest
             'starts_on' => ['required', 'date_format:Y-m-d'],
             'ends_on' => ['required', 'date_format:Y-m-d', 'after_or_equal:starts_on'],
             'image_url' => ['nullable', 'url:http,https', 'max:2048'],
+            'reference_hint' => ['sometimes', 'nullable', 'string', 'max:255'],
             'status' => ['sometimes', 'string', Rule::in(Campaign::INITIAL_STATUSES)],
         ];
     }

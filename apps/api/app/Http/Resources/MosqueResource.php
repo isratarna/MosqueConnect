@@ -109,6 +109,8 @@ class MosqueResource extends JsonResource
                 ->map(fn ($jamaat): array => (new EidJamaatResource($jamaat->setRelation('mosque', $this->resource)))->resolve())
                 ->values()
                 ->all(), []);
+            $payload['payment_methods'] = $this->whenLoaded('paymentMethods', fn (): array =>
+                MosquePaymentMethodResource::collection($this->paymentMethods)->resolve(), []);
         }
 
         return $payload;

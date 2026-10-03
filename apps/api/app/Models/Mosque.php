@@ -175,6 +175,11 @@ class Mosque extends Model
         return $this->hasMany(Campaign::class);
     }
 
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(MosquePaymentMethod::class);
+    }
+
     /**
      * Get notifications generated for followers of this mosque.
      */

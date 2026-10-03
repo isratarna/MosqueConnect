@@ -39,6 +39,7 @@ class UpdateCampaignRequest extends FormRequest
             'starts_on' => ['sometimes', 'required', 'date_format:Y-m-d'],
             'ends_on' => ['sometimes', 'required', 'date_format:Y-m-d'],
             'image_url' => ['sometimes', 'nullable', 'url:http,https', 'max:2048'],
+            'reference_hint' => ['sometimes', 'nullable', 'string', 'max:255'],
             'status' => ['sometimes', 'required', 'string', Rule::in(Campaign::STATUSES)],
         ];
     }

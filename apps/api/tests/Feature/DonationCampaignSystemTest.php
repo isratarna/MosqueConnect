@@ -36,6 +36,32 @@ class DonationCampaignSystemTest extends TestCase
             ->assertJsonPath('data.mosque.id', $active->mosque_id);
     }
 
+    public function test_completed_campaigns_are_archived_and_non_drafts_remain_viewable(): void
+    {
+        $completed = Campaign::factory()->create(['status' => Campaign::STATUS_COMPLETED]);
+        $cancelled = Campaign::factory()->create(['status' => Campaign::STATUS_CANCELLED]);
+        $expired = Campaign::factory()->create(['status' => Campaign::STATUS_EXPIRED]);
+        $draft = Campaign::factory()->create(['status' => Campaign::STATUS_DRAFT]);
+
+        $this->getJson('/api/campaigns?status=completed')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $completed->id)
+            ->assertJsonPath('data.0.accepts_donations', false);
+
+        $this->getJson("/api/campaigns/{$completed->id}")
+            ->assertOk()
+            ->assertJsonPath('data.accepts_donations', false)
+            ->assertJsonPath('data.notice', 'This campaign is complete.');
+        $this->getJson("/api/campaigns/{$cancelled->id}")
+            ->assertOk()
+            ->assertJsonPath('data.notice', 'This campaign has been cancelled.');
+        $this->getJson("/api/campaigns/{$expired->id}")
+            ->assertOk()
+            ->assertJsonPath('data.accepts_donations', false);
+        $this->getJson("/api/campaigns/{$draft->id}")->assertNotFound();
+    }
+
     public function test_verified_owner_can_create_campaign_and_cannot_spoof_ownership_or_raised_amount(): void
     {
         [$admin, $mosque] = $this->verifiedAdminAndMosque();
@@ -48,10 +74,13 @@ class DonationCampaignSystemTest extends TestCase
         ]))->assertUnprocessable()
             ->assertJsonValidationErrors(['mosque_id', 'created_by', 'raised_amount']);
 
-        $response = $this->postJson("/api/admin/mosques/{$mosque->id}/campaigns", $this->validPayload())
+        $response = $this->postJson("/api/admin/mosques/{$mosque->id}/campaigns", $this->validPayload([
+            'reference_hint' => 'Use RAMADAN and your phone number.',
+        ]))
             ->assertCreated()
             ->assertJsonPath('data.mosque_id', $mosque->id)
             ->assertJsonPath('data.created_by', $admin->id)
+            ->assertJsonPath('data.reference_hint', 'Use RAMADAN and your phone number.')
             ->assertJsonPath('data.raised_amount', 0);
 
         $this->assertDatabaseHas('campaigns', [

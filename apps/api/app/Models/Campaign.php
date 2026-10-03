@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'mosque_id', 'created_by', 'title', 'summary', 'description', 'category',
-    'target_amount', 'currency', 'starts_on', 'ends_on', 'image_url', 'status',
+    'target_amount', 'currency', 'starts_on', 'ends_on', 'image_url', 'reference_hint', 'status',
     'moderation_status', 'moderation_note',
 ])]
 class Campaign extends Model
@@ -97,6 +97,11 @@ class Campaign extends Model
     public function donations(): HasMany
     {
         return $this->hasMany(CampaignDonation::class);
+    }
+
+    public function updates(): HasMany
+    {
+        return $this->hasMany(CampaignUpdate::class);
     }
 
     public function contentReports(): HasMany

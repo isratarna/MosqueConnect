@@ -56,6 +56,8 @@ class Notification extends Model
 
     public const REFERENCE_CAMPAIGN = 'campaign';
 
+    public const REFERENCE_CAMPAIGN_UPDATE = 'campaign_update';
+
     public const REFERENCE_EID_JAMAAT = 'eid_jamaat';
 
     public const REFERENCE_MOSQUE_MEMBER = 'mosque_member';
