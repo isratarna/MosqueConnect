@@ -3,10 +3,20 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class BloodRequestResource extends JsonResource
 {
+    /**
+     * @param  bool  $canViewResponses  Whether the viewer may see who offered to
+     *                                  help, which means their phone numbers.
+     */
+    public function __construct($resource, private readonly bool $canViewResponses = false)
+    {
+        parent::__construct($resource);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -26,13 +36,19 @@ class BloodRequestResource extends JsonResource
             'status' => $this->status,
             'open' => $this->isOpen(),
             'closed_at' => $this->closed_at?->toJSON(),
+            'closed_reason' => $this->closed_reason,
+            // The creator's account phone number is never published; the
+            // requester shares contact_phone on purpose instead.
             'creator' => $this->whenLoaded('creator', fn (): array => [
                 'id' => $this->creator->id,
                 'name' => $this->creator->name,
-                'phone' => $this->creator->phone,
             ]),
             'responses_count' => $this->when(isset($this->responses_count), fn (): int => (int) $this->responses_count),
-            'responses' => BloodRequestResponseResource::collection($this->whenLoaded('responses')),
+            'has_responded' => (bool) ($this->resource->has_responded ?? false),
+            'responses' => $this->when(
+                $this->canViewResponses && $this->relationLoaded('responses'),
+                fn (): AnonymousResourceCollection => BloodRequestResponseResource::collection($this->responses),
+            ),
             'created_at' => $this->created_at?->toJSON(),
             'updated_at' => $this->updated_at?->toJSON(),
         ];

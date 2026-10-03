@@ -187,8 +187,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/verification-requests/{verificationRequest}', [VerificationRequestController::class, 'show']);
 
     // Community blood requests
-    Route::post('/blood-requests', [BloodRequestController::class, 'store']);
+    Route::post('/blood-requests', [BloodRequestController::class, 'store'])
+        ->middleware('throttle:blood-requests');
     Route::post('/blood-requests/{bloodRequest}/responses', [BloodRequestController::class, 'storeResponse']);
+    Route::delete('/blood-requests/{bloodRequest}/responses/me', [BloodRequestController::class, 'destroyMyResponse']);
+    Route::patch('/blood-requests/{bloodRequest}', [BloodRequestController::class, 'update']);
     Route::patch('/blood-requests/{bloodRequest}/status', [BloodRequestController::class, 'updateStatus']);
 
     // Mosque admin + super admin

@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BloodRequestIndexRequest;
 use App\Http\Requests\StoreBloodRequestRequest;
 use App\Http\Requests\StoreBloodRequestResponseRequest;
+use App\Http\Requests\UpdateBloodRequestRequest;
 use App\Http\Requests\UpdateBloodRequestStatusRequest;
 use App\Http\Resources\BloodRequestResource;
 use App\Http\Resources\BloodRequestResponseResource;
 use App\Models\BloodRequest;
 use App\Models\BloodRequestResponse;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -22,17 +26,28 @@ class BloodRequestController extends Controller
     }
 
     /**
-     * List active (open) blood requests available to the community.
+     * List active (open) blood requests available to the community, most
+     * urgent and most soonest first.
      */
-    public function index(): AnonymousResourceCollection
+    public function index(BloodRequestIndexRequest $request): AnonymousResourceCollection
     {
+        $viewerId = $request->user()?->id;
+
         $requests = BloodRequest::query()
             ->active()
+            ->filter($request->validated())
             ->with('creator')
             ->withCount('responses')
-            ->orderByDesc('required_date')
-            ->orderByDesc('id')
-            ->get();
+            // Lets the UI mark the rows this person already offered to help,
+            // so it no longer has to fetch /api/me/blood-responses for that.
+            ->when($viewerId !== null, fn (Builder $query): Builder => $query->withExists([
+                'responses as has_responded' => fn (Builder $query): Builder => $query->where('user_id', $viewerId),
+            ]))
+            ->urgencyFirst()
+            ->orderBy('required_date')
+            ->orderBy('id')
+            ->paginate($request->integer('per_page', 15))
+            ->withQueryString();
 
         return BloodRequestResource::collection($requests);
     }
@@ -40,16 +55,29 @@ class BloodRequestController extends Controller
     /**
      * Show a single blood request. Open requests are public; closed ones are
      * only visible to the creator or an authorized role.
+     *
+     * Who offered to help carries a phone number, so the responses are only
+     * loaded for the requester and a super admin. Everyone else sees the
+     * count alone.
      */
-    public function show(BloodRequest $bloodRequest): BloodRequestResource
+    public function show(Request $request, BloodRequest $bloodRequest): BloodRequestResource
     {
         if (! $bloodRequest->isOpen() && ! $this->canViewClosed($bloodRequest)) {
             abort(404);
         }
 
-        return new BloodRequestResource(
-            $bloodRequest->load(['creator', 'responses.respondent'])
-        );
+        $viewerId = $request->user()?->id;
+        $canViewResponses = $viewerId !== null && Gate::allows('viewResponses', $bloodRequest);
+
+        $bloodRequest->loadCount('responses');
+        $bloodRequest->has_responded = $viewerId !== null
+            && $bloodRequest->responses()->where('user_id', $viewerId)->exists();
+
+        if ($canViewResponses) {
+            $bloodRequest->load('responses.respondent');
+        }
+
+        return new BloodRequestResource($bloodRequest->load('creator'), $canViewResponses);
     }
 
     /**
@@ -129,6 +157,46 @@ class BloodRequestController extends Controller
     }
 
     /**
+     * Let the requester correct a detail, such as a changed hospital.
+     */
+    public function update(UpdateBloodRequestRequest $request, BloodRequest $bloodRequest): BloodRequestResource
+    {
+        Gate::authorize('update', $bloodRequest);
+
+        if (! $bloodRequest->isOpen()) {
+            return response()->json([
+                'message' => 'Only an open blood request can be edited.',
+            ], 422);
+        }
+
+        $bloodRequest->update($request->validated());
+
+        return new BloodRequestResource($bloodRequest->refresh()->load('creator'));
+    }
+
+    /**
+     * Withdraw this person's offer to help.
+     */
+    public function destroyMyResponse(Request $request, BloodRequest $bloodRequest): JsonResponse
+    {
+        $response = $bloodRequest->responses()
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if ($response === null) {
+            return response()->json([
+                'message' => 'You have not responded to this blood request.',
+            ], 404);
+        }
+
+        $response->delete();
+
+        return response()->json([
+            'message' => 'Your response was withdrawn successfully.',
+        ]);
+    }
+
+    /**
      * Update the status of a blood request (creator or authorized role only).
      */
     public function updateStatus(
@@ -151,6 +219,8 @@ class BloodRequestController extends Controller
         $bloodRequest->update([
             'status' => $newStatus,
             'closed_at' => $closing ? ($bloodRequest->closed_at ?? now()) : null,
+            // A cancellation reads better with the reason attached to it.
+            'closed_reason' => $closing ? $request->validated('reason') : null,
         ]);
 
         return response()->json([
