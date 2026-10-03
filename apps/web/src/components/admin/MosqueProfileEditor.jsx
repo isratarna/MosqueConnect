@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
 import LocationPicker from "./LocationPicker";
+import PhotoGalleryManager from "./PhotoGalleryManager";
 import { FACILITY_META } from "../../data/mosques";
 import { removeMosquePhoto, updateMosqueProfile, uploadMosquePhoto } from "../../utils/dashboardApi";
 
@@ -156,6 +157,8 @@ export function ProfileForm({ mosque, onSaved }) {
         {message && <div className="alert alert-success py-2 mt-3" role="status">{message}</div>}
         <button className="btn btn-mc mt-3" disabled={busy}>{busy ? "Saving…" : "Save profile"}</button>
       </form>
+      {/* [Urmee · F3 Part 2] Placed in the existing Mosque Profile section so AdminDashboard.jsx (being rebuilt by others) is not touched. */}
+      <PhotoGalleryManager mosque={mosque} onCoverChanged={(url) => onSaved({ ...mosque, photo_url: url })} />
     </div>
   );
 }

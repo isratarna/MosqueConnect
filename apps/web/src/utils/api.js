@@ -19,6 +19,9 @@ export async function apiRequest(path, { body, headers, ...options } = {}) {
     // [Urmee · F5 Part 4] Expose Laravel's per-field 422 errors so forms can show them next to the right
     // input.
     error.errors = data.errors || {};
+    // [Urmee · F3 Part 3] Keep the whole error body: the 409 response carries mosque_id of the existing
+    // mosque.
+    error.data = data;
     throw error;
   }
   return data;

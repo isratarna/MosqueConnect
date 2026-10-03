@@ -20,6 +20,7 @@ import {
   BroadcastPanel,
   ClaimsPanel,
   ContactMessagesPanel,
+  MosqueSuggestionsPanel,
   CorrectionsPanel,
   ModerationPanel,
   MosquesPanel,
@@ -36,6 +37,7 @@ const SECTIONS = [
   { id: "claims", label: "Mosque Claims", icon: FileCheck2 },
   { id: "users", label: "Users", icon: Users },
   { id: "mosques", label: "Mosques", icon: Building2 },
+  { id: "mosque-suggestions", label: "Mosque suggestions", icon: Building2 },
   { id: "corrections", label: "Corrections", icon: PencilLine },
   { id: "moderation", label: "Moderation", icon: SlidersHorizontal },
   { id: "reports", label: "Reports", icon: Flag },
@@ -68,6 +70,7 @@ export default function SuperAdminDashboard() {
       case "claims": return <ClaimsPanel />;
       case "users": return <UsersPanel currentUser={user} />;
       case "mosques": return <MosquesPanel />;
+      case "mosque-suggestions": return <MosqueSuggestionsPanel />;
       case "corrections": return <CorrectionsPanel />;
       case "moderation": return <ModerationPanel />;
       case "reports": return <ReportsPanel />;

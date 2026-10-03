@@ -6803,3 +6803,54 @@ main {
 .mc-qibla.is-aligned .mc-qibla__dial { stroke: #198754; }
 .mc-qibla.is-aligned .mc-qibla__marker { fill: #198754; }
 @media (prefers-reduced-motion: reduce) { .mc-qibla g { transition: none !important; } }
+
+/* ==========================================================================
+   [Urmee · F3 Parts 1-2] Mosque profile: action bar, section nav, gallery, reviews, admin photos
+   ========================================================================== */
+.mc-prewrap { white-space: pre-line; overflow-wrap: anywhere; }
+.mc-profile-section, #prayer-schedule, #announcements, #events, #donations, #photos, #reviews, #about, #eid-jamaat { scroll-margin-top: 140px; }
+.mc-profile-actions {
+  align-items: center;
+  background: var(--mc-surface-raised, #fff);
+  border: 1px solid var(--mc-line, #ded7ce);
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  position: sticky;
+  top: 70px;
+  z-index: 20;
+}
+.mc-profile-nav { display: flex; gap: 0.25rem 1rem; margin-bottom: 1rem; overflow-x: auto; white-space: nowrap; }
+.mc-profile-nav a { color: var(--mc-muted, #67635f); font-size: 0.85rem; font-weight: 600; padding: 0.25rem 0; text-decoration: none; }
+.mc-profile-nav a:hover { color: var(--mc-rust); }
+@media (max-width: 767.98px) {
+  /* On phones the main actions stay reachable at the bottom of the screen. */
+  .mc-profile-actions { border-radius: 12px 12px 0 0; bottom: 0; justify-content: space-around; left: 0; margin: 0; position: fixed; right: 0; top: auto; z-index: 1030; }
+  .mc-profile-hero + .mc-profile-actions ~ * { scroll-margin-bottom: 80px; }
+  .mc-profile-page-end { padding-bottom: 80px; }
+}
+.mc-gallery { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); padding: 0; }
+.mc-gallery__thumb { aspect-ratio: 4 / 3; background: none; border: 0; border-radius: 8px; display: block; overflow: hidden; padding: 0; width: 100%; }
+.mc-gallery__thumb img { height: 100%; object-fit: cover; transition: transform 0.2s ease; width: 100%; }
+.mc-gallery__thumb:hover img { transform: scale(1.04); }
+.mc-gallery__large { border-radius: 8px; max-height: 70vh; max-width: 100%; object-fit: contain; }
+.mc-star-input { border: 0; margin: 0; padding: 0; }
+.mc-star-input__star { cursor: pointer; line-height: 1; margin: 0; }
+.mc-star-input input:focus-visible + .mc-star-input__star { outline: 2px solid var(--mc-rust); outline-offset: 2px; border-radius: 4px; }
+.mc-stars { display: inline-flex; gap: 1px; }
+.mc-dropzone { align-items: center; border: 2px dashed var(--mc-line, #ded7ce); border-radius: 12px; display: flex; flex-direction: column; padding: 1.25rem; text-align: center; }
+.mc-dropzone.is-dragging { background: rgba(182, 69, 18, 0.08); border-color: var(--mc-rust); }
+.mc-admin-photos { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); padding: 0; }
+.mc-admin-photos__item { border: 1px solid var(--mc-line, #ded7ce); border-radius: 10px; padding: 0.5rem; position: relative; }
+.mc-admin-photos__item img { aspect-ratio: 4 / 3; border-radius: 6px; object-fit: cover; width: 100%; }
+.mc-admin-photos__badge { left: 0.85rem; position: absolute; top: 0.85rem; }
+
+/* [Urmee · F3 Part 3] MosquePicker (combobox) */
+.mc-picker__list { background: var(--mc-surface-raised, #fff); border: 1px solid var(--mc-line, #ded7ce); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); left: 0; margin: 0.25rem 0 0; max-height: 320px; overflow-y: auto; position: absolute; right: 0; z-index: 30; }
+.mc-picker__option { cursor: pointer; padding: 0.55rem 0.75rem; }
+.mc-picker__option.is-active { background: rgba(182, 69, 18, 0.1); }
+.mc-picker__option.is-disabled { cursor: not-allowed; opacity: 0.6; }
+@media (max-width: 767.98px) { .mc-profile-page { padding-bottom: 5rem; } }

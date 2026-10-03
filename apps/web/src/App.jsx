@@ -29,6 +29,7 @@ const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
 const Eid = lazy(() => import("./pages/Eid"));
 const Search = lazy(() => import("./pages/Search"));
+const SuggestMosque = lazy(() => import("./pages/SuggestMosque"));
 const Qibla = lazy(() => import("./pages/Qibla"));
 const About = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.About })));
 const Faq = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.Faq })));
@@ -101,6 +102,15 @@ export default function App() {
             }
           />
           <Route path="/mosque/:id" element={<MosqueProfile />} />
+          <Route
+            // [Urmee · F3 Part 3] Sending a suggestion needs an account, so the route is protected.
+            path="/mosques/suggest"
+            element={
+              <ProtectedRoute>
+                <SuggestMosque />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route

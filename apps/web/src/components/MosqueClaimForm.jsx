@@ -22,6 +22,8 @@ export default function MosqueClaimForm({ mosqueId }) {
     finally { setBusy(false); }
   }
 
+  // [Urmee · F3 Part 1] Now a small "Is this your mosque?" link inside the About card instead of a big
+  // box at the top of the page.
   return <details className="card p-3 mb-4">
     <summary className="fw-semibold text-mc">Manage this mosque? Apply for administrator access</summary>
     <div className="pt-3">

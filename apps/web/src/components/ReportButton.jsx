@@ -20,7 +20,9 @@ const CATEGORIES = [
  * "Report" button for a content page. `type` is one of announcement, event, campaign,
  * mosque, review or lost_found; `id` is that item's id. Logged-out visitors are sent to log in first.
  */
-export default function ReportButton({ type, id, className = "btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" }) {
+// [Urmee · F3 Part 1] New optional `label` ("Report incorrect info" on the profile) and a link-style
+// className.
+export default function ReportButton({ type, id, label = "Report", className = "btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" }) {
   const { user } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -35,7 +37,7 @@ export default function ReportButton({ type, id, className = "btn btn-sm btn-out
   if (!user) {
     return (
       <Link to="/login" state={{ from: location.pathname + location.search }} className={className}>
-        <Flag size={14} aria-hidden="true" /> Report
+        <Flag size={14} aria-hidden="true" /> {label}
       </Link>
     );
   }
@@ -69,7 +71,7 @@ export default function ReportButton({ type, id, className = "btn btn-sm btn-out
   return (
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>
-        <Flag size={14} aria-hidden="true" /> Report
+        <Flag size={14} aria-hidden="true" /> {label}
       </button>
       {open && (
         <Modal

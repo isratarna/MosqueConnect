@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle, Clock, FileWarning, ShieldCheck, Upload } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
-import { useGeolocation } from "../hooks/useGeolocation";
-import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
+import MosquePicker from "../components/MosquePicker";
+import { fetchMosqueById } from "../utils/mosqueDiscovery";
 import { PageSkeleton } from "../components/skeletons";
 
 export default function MosqueAdminClaim() {
@@ -21,14 +21,18 @@ export default function MosqueAdminClaim() {
   const [applicantName, setApplicantName] = useState(user?.name || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [role, setRole] = useState("");
-  const [mosqueId, setMosqueId] = useState("");
+  const [mosque, setMosque] = useState(null);
+  const mosqueId = mosque ? String(mosque.id) : "";
   const [document, setDocument] = useState(null);
 
-  // Mosques List State
-  const origin = useGeolocation();
-  const discovery = useMosqueDiscovery(origin);
-  const mosques = discovery.mosques || [];
-  const loadingMosques = discovery.status === "loading" || discovery.status === "idle";
+  // ?mosque=ID (from "Claim this mosque instead" or an approved suggestion) preselects the mosque.
+  const [searchParams] = useSearchParams();
+  // [Urmee · F3 Part 3] ?mosque=ID (from "Claim this mosque instead" or an approved suggestion)
+  // preselects the mosque on the claim form.
+  const preselected = searchParams.get("mosque");
+  useEffect(() => {
+    if (preselected) fetchMosqueById(preselected).then(setMosque).catch(() => {});
+  }, [preselected]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -63,6 +67,11 @@ export default function MosqueAdminClaim() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
+    if (!mosqueId) {
+      // [Urmee · F3 Part 3] The picker isn't a native <select>, so "required" is checked here.
+      setSubmitError("Please search for your mosque and choose it from the list.");
+      return;
+    }
     
     setSubmitting(true);
     setSubmitError("");
@@ -213,26 +222,10 @@ export default function MosqueAdminClaim() {
               </div>
               
               <div className="col-12">
-                <label className="form-label fw-semibold">Select Mosque <span className="text-danger">*</span></label>
-                <select 
-                  className="form-select" 
-                  value={mosqueId} 
-                  onChange={(e) => setMosqueId(e.target.value)} 
-                  required
-                  disabled={loadingMosques}
-                >
-                  <option value="">{loadingMosques ? "Locating nearby mosques..." : "-- Select a Mosque --"}</option>
-                  {mosques.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} {m.address ? `- ${m.address}` : ""}
-                    </option>
-                  ))}
-                </select>
-                {discovery.status === "error" && (
-                  <div className="small text-danger mt-1">
-                    Failed to load nearby mosques: {discovery.error}. Please ensure location services are enabled.
-                  </div>
-                )}
+                <MosquePicker label="Your mosque" required value={mosque} onChange={setMosque} />
+                <div className="form-text">
+                  Can&apos;t find your mosque? <Link to="/mosques/suggest">Suggest it</Link>.
+                </div>
               </div>
 
               <div className="col-12 mt-4">
