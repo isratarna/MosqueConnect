@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { translate } from "../i18n/translate.js";
 import {
   clearMosqueDiscoveryCache,
   coordinatesOf,
@@ -19,7 +20,7 @@ export function useMosqueDiscovery(origin, radius = DISCOVERY_RADIUS_KM) {
     if (latitude === undefined || longitude === undefined) {
       setMosques([]);
       setStatus("error");
-      setError("A valid location is required to discover mosques.");
+      setError(translate("error.locationRequired"));
       return undefined;
     }
 
@@ -37,7 +38,7 @@ export function useMosqueDiscovery(origin, radius = DISCOVERY_RADIUS_KM) {
         if (!active) return;
         setMosques([]);
         setStatus("error");
-        setError(requestError.message || "Nearby mosques could not be loaded.");
+        setError(requestError.message || translate("error.nearbyLoad"));
       });
 
     return () => {

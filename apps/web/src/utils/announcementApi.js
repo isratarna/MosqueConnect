@@ -1,13 +1,15 @@
 import { apiUrl } from "../config.js";
 import { getAnnouncementUrgency } from "../data/announcements";
+import { translate } from "../i18n/translate.js";
+import { networkFetch } from "./network.js";
 
 export async function fetchAnnouncementById(id) {
   const announcementId = String(id ?? "").trim();
   if (!announcementId) {
-    return Promise.reject(new Error("An announcement id is required."));
+    return Promise.reject(new Error(translate("error.announcementIdRequired")));
   }
 
-  const response = await fetch(apiUrl(`/api/announcements/${encodeURIComponent(announcementId)}`), {
+  const response = await networkFetch(apiUrl(`/api/announcements/${encodeURIComponent(announcementId)}`), {
     headers: { Accept: "application/json" },
   });
   const payload = await response.json().catch(() => ({}));
@@ -17,11 +19,11 @@ export async function fetchAnnouncementById(id) {
   }
 
   if (response.status !== 404) {
-    throw new Error(payload.message || "Announcement details could not be loaded.");
+    throw new Error(payload.message || translate("error.announcementLoad"));
   }
 
 
-  throw new Error(payload.message || "Announcement not found.");
+  throw new Error(payload.message || translate("error.announcementNotFound"));
 }
 
 export function normalizeAnnouncement(record) {
@@ -31,7 +33,6 @@ export function normalizeAnnouncement(record) {
   return {
     id: record.id,
     category: "announcement",
-    typeLabel: "Mosque announcement",
     title: record.title,
     description: record.body || record.description || "",
     urgency: getAnnouncementUrgency(record.urgency),
@@ -44,10 +45,11 @@ export function normalizeAnnouncement(record) {
     location: mosque.address || record.location,
     area: record.area,
     contact: mosque.phone || record.contact,
+    // The UI turns these into translated text (announcement.publishedBy.*).
     publishedBy: mosque.verified === true || mosque.verification_status === "verified"
-      ? "Verified mosque admin"
+      ? { kind: "verifiedAdmin" }
       : mosque.name
-        ? `${mosque.name} community`
-        : "MosqueConnect community",
+        ? { kind: "mosqueCommunity", name: mosque.name }
+        : { kind: "community" },
   };
 }

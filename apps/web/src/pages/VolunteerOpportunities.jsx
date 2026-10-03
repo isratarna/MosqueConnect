@@ -13,8 +13,12 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../utils/api";
 import { ListRowsSkeleton, SkeletonRegion } from "../components/skeletons";
+import { formatApiDate, formatNumber } from "../utils/intl";
+import { formatClockTime } from "../utils/prayerTime";
+import { useLocale } from "../hooks/useLocale";
 
 export default function VolunteerOpportunities() {
+  const { t, locale } = useLocale();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -30,7 +34,6 @@ export default function VolunteerOpportunities() {
 
   const normalize = (item, registrations = []) => ({
     ...item, mosqueName: item.mosque?.name, date: item.opportunity_date,
-    time: [item.start_time, item.end_time].filter(Boolean).join(" - ") || "Contact the mosque",
     capacity: item.volunteers_required, instructions: item.requirements,
     participantCount: item.registrations_count || 0,
     acceptedCount: item.accepted_count || 0,
@@ -74,9 +77,9 @@ export default function VolunteerOpportunities() {
         <div>
           <h2 className="fw-bold mb-1 d-flex align-items-center gap-2">
             <HeartHandshake size={28} className="text-mc" />
-            Volunteer Opportunities
+            {t("volunteer.title")}
           </h2>
-          <p className="text-muted mb-0 small">Give back to your community and earn rewards.</p>
+          <p className="text-muted mb-0 small">{t("volunteer.subtitle")}</p>
         </div>
         {isAdmin && managedMosqueIds.length > 0 && (
           <Link to="/admin/dashboard?section=volunteers" className="btn btn-outline-mc d-flex align-items-center gap-2">
@@ -91,15 +94,15 @@ export default function VolunteerOpportunities() {
       ) : error ? (
         <div className="alert alert-warning text-center py-5 shadow-sm">
           <AlertCircle size={32} className="text-warning mb-3 mx-auto" />
-          <h5 className="fw-bold">Failed to load opportunities</h5>
+          <h5 className="fw-bold">{t("volunteer.loadFailed")}</h5>
           <p>{error}</p>
-          <button className="btn btn-warning mt-2" onClick={() => fetchData()}>Try Again</button>
+          <button className="btn btn-warning mt-2" onClick={() => fetchData()}>{t("common.tryAgain")}</button>
         </div>
       ) : opportunities.length === 0 ? (
         <div className="text-center py-5 text-muted border rounded shadow-sm bg-white">
           <HeartHandshake size={48} className="mb-3 opacity-25 mx-auto" />
-          <h5 className="fw-bold">No Active Opportunities</h5>
-          <p className="mb-0">There are no volunteer requests available at the moment. Check back later!</p>
+          <h5 className="fw-bold">{t("volunteer.emptyTitle")}</h5>
+          <p className="mb-0">{t("volunteer.emptyCopy")}</p>
         </div>
       ) : (
         <div className="d-flex flex-column gap-3">
@@ -116,9 +119,9 @@ export default function VolunteerOpportunities() {
                   <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
                     <h5 className="fw-bold mb-0 text-dark">{opp.title}</h5>
                     <div>
-                      {opp.status === "active" && !isFilled && <span className="badge bg-success-subtle text-success border border-success-subtle">Active</span>}
-                      {opp.status === "active" && isFilled && <span className="badge bg-warning-subtle text-warning border border-warning-subtle text-dark">Filled</span>}
-                      {isCompleted && <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Completed</span>}
+                      {opp.status === "active" && !isFilled && <span className="badge bg-success-subtle text-success border border-success-subtle">{t("status.active")}</span>}
+                      {opp.status === "active" && isFilled && <span className="badge bg-warning-subtle text-warning border border-warning-subtle text-dark">{t("volunteer.filled")}</span>}
+                      {isCompleted && <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle">{t("status.completed")}</span>}
                     </div>
                   </div>
                   <h6 className="text-mc fw-semibold mb-3 small d-flex align-items-center gap-1">
@@ -129,7 +132,7 @@ export default function VolunteerOpportunities() {
 
                   {opp.instructions && (
                     <div className="bg-light p-3 rounded mb-3 small text-muted border-start border-3 border-secondary">
-                      <strong className="d-block mb-1 text-dark">Requirements/Instructions:</strong>
+                      <strong className="d-block mb-1 text-dark">{t("volunteer.requirementsLabel")}</strong>
                       {opp.instructions}
                     </div>
                   )}
@@ -137,17 +140,17 @@ export default function VolunteerOpportunities() {
                   <div className="row g-2 mb-3">
                     <div className="col-sm-6 col-md-4">
                       <div className="d-flex align-items-center gap-2 small text-muted">
-                        <Calendar size={16} /> <span>{opp.date}</span>
+                        <Calendar size={16} /> <span>{formatApiDate(opp.date, locale)}</span>
                       </div>
                     </div>
                     <div className="col-sm-6 col-md-4">
                       <div className="d-flex align-items-center gap-2 small text-muted">
-                        <Clock size={16} /> <span>{opp.time}</span>
+                        <Clock size={16} /> <span>{[opp.start_time, opp.end_time].filter(Boolean).map((value) => formatClockTime(value, locale)).join(" - ") || t("volunteer.contactMosque")}</span>
                       </div>
                     </div>
                     <div className="col-sm-6 col-md-4">
                       <div className="d-flex align-items-center gap-2 small fw-semibold text-dark">
-                        <Users size={16} /> <span>{opp.participantCount} / {opp.capacity} Volunteers</span>
+                        <Users size={16} /> <span>{t("volunteer.volunteers", { applied: opp.participantCount, capacity: opp.capacity })}</span>
                       </div>
                     </div>
                   </div>
@@ -158,11 +161,11 @@ export default function VolunteerOpportunities() {
                     <div>
                       {canManage ? (
                         <div className="small text-muted fw-semibold">
-                          Admin View: {opp.participantCount} Applications
+                          {t("volunteer.adminView", { count: opp.participantCount })}
                         </div>
                       ) : (
                         <div className="small text-muted">
-                          {hasApplied ? "Jazakallah Khair for participating!" : "Sign up to help your community."}
+                          {hasApplied ? t("volunteer.thanks") : t("volunteer.signUp")}
                         </div>
                       )}
                     </div>
@@ -187,7 +190,7 @@ export default function VolunteerOpportunities() {
                           ) : (
                             <HeartHandshake size={16} />
                           )}
-                          {hasApplied ? "Cancel signup" : isFilled ? "Spots Filled" : isCompleted ? "Completed" : "Volunteer Now"}
+                          {hasApplied ? t("volunteer.cancelSignup") : isFilled ? t("volunteer.spotsFilled") : isCompleted ? t("status.completed") : t("volunteer.volunteerNow")}
                         </button>
                       )}
                     </div>

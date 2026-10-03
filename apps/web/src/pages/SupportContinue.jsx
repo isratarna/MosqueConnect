@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Pencil } from "lucide-react";
 import { getSupportCategory, getSupportSummary } from "../data/supportFlow";
+import { useLocale } from "../hooks/useLocale";
 
 export default function SupportContinue() {
+  const { t } = useLocale();
   const { state } = useLocation();
   const navigate = useNavigate();
   const [acknowledged, setAcknowledged] = useState(false);
@@ -15,10 +17,10 @@ export default function SupportContinue() {
       <section className="mc-support-action">
         <div className="container py-5">
           <div className="mc-support-action__empty mc-card text-center">
-            <h1>Nothing to review yet</h1>
-            <p>Choose a support category first so we can prepare a summary of your details.</p>
+            <h1>{t("support.continuePage.emptyTitle")}</h1>
+            <p>{t("support.continuePage.emptyCopy")}</p>
             <Link to="/support" className="btn btn-mc">
-              <ArrowLeft size={16} aria-hidden="true" /> Back to Support
+              <ArrowLeft size={16} aria-hidden="true" /> {t("support.continuePage.backToSupport")}
             </Link>
           </div>
         </div>
@@ -27,15 +29,15 @@ export default function SupportContinue() {
   }
 
   const Icon = category.icon;
-  const summary = getSupportSummary(category.key, support.formData);
+  const summary = getSupportSummary(category.key, support.formData, t);
 
   return (
     <section className="mc-support-action mc-atmospheric-section">
       <div className="container py-5">
         <div className="mc-support-action__intro mc-motion-section">
-          <p className="mc-kicker">Review your support</p>
-          <h1>{category.title}</h1>
-          <p>Review the information below before moving to the next placeholder step.</p>
+          <p className="mc-kicker">{t("support.continuePage.kicker")}</p>
+          <h1>{t(category.titleKey)}</h1>
+          <p>{t("support.continuePage.copy")}</p>
         </div>
 
         <div className="row justify-content-center mc-motion-stagger">
@@ -44,8 +46,8 @@ export default function SupportContinue() {
               <div className="mc-support-action__heading">
                 <div className="mc-feature-icon"><Icon size={25} strokeWidth={1.6} aria-hidden="true" /></div>
                 <div>
-                  <span className="mc-card-eyebrow">Selected support type</span>
-                  <h2>{category.cardTitle}</h2>
+                  <span className="mc-card-eyebrow">{t("support.continuePage.selectedType")}</span>
+                  <h2>{t(category.cardTitleKey)}</h2>
                 </div>
               </div>
 
@@ -61,7 +63,7 @@ export default function SupportContinue() {
               {acknowledged && (
                 <div className="alert alert-light border mc-support-action__notice" role="status">
                   <CheckCircle2 size={18} aria-hidden="true" />
-                  <span>This is a frontend placeholder. No payment, application, or support offer has been submitted.</span>
+                  <span>{t("support.continuePage.placeholderNotice")}</span>
                 </div>
               )}
 
@@ -71,17 +73,15 @@ export default function SupportContinue() {
                   className="btn btn-outline-mc"
                   onClick={() => navigate("/support", { state: { draft: support } })}
                 >
-                  <Pencil size={16} aria-hidden="true" /> Edit information
+                  <Pencil size={16} aria-hidden="true" /> {t("support.continuePage.edit")}
                 </button>
                 <button type="button" className="btn btn-mc" onClick={() => setAcknowledged(true)}>
-                  {category.nextLabel}
+                  {t(category.nextLabelKey)}
                 </button>
               </div>
             </div>
 
-            <p className="mc-support-action__helper mb-0">
-              Your details are held temporarily in this browser navigation flow and are not stored or submitted.
-            </p>
+            <p className="mc-support-action__helper mb-0">{t("support.continuePage.helper")}</p>
           </div>
         </div>
       </div>

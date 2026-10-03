@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -11,6 +12,7 @@ const FOCUSABLE_SELECTOR = [
 ].join(",");
 
 export default function SupportModal({ title, description, onClose, children }) {
+  const { t } = useTranslation();
   const dialogRef = useRef(null);
   const closeButtonRef = useRef(null);
 
@@ -62,7 +64,7 @@ export default function SupportModal({ title, description, onClose, children }) 
       >
         <header className="mc-modal__header">
           <div>
-            <p className="mc-kicker mb-2">Support the community</p>
+            <p className="mc-kicker mb-2">{t("support.modal.kicker")}</p>
             <h2 id="support-modal-title">{title}</h2>
             <p id="support-modal-description">{description}</p>
           </div>
@@ -71,7 +73,7 @@ export default function SupportModal({ title, description, onClose, children }) 
             type="button"
             className="mc-modal__close"
             onClick={onClose}
-            aria-label="Close support form"
+            aria-label={t("support.modal.close")}
           >
             <X size={19} aria-hidden="true" />
           </button>

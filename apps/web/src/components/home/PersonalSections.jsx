@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Trans } from "react-i18next";
 import { BookOpen, Clock3, Heart, MapPin } from "lucide-react";
+import { useLocale } from "../../hooks/useLocale";
 import { apiRequest } from "../../utils/api";
+import { formatApiDate } from "../../utils/intl";
 import { fetchFollowedMosques } from "../../utils/mosqueDiscovery";
 import { formatClockTime, nextJamaat } from "../../utils/prayerTime";
 
@@ -85,17 +88,18 @@ const Skeleton = ({ count }) => (
 );
 
 export function MyMosques() {
+  const { t, locale } = useLocale();
   const { status, data } = useLoad(loadMyMosques);
   if (status === "error" || (status === "success" && data.length === 0)) {
     // No follows (or the list failed): invite the user to follow instead of leaving a gap.
     return status === "error" ? null : (
-      <Section title="My mosques">
-        <p className="text-muted mb-0">You don&apos;t follow any mosque yet. <Link to="/browse">Browse mosques</Link> and follow the ones you pray at.</p>
+      <Section title={t("home.personal.myMosques")}>
+        <p className="text-muted mb-0"><Trans i18nKey="home.personal.noFollows" components={{ browse: <Link to="/browse" /> }} /></p>
       </Section>
     );
   }
   return (
-    <Section title="My mosques" action={<Link to="/browse" className="btn btn-outline-mc btn-sm">Browse</Link>}>
+    <Section title={t("home.personal.myMosques")} action={<Link to="/browse" className="btn btn-outline-mc btn-sm">{t("home.personal.browse")}</Link>}>
       {status === "loading" ? <Skeleton count={2} /> : (
         <div className="row g-3">
           {data.map(({ mosque, next }) => (
@@ -106,11 +110,11 @@ export function MyMosques() {
                   <div className="text-muted small mb-2"><MapPin size={14} className="me-1" aria-hidden="true" />{mosque.address}</div>
                   <div className="small">
                     <Clock3 size={14} className="me-1 text-muted" aria-hidden="true" />
-                    <span className="text-muted me-1">Next jamat:</span>
-                    {next ? <strong>{next.label} {formatClockTime(next.time)}{next.tomorrow ? " (tomorrow)" : ""}</strong> : <span className="text-muted">not published</span>}
+                    <span className="text-muted me-1">{t("home.personal.nextJamat")}</span>
+                    {next ? <strong>{t(`prayer.${next.label.toLowerCase()}`, { defaultValue: next.label })} {formatClockTime(next.time, locale)}{next.tomorrow ? ` (${t("prayer.tomorrow")})` : ""}</strong> : <span className="text-muted">{t("home.personal.notPublished")}</span>}
                   </div>
                 </div>
-                <Link to={`/mosque/${mosque.id}`} className="btn btn-outline-mc btn-sm">View</Link>
+                <Link to={`/mosque/${mosque.id}`} className="btn btn-outline-mc btn-sm">{t("mosque.view")}</Link>
               </div>
             </div>
           ))}
@@ -121,10 +125,11 @@ export function MyMosques() {
 }
 
 export function MyFeed() {
+  const { t, locale } = useLocale();
   const { status, data } = useLoad(loadMyFeed);
   if (status !== "success" || data.length === 0) return null; // Quiet when there is nothing to say.
   return (
-    <Section title="From your mosques" action={<Link to="/community?category=announcement" className="btn btn-outline-mc btn-sm">See all</Link>}>
+    <Section title={t("home.personal.fromYourMosques")} action={<Link to="/community?category=announcement" className="btn btn-outline-mc btn-sm">{t("home.personal.seeAll")}</Link>}>
       <div className="d-flex flex-column gap-2">
         {data.map((item) => (
           <Link key={item.id} to={`/community/announcements/${item.id}`} className="card mc-card p-3 text-decoration-none">
@@ -132,7 +137,7 @@ export function MyFeed() {
               <BookOpen size={14} aria-hidden="true" />
               <span>{item.mosque?.name}</span>
               <span aria-hidden="true">•</span>
-              <span>{item.date}</span>
+              <span>{formatApiDate(item.date, locale)}</span>
             </div>
             <h3 className="h6 mb-0">{item.title}</h3>
           </Link>
@@ -143,12 +148,13 @@ export function MyFeed() {
 }
 
 export function UrgentBloodRequests() {
+  const { t, locale } = useLocale();
   const { status, data } = useLoad(loadUrgentBlood);
   if (status !== "success" || data.length === 0) return null;
   return (
     <Section
-      title={<span className="text-danger d-inline-flex align-items-center gap-2"><Heart size={22} fill="currentColor" aria-hidden="true" /> Urgent blood requests</span>}
-      action={<Link to="/blood-donation" className="btn btn-outline-danger btn-sm">View all</Link>}
+      title={<span className="text-danger d-inline-flex align-items-center gap-2"><Heart size={22} fill="currentColor" aria-hidden="true" /> {t("home.personal.urgentBlood")}</span>}
+      action={<Link to="/blood-donation" className="btn btn-outline-danger btn-sm">{t("mosque.viewAll")}</Link>}
     >
       <div className="row g-3">
         {data.map((request) => (
@@ -158,9 +164,9 @@ export function UrgentBloodRequests() {
                 <div>
                   <h3 className="text-danger mb-1 h4">{request.blood_group}</h3>
                   <div className="fw-semibold mb-1">{request.hospital_or_location}</div>
-                  <div className="text-muted small">{request.units} unit(s) · needed by {request.required_date}</div>
+                  <div className="text-muted small">{t("home.personal.bloodDetail", { count: request.units, date: formatApiDate(request.required_date, locale) })}</div>
                 </div>
-                <span className="badge bg-danger text-capitalize">{request.urgency}</span>
+                <span className="badge bg-danger">{t(`urgency.${request.urgency}`, { defaultValue: request.urgency })}</span>
               </div>
             </Link>
           </div>

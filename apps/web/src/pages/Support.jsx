@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocale } from "../hooks/useLocale";
 import SupportForm from "../components/SupportForm";
 import SupportModal from "../components/SupportModal";
 import { getSupportCategory, isSupportType, SUPPORT_CATEGORIES } from "../data/supportFlow";
 
 export default function Support() {
+  const { t } = useLocale();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -58,12 +60,9 @@ export default function Support() {
     <section className="mc-support-page mc-atmospheric-section">
       <div className="container py-5">
         <div className="mc-support-page__intro mc-motion-section">
-          <p className="mc-kicker">Community support</p>
-          <h1>How would you like to contribute today?</h1>
-          <p>
-            Every contribution helps mosques and their communities care for the people around them.
-            Choose a way to support that feels right for you.
-          </p>
+          <p className="mc-kicker">{t("support.kicker")}</p>
+          <h1>{t("support.title")}</h1>
+          <p>{t("support.intro")}</p>
         </div>
 
         <div className="row g-4 justify-content-center mc-motion-stagger">
@@ -84,10 +83,10 @@ export default function Support() {
                   <div className="mc-feature-icon">
                     <Icon size={25} strokeWidth={1.6} aria-hidden="true" />
                   </div>
-                  <h2>{option.cardTitle}</h2>
-                  <p>{option.description}</p>
+                  <h2>{t(option.cardTitleKey)}</h2>
+                  <p>{t(option.descriptionKey)}</p>
                   <span className="mc-support-page__action">
-                    Explore {option.cardTitle} <ChevronRight size={16} aria-hidden="true" />
+                    {t("support.explore", { title: t(option.cardTitleKey) })} <ChevronRight size={16} aria-hidden="true" />
                   </span>
                 </button>
               </div>
@@ -95,15 +94,13 @@ export default function Support() {
           })}
         </div>
 
-        <p className="mc-support-page__note mb-0">
-          Review your details before the next step. No payment, application, or support offer is submitted here yet.
-        </p>
+        <p className="mc-support-page__note mb-0">{t("support.note")}</p>
       </div>
 
       {activeCategory && (
         <SupportModal
-          title={activeCategory.title}
-          description={activeCategory.description}
+          title={t(activeCategory.titleKey)}
+          description={t(activeCategory.descriptionKey)}
           onClose={closeModal}
         >
           <SupportForm

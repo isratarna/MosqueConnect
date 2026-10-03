@@ -6,8 +6,11 @@ import { useAuth } from "../context/AuthContext";
 import MosquePicker from "../components/MosquePicker";
 import { fetchMosqueById } from "../utils/mosqueDiscovery";
 import { PageSkeleton } from "../components/skeletons";
+import { useLocale } from "../hooks/useLocale";
+import { statusLabel } from "../utils/labels";
 
 export default function MosqueAdminClaim() {
+  const { t } = useLocale();
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
@@ -101,16 +104,16 @@ export default function MosqueAdminClaim() {
   };
 
   if (loading) {
-    return <PageSkeleton label="Checking application status…" />;
+    return <PageSkeleton label={t("admin.claim.checking")} />;
   }
 
   if (fetchError) {
     return (
       <div className="container py-5 text-center">
         <FileWarning size={48} className="text-danger mb-3" />
-        <h4 className="fw-bold">Unable to load status</h4>
+        <h4 className="fw-bold">{t("admin.claim.loadFailed")}</h4>
         <p className="text-muted">{fetchError}</p>
-        <button className="btn btn-outline-mc mt-3" onClick={() => window.location.reload()}>Try Again</button>
+        <button className="btn btn-outline-mc mt-3" onClick={() => window.location.reload()}>{t("common.tryAgain")}</button>
       </div>
     );
   }
@@ -132,26 +135,26 @@ export default function MosqueAdminClaim() {
           )}
           
           <h3 className="fw-bold mb-2">
-            Application Status: <span className="text-capitalize">{status.replace("_", " ")}</span>
+            {t("admin.claim.statusTitle", { status: statusLabel(t, status) })}
           </h3>
           
           <p className="text-muted mb-4 fs-5">
-            {status === "approved" 
-              ? "Jazakallah Khair! Your mosque administration request has been approved." 
+            {status === "approved"
+              ? t("admin.claim.approved")
               : status === "rejected"
-                ? "Unfortunately, your application was not approved at this time."
-                : "Your verification request is currently under review by our team. We will update you soon."}
+                ? t("admin.claim.rejected")
+                : t("admin.claim.pending")}
           </p>
 
           {note && (
             <div className={`alert ${status === "rejected" ? "alert-danger" : "alert-info"} text-start d-inline-block mx-auto mb-4`}>
-              <strong>Note from reviewer:</strong> {note}
+              <strong>{t("admin.claim.reviewerNote")}</strong> {note}
             </div>
           )}
           
           <div>
             <Link to={status === "approved" ? "/admin/dashboard" : "/"} className="btn btn-mc px-4 py-2">
-              {status === "approved" ? "Go to Dashboard" : "Return to Home"}
+              {status === "approved" ? t("admin.claim.goDashboard") : t("admin.claim.returnHome")}
             </Link>
           </div>
         </div>
@@ -165,8 +168,8 @@ export default function MosqueAdminClaim() {
         <span className="rounded-circle bg-success-subtle text-success p-3 d-inline-block mb-3">
           <ShieldCheck size={32} />
         </span>
-        <h2 className="fw-bold">Mosque Administrator Claim</h2>
-        <p className="text-muted">Apply to manage your mosque's profile, events, and announcements on MosqueConnect.</p>
+        <h2 className="fw-bold">{t("admin.claim.title")}</h2>
+        <p className="text-muted">{t("admin.claim.subtitle")}</p>
       </div>
 
       <div className="card border-0 shadow-sm">
@@ -180,11 +183,11 @@ export default function MosqueAdminClaim() {
           <form onSubmit={handleSubmit}>
             <div className="row g-4">
               <div className="col-12">
-                <h5 className="fw-bold border-bottom pb-2">Applicant Information</h5>
+                <h5 className="fw-bold border-bottom pb-2">{t("admin.claim.applicantInfo")}</h5>
               </div>
               
               <div className="col-md-6">
-                <label className="form-label fw-semibold">Full Name <span className="text-danger">*</span></label>
+                <label className="form-label fw-semibold">{t("admin.claim.fullName")} <span className="text-danger">*</span></label>
                 <input 
                   type="text" 
                   className="form-control" 
@@ -195,7 +198,7 @@ export default function MosqueAdminClaim() {
               </div>
               
               <div className="col-md-6">
-                <label className="form-label fw-semibold">Phone Number <span className="text-danger">*</span></label>
+                <label className="form-label fw-semibold">{t("admin.claim.phone")} <span className="text-danger">*</span></label>
                 <input 
                   type="tel" 
                   className="form-control" 
@@ -206,11 +209,11 @@ export default function MosqueAdminClaim() {
               </div>
 
               <div className="col-12">
-                <label className="form-label fw-semibold">Your Role in the Mosque <span className="text-danger">*</span></label>
+                <label className="form-label fw-semibold">{t("admin.claim.role")} <span className="text-danger">*</span></label>
                 <input 
                   type="text" 
                   className="form-control" 
-                  placeholder="e.g. Committee Member, Imam, Secretary"
+                  placeholder={t("admin.claim.rolePlaceholder")}
                   value={role} 
                   onChange={(e) => setRole(e.target.value)} 
                   required 
@@ -218,21 +221,19 @@ export default function MosqueAdminClaim() {
               </div>
 
               <div className="col-12 mt-4">
-                <h5 className="fw-bold border-bottom pb-2">Mosque Information</h5>
+                <h5 className="fw-bold border-bottom pb-2">{t("admin.claim.mosqueInfo")}</h5>
               </div>
               
               <div className="col-12">
-                <MosquePicker label="Your mosque" required value={mosque} onChange={setMosque} />
+                <MosquePicker label={t("admin.claim.selectMosque")} required value={mosque} onChange={setMosque} />
                 <div className="form-text">
-                  Can&apos;t find your mosque? <Link to="/mosques/suggest">Suggest it</Link>.
+                  {t("admin.claim.cantFind")} <Link to="/mosques/suggest">{t("admin.claim.suggestIt")}</Link>
                 </div>
               </div>
 
               <div className="col-12 mt-4">
-                <h5 className="fw-bold border-bottom pb-2">Verification Proof</h5>
-                <p className="small text-muted mb-3">
-                  Please upload a document that proves your association with the mosque (e.g. official letterhead, committee resolution, ID card). Maximum size: 5MB.
-                </p>
+                <h5 className="fw-bold border-bottom pb-2">{t("admin.claim.proof")}</h5>
+                <p className="small text-muted mb-3">{t("admin.claim.proofHelp")}</p>
               </div>
               
               <div className="col-12">
@@ -247,23 +248,23 @@ export default function MosqueAdminClaim() {
                   />
                   <label htmlFor="proof-upload" className="cursor-pointer m-0 d-block" style={{ cursor: 'pointer' }}>
                     <Upload size={32} className="text-secondary mb-2" />
-                    <div className="fw-semibold text-mc">Click to upload document</div>
-                    <div className="small text-muted mt-1">{document ? document.name : "Supported formats: PDF, JPG, PNG"}</div>
+                    <div className="fw-semibold text-mc">{t("admin.claim.upload")}</div>
+                    <div className="small text-muted mt-1">{document ? document.name : t("admin.claim.formats")}</div>
                   </label>
                 </div>
               </div>
             </div>
             
             <div className="mt-5 text-end">
-              <Link to="/" className="btn btn-light border px-4 py-2 me-2" disabled={submitting}>Cancel</Link>
+              <Link to="/" className="btn btn-light border px-4 py-2 me-2" disabled={submitting}>{t("common.cancel")}</Link>
               <button type="submit" className="btn btn-mc px-4 py-2 d-inline-flex align-items-center gap-2" disabled={submitting}>
                 {submitting ? (
                   <>
                     <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    Submitting...
+                    {t("admin.claim.submitting")}
                   </>
                 ) : (
-                  "Submit Application"
+                  t("admin.claim.submit")
                 )}
               </button>
             </div>

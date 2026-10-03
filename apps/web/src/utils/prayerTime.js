@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE, formatTimeOfDay } from "./intl.js";
+
 export function parseClockTime(timeStr, reference = new Date()) {
   const value = String(timeStr || "").trim();
   const match = value.match(/^(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?$/);
@@ -28,17 +30,19 @@ export function parseClockTime(timeStr, reference = new Date()) {
   );
 }
 
-export function formatClockTime(timeStr) {
+// The API sends 24-hour ASCII times ("13:30"); they are only localised here, at
+// the point of display. "bn-BD" renders Bangla digits (১:৩০ PM).
+export function formatClockTime(timeStr, locale = DEFAULT_LOCALE) {
   const parsed = parseClockTime(timeStr);
   if (!parsed) return timeStr || "—";
 
-  return parsed.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return formatTimeOfDay(parsed, locale);
 }
 
-export function dhuhrJamaatLabel(prayer) {
+export function dhuhrJamaatLabel(prayer, locale = DEFAULT_LOCALE, label = "Dhuhr") {
   const time = prayer?.Dhuhr || prayer?.dhuhr;
   if (!time) return null;
-  return `Dhuhr ${formatClockTime(time)}`;
+  return `${label} ${formatClockTime(time, locale)}`;
 }
 
 // The API marks each prayer with where its time came from: "mosque" when the
@@ -69,9 +73,14 @@ export function nextJamaat(schedule, now = new Date()) {
  * { prayer: "Asr", text: "Asr 4:30 PM", tomorrow }, or null when no times are set.
  */
 // [Urmee · F1 Part 3] Same, from a mosque's `prayer` summary ({ Fajr: "05:00", … }).
-export function nextJamaatLabel(prayer, now = new Date()) {
+// [Urmee · i18n restore] Takes { locale, t } so the prayer name, the time digits (Bangla) and
+// "tomorrow" follow the active language.
+export function nextJamaatLabel(prayer, now = new Date(), { locale = DEFAULT_LOCALE, t } = {}) {
   const entries = Object.entries(prayer || {}).map(([label, time]) => ({ label, jamaat_time: time }));
   const next = nextJamaat(entries, now);
   if (!next) return null;
-  return { prayer: next.label, text: `${next.label} ${formatClockTime(next.time)}${next.tomorrow ? " (tomorrow)" : ""}`, tomorrow: next.tomorrow };
+  // The prayer names and "tomorrow" are translated when a `t` function is given; the time follows the locale.
+  const name = t ? t(`prayer.${next.label.toLowerCase()}`) : next.label;
+  const tomorrow = next.tomorrow ? ` (${t ? t("prayer.tomorrow") : "tomorrow"})` : "";
+  return { prayer: next.label, text: `${name} ${formatClockTime(next.time, locale)}${tomorrow}`, tomorrow: next.tomorrow };
 }

@@ -15,5 +15,5 @@ test("campaign values receive readable formatting", () => {
 });
 
 test("compact money keeps the taka symbol", () => {
-  assert.match(formatCampaignMoney(2100000, "BDT", { compact: true }), /^৳\s?2\.1M$/);
+  assert.match(formatCampaignMoney(2100000, "BDT", "en-BD", { compact: true }), /^৳\s?2\.1M$/);
 });

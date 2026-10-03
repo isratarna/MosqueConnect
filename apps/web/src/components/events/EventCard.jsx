@@ -9,12 +9,8 @@ import {
   getEventMosqueName,
   isEventPast,
 } from "../../utils/eventFilters";
-
-function capacityLabel(event) {
-  if (event.capacity !== null && event.capacity !== undefined) return `Capacity: ${event.capacity}`;
-
-  return "Capacity not specified";
-}
+import { eventCategoryLabel } from "../../utils/labels";
+import { useLocale } from "../../hooks/useLocale";
 
 export default function EventCard({
   event,
@@ -24,14 +20,15 @@ export default function EventCard({
   registrationLoading,
   registrationEnabled,
 }) {
-  const mosqueName = getEventMosqueName(event);
+  const { t, locale } = useLocale();
+  const mosqueName = getEventMosqueName(event, t("event.mosqueTbd"));
   const past = isEventPast(event);
   const detailsPath = `/community/events/${event.id}`;
 
   return (
     <article className="mc-event-card mc-card">
       <div className="mc-event-card__meta">
-        <span className="mc-event-card__category">{event.category || "Other"}</span>
+        <span className="mc-event-card__category">{eventCategoryLabel(t, event.category)}</span>
         <EventStatusBadge status={getEventDisplayStatus(event)} />
       </div>
 
@@ -40,20 +37,20 @@ export default function EventCard({
 
       <dl className="mc-event-card__details">
         <div>
-          <dt><CalendarDays size={15} aria-hidden="true" /><span className="visually-hidden">Date</span></dt>
-          <dd>{formatEventDate(event.event_date, { compact: true })}</dd>
+          <dt><CalendarDays size={15} aria-hidden="true" /><span className="visually-hidden">{t("event.date")}</span></dt>
+          <dd>{formatEventDate(event.event_date, { compact: true, locale, fallback: t("event.dateTbd") })}</dd>
         </div>
         <div>
-          <dt><Clock3 size={15} aria-hidden="true" /><span className="visually-hidden">Time</span></dt>
-          <dd>{formatEventTimeRange(event)}</dd>
+          <dt><Clock3 size={15} aria-hidden="true" /><span className="visually-hidden">{t("event.time")}</span></dt>
+          <dd>{formatEventTimeRange(event, locale, t("event.timeTbd"))}</dd>
         </div>
         <div>
-          <dt><MapPin size={15} aria-hidden="true" /><span className="visually-hidden">Location</span></dt>
-          <dd>{event.location || "Location to be announced"}</dd>
+          <dt><MapPin size={15} aria-hidden="true" /><span className="visually-hidden">{t("event.location")}</span></dt>
+          <dd>{event.location || t("event.locationTbd")}</dd>
         </div>
         <div>
-          <dt><UsersRound size={15} aria-hidden="true" /><span className="visually-hidden">Capacity</span></dt>
-          <dd>{capacityLabel(event)}</dd>
+          <dt><UsersRound size={15} aria-hidden="true" /><span className="visually-hidden">{t("event.capacityLabel")}</span></dt>
+          <dd>{event.capacity !== null && event.capacity !== undefined ? t("event.capacity", { capacity: event.capacity }) : t("event.capacityNotSpecified")}</dd>
         </div>
       </dl>
 
@@ -67,7 +64,7 @@ export default function EventCard({
           registrationEnabled={registrationEnabled}
           isPast={past}
         />
-        <Link className="mc-event-card__details-link" to={detailsPath}>View details</Link>
+        <Link className="mc-event-card__details-link" to={detailsPath}>{t("common.viewDetails")}</Link>
       </div>
     </article>
   );
