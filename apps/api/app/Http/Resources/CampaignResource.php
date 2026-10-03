@@ -28,8 +28,15 @@ class CampaignResource extends JsonResource
             'starts_on' => $this->starts_on?->format('Y-m-d'),
             'ends_on' => $this->ends_on?->format('Y-m-d'),
             'image_url' => $this->image_url,
+            'reference_hint' => $this->reference_hint,
             'status' => $this->status,
             'accepts_donations' => $this->acceptsDonations(),
+            'notice' => match ($this->status) {
+                \App\Models\Campaign::STATUS_COMPLETED => 'This campaign is complete.',
+                \App\Models\Campaign::STATUS_CANCELLED => 'This campaign has been cancelled.',
+                \App\Models\Campaign::STATUS_EXPIRED => 'This campaign has expired.',
+                default => null,
+            },
             'supporters_count' => $this->whenCounted('supporters'),
             'pending_donations_count' => $this->whenCounted('pendingDonations'),
             'mosque' => $this->whenLoaded('mosque', fn (): array => [
@@ -43,6 +50,11 @@ class CampaignResource extends JsonResource
                 'id' => $this->creator->id,
                 'name' => $this->creator->name,
             ]),
+            'payment_methods' => $this->when(
+                $this->relationLoaded('mosque') && $this->mosque->relationLoaded('paymentMethods'),
+                fn (): array => MosquePaymentMethodResource::collection($this->mosque->paymentMethods)->resolve(),
+            ),
+            'updates' => $this->whenLoaded('updates', fn (): array => CampaignUpdateResource::collection($this->updates)->resolve()),
             'created_at' => $this->created_at?->toJSON(),
             'updated_at' => $this->updated_at?->toJSON(),
         ];

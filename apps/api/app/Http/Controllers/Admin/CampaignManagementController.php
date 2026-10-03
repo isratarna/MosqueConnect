@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CampaignManagementController extends Controller
 {
@@ -140,6 +141,43 @@ class CampaignManagementController extends Controller
             ->withQueryString();
 
         return CampaignDonationResource::collection($items);
+    }
+
+    public function exportDonations(Mosque $mosque, Campaign $campaign): StreamedResponse
+    {
+        Gate::authorize('view', $campaign);
+        abort_unless((int) $campaign->mosque_id === (int) $mosque->id, 404);
+
+        return response()->streamDownload(function () use ($campaign): void {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, [
+                'donation_id', 'donor_name', 'contact', 'amount', 'payment_method',
+                'reference', 'message', 'status', 'confirmed_by', 'confirmed_at', 'created_at',
+            ]);
+
+            $campaign->donations()
+                ->with('confirmer:id,name')
+                ->orderBy('id')
+                ->chunkById(500, function ($donations) use ($output): void {
+                    foreach ($donations as $donation) {
+                        fputcsv($output, [
+                            $donation->id,
+                            $donation->is_anonymous ? 'Anonymous' : $donation->donor_name,
+                            $donation->contact,
+                            $donation->amount,
+                            $donation->payment_method,
+                            $donation->reference,
+                            $donation->message,
+                            $donation->status,
+                            $donation->confirmer?->name,
+                            $donation->confirmed_at?->toDateTimeString(),
+                            $donation->created_at?->toDateTimeString(),
+                        ]);
+                    }
+                });
+
+            fclose($output);
+        }, "campaign-{$campaign->id}-donations.csv", ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function recordDonation(StoreManualCampaignDonationRequest $request, Mosque $mosque, Campaign $campaign): JsonResponse

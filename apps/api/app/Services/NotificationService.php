@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\EidJamaat;
 use App\Models\Event;
 use App\Models\EventRegistration;
+use App\Models\CampaignUpdate;
+use App\Models\CampaignDonation;
 use App\Models\Mosque;
 use App\Models\Notification;
 use App\Models\NotificationPreference;
@@ -152,6 +154,66 @@ class NotificationService
             'reference_type' => Notification::REFERENCE_CAMPAIGN,
             'reference_id' => $campaignId,
         ]);
+    }
+
+    public function notifyCampaignSupporters(CampaignUpdate $update): int
+    {
+        $update->loadMissing('campaign.mosque');
+        $campaign = $update->campaign;
+        $mosque = $campaign->mosque;
+        $now = now();
+        $created = 0;
+        $title = Str::limit("Campaign update: {$update->title}", 255, '');
+        $message = Str::limit("{$mosque->name} posted an update for {$campaign->title}: {$update->body}", 10000, '');
+
+        $recipients = DB::table('campaign_donations as donations')
+            ->leftJoin('notification_preferences', 'notification_preferences.user_id', '=', 'donations.user_id')
+            ->leftJoin('followers', function ($join) use ($mosque): void {
+                $join->on('followers.user_id', '=', 'donations.user_id')
+                    ->where('followers.mosque_id', '=', $mosque->id);
+            })
+            ->where('donations.campaign_id', $campaign->id)
+            ->where('donations.status', CampaignDonation::STATUS_CONFIRMED)
+            ->whereNotNull('donations.user_id')
+            ->where(function ($query): void {
+                $query->whereNull('notification_preferences.user_id')
+                    ->orWhere('notification_preferences.campaign', true);
+            })
+            ->where(function ($query): void {
+                $query->whereNull('followers.id')
+                    ->orWhere('followers.notifications_muted', false);
+            })
+            ->whereNotExists(function ($query) use ($mosque, $update): void {
+                $query->selectRaw('1')
+                    ->from('notifications as existing')
+                    ->whereColumn('existing.user_id', 'donations.user_id')
+                    ->where('existing.mosque_id', $mosque->id)
+                    ->where('existing.type', Notification::TYPE_CAMPAIGN)
+                    ->where('existing.reference_type', Notification::REFERENCE_CAMPAIGN_UPDATE)
+                    ->where('existing.reference_id', $update->id);
+            })
+            ->select('donations.user_id')
+            ->distinct()
+            ->orderBy('donations.user_id');
+
+        $recipients->chunkById(500, function ($users) use ($mosque, $update, $title, $message, $now, &$created): void {
+            $rows = $users->map(fn ($recipient): array => [
+                'user_id' => $recipient->user_id,
+                'mosque_id' => $mosque->id,
+                'type' => Notification::TYPE_CAMPAIGN,
+                'title' => $title,
+                'message' => $message,
+                'reference_type' => Notification::REFERENCE_CAMPAIGN_UPDATE,
+                'reference_id' => $update->id,
+                'is_read' => false,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])->all();
+
+            $created += Notification::query()->insertOrIgnore($rows);
+        }, 'donations.user_id', 'user_id');
+
+        return $created;
     }
 
     /**
