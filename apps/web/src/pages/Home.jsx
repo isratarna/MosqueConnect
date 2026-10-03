@@ -31,6 +31,7 @@ import { directionsUrl } from "../utils/mosqueDiscovery";
 import { dhuhrJamaatLabel, isEstimatedPrayer } from "../utils/prayerTime";
 import EstimatedBadge from "../components/EstimatedBadge";
 import EidBanner from "../components/EidBanner";
+import CatchableJamaatCard, { JourneyEntryCard } from "../components/journey/CatchableJamaatCard";
 
 const MIN_CARD_WIDTH = 240;
 const CARD_GAP = 16;
@@ -72,6 +73,7 @@ export default function Home() {
             selectedMosqueId={selectedMosqueId}
             onMosqueSelect={setSelectedMosqueId}
           />
+          <JourneyCards origin={origin} />
           <NearbySection
             origin={origin}
             nearby={nearby}
@@ -84,6 +86,7 @@ export default function Home() {
       ) : (
         <>
           <Hero origin={origin} nearby={nearby} nearest={nearest} onRequestLocation={() => requestGeolocation({ force: origin.status === "failure" })} />
+          <JourneyCards origin={origin} />
           <NearbySection
             origin={origin}
             nearby={nearby}
@@ -97,6 +100,24 @@ export default function Home() {
       <ImpactSection />
       <AboutSection />
     </>
+  );
+}
+
+// "Next jamat you can catch" ar journey planner-e jawar card pashapashi.
+function JourneyCards({ origin }) {
+  return (
+    <section className="mc-journey-cards" aria-label="Catch a jamaat">
+      <div className="container">
+        <div className="row g-3">
+          <div className="col-lg-7">
+            <CatchableJamaatCard origin={origin} />
+          </div>
+          <div className="col-lg-5">
+            <JourneyEntryCard />
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

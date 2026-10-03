@@ -6176,3 +6176,405 @@ main {
 .mc-search-results__title { font-weight: 700; }
 .mc-search-results__subtitle { color: var(--mc-muted); font-size: 0.85rem; }
 .mc-search-results__all { align-items: center; color: var(--mc-rust); display: inline-flex; font-weight: 600; gap: 0.35rem; text-decoration: none; }
+/* Journey planner (#194): Home card, /journey page, timeline */
+.mc-journey-cards {
+  padding: 1.5rem 0 0.5rem;
+}
+
+.mc-journey-card {
+  border-radius: 0.8rem;
+  border-color: #dfe8e4;
+}
+
+.mc-journey-card--entry {
+  background: var(--mc-soft);
+}
+
+.mc-journey-map {
+  height: 360px;
+  border-radius: 0.8rem;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+.mc-journey-timeline__row {
+  border-left: 4px solid var(--mc-prayer-color, var(--mc-green));
+  padding: 0.25rem 0 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.mc-journey-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.6rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.mc-journey-option.is-selected {
+  border-color: var(--mc-prayer-color, var(--mc-green));
+  box-shadow: 0 0 0 1px var(--mc-prayer-color, var(--mc-green));
+}
+
+.mc-place-autocomplete gmp-place-autocomplete {
+  width: 100%;
+}
+
+/* Appearance controls retain the main navigation layout. */
+/* Language switcher: segmented EN / বাং control in the navbar. The active
+   language is a filled brand-colour pill; the other is plain text. */
+.mc-lang-toggle {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-pill);
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+}
+
+.mc-lang-toggle__option {
+  background: transparent;
+  border: 0;
+  border-radius: var(--mc-radius-pill);
+  color: var(--mc-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.45rem 0.85rem;
+  transition: background-color var(--mc-dur-base) var(--mc-ease-out), color var(--mc-dur-base) var(--mc-ease-out);
+}
+
+.mc-lang-toggle__option:hover:not(.is-active) {
+  background: var(--mc-soft);
+  color: var(--mc-rust);
+}
+
+.mc-lang-toggle__option.is-active {
+  background: var(--mc-rust);
+  color: #fff;
+}
+
+.mc-lang-toggle__option:focus-visible {
+  outline: 2px solid var(--mc-rust);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-lang-toggle__option {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   Dark theme
+   Applied by <html data-bs-theme="dark"> (see utils/theme.js and the inline
+   script in index.html). Bootstrap 5.3 flips its own components; this block
+   re-points the site's tokens and the surfaces that were painted with fixed
+   light colours.
+   ========================================================================== */
+:root[data-bs-theme="dark"] {
+  --mc-ink: #ece6dd;
+  --mc-muted: #a9a094;
+  --mc-ivory: #16130f;
+  --mc-paper: #1f1b16;
+  --mc-line: #3b342b;
+  --mc-soft: #2a221b;
+  --mc-surface: #211d18;
+  --mc-surface-raised: #2a251f;
+  /* Lighter than the light theme's rust so links and outlines stay readable on
+     dark surfaces; filled buttons keep white text at about 4:1. */
+  --mc-rust: #d0622f;
+  --mc-rust-dark: #e58a5c;
+  --mc-gold: #e0944f;
+  --mc-glass: rgba(33, 29, 24, 0.86);
+  --mc-glass-strong: rgba(33, 29, 24, 0.94);
+  --mc-glass-line: rgba(255, 238, 215, 0.13);
+  --mc-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.35);
+  --mc-shadow-lift: 0 16px 32px rgba(0, 0, 0, 0.45);
+  --mc-ring: 0 0 0 3px rgba(224, 138, 92, 0.35);
+
+  --bs-body-bg: var(--mc-ivory);
+  --bs-body-color: var(--mc-ink);
+  --bs-secondary-color: var(--mc-muted);
+  --bs-tertiary-bg: var(--mc-surface-raised);
+  --bs-border-color: var(--mc-line);
+  --bs-link-color: var(--mc-rust-dark);
+  --bs-link-hover-color: #f3a47c;
+}
+
+/* The page texture is a light photograph; multiplying it into a dark base turns
+   it into a faint texture instead of a bright wash. */
+:root[data-bs-theme="dark"] body {
+  background-blend-mode: multiply;
+  background-color: var(--mc-ivory);
+}
+
+/* Navigation */
+:root[data-bs-theme="dark"] .mc-navbar,
+:root[data-bs-theme="dark"] .mc-navbar.is-scrolled {
+  background: rgba(22, 19, 15, 0.94);
+  border-bottom-color: var(--mc-glass-line);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .nav-link,
+:root[data-bs-theme="dark"] .navbar-dark .navbar-nav .nav-link {
+  color: #d8d1c7;
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .nav-link:hover,
+:root[data-bs-theme="dark"] .mc-navbar .nav-link.active,
+:root[data-bs-theme="dark"] .navbar-dark .navbar-nav .nav-link:hover,
+:root[data-bs-theme="dark"] .navbar-dark .navbar-nav .nav-link.active {
+  color: var(--mc-rust-dark);
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .navbar-toggler {
+  border-color: var(--mc-line);
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .navbar-toggler-icon {
+  filter: invert(90%);
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .navbar-collapse {
+  background: rgba(22, 19, 15, 0.98);
+}
+
+/* Segmented language and theme controls */
+:root[data-bs-theme="dark"] .mc-lang-toggle {
+  background: var(--mc-surface);
+}
+
+:root[data-bs-theme="dark"] .mc-lang-toggle__option:hover:not(.is-active) {
+  background: var(--mc-surface-raised);
+}
+
+.mc-theme-toggle .mc-lang-toggle__option {
+  align-items: center;
+  display: inline-flex;
+  padding: 0.45rem 0.6rem;
+}
+
+/* Cards, panels and other surfaces painted with fixed light colours */
+:root[data-bs-theme="dark"] :is(
+  .mc-card, .mc-auth-card, .mc-nearby-card, .mc-notif-menu, .mc-notification-item,
+  .mc-notifications-page__panel, .mc-hero__search-input, .mc-hero__nearby, .mc-location-card,
+  .mc-support-tile, .mc-custom-support, .mc-support-page__card, .mc-community-filter,
+  .mc-community-card, .mc-community-empty, .mc-event-card, .mc-event-state,
+  .mc-event-discovery-controls, .mc-event-details__content, .mc-event-details__info,
+  .mc-event-details__source, .mc-event-details__state, .mc-announcement-details__content,
+  .mc-announcement-details__info, .mc-announcement-details__source,
+  .mc-announcement-details__not-found, .mc-support-action__card, .mc-support-action__empty,
+  .mc-admin-campaign-form, .mc-admin-campaign, .mc-donation-review, .mc-dash-card,
+  .mc-suggestion, .mc-doc-viewer, .mc-auth-home-map__feedback, .mc-impact .container
+) {
+  background: var(--mc-glass-strong);
+  border-color: var(--mc-glass-line);
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-notification-item:hover, .mc-notification-item.is-unread, .mc-prayer-item.mc-next, .btn-outline-mc:hover, .btn-outline-mc:focus) {
+  background: var(--mc-surface-raised);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-feature-icon, .mc-custom-support__icon, .mc-location-card__icon, .mc-notification-item__icon, .mc-modal__close, .mc-badge) {
+  background: var(--mc-soft);
+  border-color: var(--mc-line);
+}
+
+:root[data-bs-theme="dark"] .mc-auth-nearby-experience {
+  background: var(--mc-ivory);
+}
+
+/* Hero: the same left-to-right fade, in dark, with the photo dimmed */
+:root[data-bs-theme="dark"] .mc-hero::after {
+  background:
+    linear-gradient(90deg, rgba(22, 19, 15, 0.99) 0%, rgba(22, 19, 15, 0.9) 38%, rgba(22, 19, 15, 0.25) 72%),
+    linear-gradient(rgba(22, 19, 15, 0.45), rgba(22, 19, 15, 0.45)),
+    url("/uiRef.jpeg") center calc(30% + var(--mc-parallax-y, 0px)) / cover;
+}
+
+/* Bootstrap utilities with fixed light values */
+:root[data-bs-theme="dark"] .bg-light {
+  background-color: var(--mc-surface-raised) !important;
+}
+
+:root[data-bs-theme="dark"] .bg-white {
+  background-color: var(--mc-surface) !important;
+}
+
+:root[data-bs-theme="dark"] :is(.text-dark, .text-body) {
+  color: var(--mc-ink) !important;
+}
+
+:root[data-bs-theme="dark"] :is(.btn-light, .table-light, .alert-light) {
+  --bs-btn-bg: var(--mc-surface-raised);
+  --bs-btn-color: var(--mc-ink);
+  --bs-btn-border-color: var(--mc-line);
+  --bs-btn-hover-bg: var(--mc-soft);
+  --bs-btn-hover-color: var(--mc-ink);
+  --bs-table-bg: var(--mc-surface-raised);
+  --bs-table-color: var(--mc-ink);
+  --bs-alert-bg: var(--mc-surface-raised);
+  --bs-alert-color: var(--mc-ink);
+  --bs-alert-border-color: var(--mc-line);
+}
+
+:root[data-bs-theme="dark"] .border-light {
+  border-color: var(--mc-line) !important;
+}
+
+/* The map is a third-party widget with its own light tiles; soften them. */
+:root[data-bs-theme="dark"] .mc-map .gm-style {
+  filter: brightness(0.82) contrast(1.05);
+}
+
+/* Page wrappers that laid a pale veil over the texture */
+:root[data-bs-theme="dark"] :is(.mc-notifications-page, .mc-support-section, .mc-support-page, .mc-community-page, .mc-support-action) {
+  background: rgba(22, 19, 15, 0.72);
+}
+
+:root[data-bs-theme="dark"] .mc-auth-nearby-experience + .mc-support-section {
+  background: linear-gradient(180deg, #1c1813 0%, rgba(22, 19, 15, 0.78) 4rem, rgba(22, 19, 15, 0.72) 100%);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-community-filter__category, .mc-auth-home-map__label, .mc-auth-home-map__browse, .mc-campaign-progress__track) {
+  background: var(--mc-surface-raised);
+  border-color: var(--mc-line);
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] .mc-map {
+  background: var(--mc-surface);
+}
+
+/* Text that was a fixed dark grey or green on a light surface */
+:root[data-bs-theme="dark"] :is(
+  .mc-hero__copy, .mc-notification-item.is-read, .mc-campaign-card__meta, .mc-campaign-card__facts,
+  .mc-campaign-progress__figures, .mc-campaign-details__summary, .mc-eid-jamaat__time span,
+  .mc-suggestion__note, .mc-map-placeholder
+) {
+  color: var(--mc-muted);
+}
+
+:root[data-bs-theme="dark"] :is(
+  .mc-campaign-card h2 a, .mc-campaign-progress__figures strong, .mc-campaign-details__body h2,
+  .mc-campaign-details__sidebar h2, .mc-campaign-details__sidebar dd, .mc-campaign-support-success,
+  .mc-admin-campaign__heading h5, .text-slate-600, .text-slate-700, .text-slate-800
+) {
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] .mc-map .gm-style {
+  filter: brightness(0.66) contrast(1.12) saturate(0.85);
+}
+
+/* Headings that fall back to a fixed deep green when this token is undefined */
+:root[data-bs-theme="dark"] {
+  --mc-green-900: var(--mc-ink);
+  --mc-surface-soft: var(--mc-surface-raised);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-campaign-details__goal strong, .mc-campaign-support-success svg) {
+  color: #4cc79c;
+}
+
+.mc-theme-toggle .mc-lang-toggle__option.is-active {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(53, 39, 29, 0.16);
+  color: var(--mc-rust);
+}
+
+:root[data-bs-theme=dark] .mc-theme-toggle .mc-lang-toggle__option.is-active {
+  background: var(--mc-surface-raised);
+  color: var(--mc-rust-dark);
+}
+
+/* Status and urgency chips: translucent tints with a lighter label, so they sit on dark surfaces instead of glowing as pastel blocks. */
+:root[data-bs-theme="dark"] .mc-community-card__urgency.is-urgent,
+:root[data-bs-theme="dark"] .mc-announcement-details__urgency.is-urgent,
+:root[data-bs-theme="dark"] .mc-event-status.is-cancelled,
+:root[data-bs-theme="dark"] .mc-campaign-status.is-cancelled {
+  background: rgba(226,106,72,.2);
+  color: #f4a58a;
+}
+
+:root[data-bs-theme="dark"] .mc-community-card__urgency.is-important,
+:root[data-bs-theme="dark"] .mc-announcement-details__urgency.is-important,
+:root[data-bs-theme="dark"] .mc-campaign-status.is-expired {
+  background: rgba(224,160,60,.18);
+  color: #ebc16f;
+}
+
+:root[data-bs-theme="dark"] .mc-announcement-details__urgency.is-normal,
+:root[data-bs-theme="dark"] .mc-event-status.is-published,
+:root[data-bs-theme="dark"] .mc-campaign-status.is-active {
+  background: rgba(70,184,110,.18);
+  color: #7fd49b;
+}
+
+:root[data-bs-theme="dark"] .mc-campaign-status.is-completed {
+  background: rgba(90,150,230,.2);
+  color: #9cc4f2;
+}
+
+:root[data-bs-theme="dark"] .mc-event-status.is-completed {
+  background: rgba(130,140,220,.2);
+  color: #b2b9ee;
+}
+
+:root[data-bs-theme="dark"] .mc-event-status.is-draft,
+:root[data-bs-theme="dark"] .mc-event-status.is-past,
+:root[data-bs-theme="dark"] .mc-campaign-status.is-draft {
+  background: rgba(160,152,140,.18);
+  color: #c4bbae;
+}
+
+:root[data-bs-theme="dark"] :is(.mc-estimated, .mc-trusted-badge, .mc-maintenance-banner, .mc-notif-menu__error) {
+  background: rgba(224, 160, 60, 0.14);
+  border-color: rgba(224, 160, 60, 0.35);
+  color: #ebc16f;
+}
+
+:root[data-bs-theme="dark"] :is(.mc-dash-card__error, .mc-suggestion__before) {
+  background: rgba(226, 106, 72, 0.14);
+  color: #f4a58a;
+}
+
+:root[data-bs-theme="dark"] .mc-suggestion__after {
+  background: rgba(70, 184, 110, 0.14);
+  color: #7fd49b;
+}
+
+/* Bootstrap cards default to the page colour in dark mode, which flattens them into the background. */
+:root[data-bs-theme="dark"] .card {
+  --bs-card-bg: var(--mc-surface);
+  --bs-card-cap-bg: var(--mc-surface-raised);
+}
+
+/* Main now also has journey planner surfaces. */
+:root[data-bs-theme="dark"] :is(.mc-journey-card, .mc-journey-option) {
+  background: var(--mc-surface);
+  border-color: var(--mc-line);
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-eid-jamaat, .mc-chart-tooltip) {
+  background: var(--mc-surface);
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] .btn-warning.text-dark {
+  color: var(--bs-btn-color) !important;
+}
+
+:root[data-bs-theme="dark"] .mc-community-filter__category.is-active {
+  background: var(--mc-rust);
+  border-color: var(--mc-rust);
+  color: #fff;
+}

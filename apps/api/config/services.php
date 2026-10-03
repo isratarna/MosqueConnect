@@ -44,6 +44,13 @@ return [
         'credentials' => env('GOOGLE_DOCUMENT_AI_CREDENTIALS'),
     ],
 
+    // Geoapify Routing + Route Matrix API for the journey planner (server side).
+    // The frontend keeps using VITE_GOOGLE_MAPS_API_KEY for maps and autocomplete.
+    'geoapify' => [
+        'key' => env('GEOAPIFY_API_KEY'),
+        'timeout' => (int) env('GEOAPIFY_TIMEOUT', 15),
+    ],
+
     'claim_ai' => [
         'enabled' => (bool) env('CLAIM_AI_REVIEW_ENABLED', false),
     ],

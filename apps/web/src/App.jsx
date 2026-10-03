@@ -28,6 +28,7 @@ const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
 const Eid = lazy(() => import("./pages/Eid"));
 const Search = lazy(() => import("./pages/Search"));
+const Journey = lazy(() => import("./pages/Journey"));
 
 function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
   const { user, loading } = useAuth();
@@ -70,6 +71,8 @@ export default function App() {
           <Route path="/browse" element={<Browse />} />
           <Route path="/search" element={<Search />} />
           <Route path="/eid" element={<Eid />} />
+          <Route path="/journey" element={<Journey />} />
+          <Route path="/journey/:id" element={<Journey />} />
           <Route path="/support" element={<Support />} />
           <Route path="/support/continue" element={<SupportContinue />} />
           <Route path="/community" element={<Community />} />

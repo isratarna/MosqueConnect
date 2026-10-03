@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, Search, ShieldCheck, UserRound } from "lucide-react";
 import GlobalSearch from "./GlobalSearch";
 import NotificationList from "./notifications/NotificationList";
+import ThemeSwitcher from "./ThemeSwitcher";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { fetchNotifications } from "../utils/notificationApi";
@@ -106,6 +107,9 @@ export default function Navbar() {
               <NavLink className={navLinkClass} to="/browse" onClick={close}>Browse Mosques</NavLink>
             </li>
             <li className="nav-item">
+              <NavLink className={navLinkClass} to="/journey" onClick={close}>Journey</NavLink>
+            </li>
+            <li className="nav-item">
               <NavLink className={navLinkClass} to="/support" onClick={close}>Support</NavLink>
             </li>
             <li className="nav-item">
@@ -119,6 +123,10 @@ export default function Navbar() {
             </li>
             <li className="nav-item">
               <NavLink className={navLinkClass} to="/volunteers" onClick={close}>Volunteers</NavLink>
+            </li>
+
+            <li className="nav-item mc-navbar__appearance mt-1 mt-lg-0">
+              <ThemeSwitcher />
             </li>
 
             {!user ? (

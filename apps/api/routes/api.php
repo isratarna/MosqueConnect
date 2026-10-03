@@ -36,6 +36,7 @@ use App\Http\Controllers\EidJamaatController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventRegistrationController;
 use App\Http\Controllers\GoodsDonationController;
+use App\Http\Controllers\JourneyController;
 use App\Http\Controllers\LostFoundController;
 use App\Http\Controllers\MosqueClaimController;
 use App\Http\Controllers\MosqueController;
@@ -76,6 +77,10 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/mosques/nearby', [MosqueController::class, 'nearby']);
+// Journey planner (#194): je jamaat dhora jay, ar route-er pashe namaz-er stop.
+Route::get('/mosques/catchable', [JourneyController::class, 'catchable'])->middleware('throttle:60,1');
+Route::post('/journeys/plan', [JourneyController::class, 'plan'])->middleware('throttle:journey-plan');
+Route::get('/journeys/{journeyPlan}', [JourneyController::class, 'show']);
 Route::get('/eid-season', [EidJamaatController::class, 'season']);
 Route::get('/settings/public', [SystemSettingController::class, 'publicIndex']);
 Route::get('/eid-jamaats/nearby', [EidJamaatController::class, 'nearby']);
