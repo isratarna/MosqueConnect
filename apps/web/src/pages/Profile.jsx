@@ -12,6 +12,7 @@ import { roleLabel } from "../utils/teamRoles";
 import { TrustedBadge } from "../components/suggestions/SuggestionReviewList";
 import { COMPLAINT_CATEGORIES, COMPLAINT_STATUS, GOODS_STATUS, LOST_FOUND_STATUS, labelOf } from "../utils/communityHubApi";
 import { ListRowsSkeleton, MosqueCardSkeleton, SkeletonRegion } from "../components/skeletons";
+import MySuggestedMosques from "../components/profile/MySuggestedMosques";
 
 const tabs = { followed: "Followed Mosques", invites: "Team Invitations", activity: "Event Registrations", donations: "Donations", suggestions: "My Corrections", feedback: "My Feedback", lostfound: "My Lost & Found", claims: "Mosque Applications", settings: "Settings" };
 const endpoints = { invites: "/api/me/mosque-invites", activity: "/api/me/event-registrations", donations: "/api/me/donations", suggestions: "/api/me/suggestions", feedback: "/api/me/complaints", lostfound: "/api/lost-found/me", claims: "/api/me/mosque-claims" };
@@ -156,7 +157,9 @@ export default function Profile() {
                   </>}
                 </div>)}
                 {activeTab === "suggestions" && <p className="small text-muted">Spotted a wrong time or detail? Open the mosque's page and choose <strong>Suggest a correction</strong>. After 3 accepted corrections you get the <strong>Trusted contributor</strong> badge.</p>}
-                {activeTab === "claims" && <p>To apply as a mosque administrator, open your <Link to="/browse">mosque profile</Link> and submit an application with your supporting document.</p>}
+                {activeTab === "claims" && <p>To apply as a mosque administrator, <Link to="/mosque-admin/claim">search for your mosque</Link> and submit an application with your supporting document.</p>}
+                {/* [Urmee · F3 Part 3] Mosque suggestions are listed under Mosque Applications, with their status. */}
+                {activeTab === "claims" && <MySuggestedMosques />}
                 {activeTab === "feedback" && <p className="small text-muted">To send feedback, open a mosque's page and choose <strong>Send feedback to this mosque</strong>.</p>}
                 {activeTab === "lostfound" && <p className="small text-muted"><Link to="/community?category=lost_found">Open Lost &amp; Found</Link> to report an item or mark one returned.</p>}
                 {activeTab === "donations" && <GoodsPledges />}

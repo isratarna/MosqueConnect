@@ -212,6 +212,17 @@ export function updateContactMessage(id, status) {
   });
 }
 
+export function fetchMosqueSuggestions(params = {}, { signal } = {}) {
+  return request(queryPath("/api/super-admin/mosque-suggestions", params), { signal });
+}
+
+export function reviewMosqueSuggestion(id, action, reviewNote = "") {
+  return request(`/api/super-admin/mosque-suggestions/${id}/${action}`, {
+    method: "PATCH",
+    body: JSON.stringify(action === "reject" ? { review_note: reviewNote } : {}),
+  });
+}
+
 export function fetchAuditLogs(params = {}, { signal } = {}) {
   return request(queryPath("/api/super-admin/audit-logs", params), { signal });
 }

@@ -31,11 +31,13 @@ import {
   fetchManagedMosques,
   fetchManagedUsers,
   fetchModerationQueue,
+  fetchMosqueSuggestions,
   fetchReports,
   fetchSystemAdminOverview,
   fetchSystemSettings,
   fetchSystemStatistics,
   reviewClaim,
+  reviewMosqueSuggestion,
   sendBroadcast,
   updateContactMessage,
   updateContentModeration,
@@ -53,6 +55,7 @@ import UserDetailModal from "./UserDetailModal";
 import SuggestionReviewList from "../suggestions/SuggestionReviewList";
 import { fetchSystemSuggestions, reviewSystemSuggestion } from "../../utils/teamApi";
 import { SkeletonRegion, TableRowsSkeleton } from "../skeletons";
+import MapView from "../MapView";
 
 const dateTime = (value) => value ? new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -491,6 +494,65 @@ export function ContactMessagesPanel() {
           ))}</tbody>
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
+    </>
+  );
+}
+
+const SUGGESTION_STATUSES = ["pending", "approved", "rejected"];
+
+/**
+ * [Urmee · F3 Part 3] Super-admin review of "Suggest a mosque" submissions: details, a small map
+ * preview of the pin, and Approve / Reject (a note is required to reject). Approving creates the mosque.
+ */
+export function MosqueSuggestionsPanel() {
+  const [status, setStatus] = useState("pending");
+  const [page, setPage] = useState(1);
+  const [confirm, setConfirm] = useState(null);
+  const state = useRemoteData((signal) => fetchMosqueSuggestions({ status, page }, { signal }), [status, page]);
+
+  // [Urmee · F3 Part 3] Approve confirms; Reject requires a note that the person who suggested the
+  // mosque will see.
+  const review = (suggestion, action) => setConfirm(action === "approve"
+    ? { title: `Approve "${suggestion.name}"?`, message: "This adds the mosque to the directory so it can be found and claimed.", confirmLabel: "Approve", tone: "success", onConfirm: async () => { await reviewMosqueSuggestion(suggestion.id, "approve"); state.refresh(); } }
+    : { title: `Reject "${suggestion.name}"?`, confirmLabel: "Reject", tone: "danger", reason: "required", reasonLabel: "Note to the person who suggested it", onConfirm: async (note) => { await reviewMosqueSuggestion(suggestion.id, "reject", note); state.refresh(); } });
+
+  return (
+    <>
+      <PanelHeader title="Mosque suggestions" description="Mosques that people asked us to add. Approve to add them to the directory." onRefresh={state.refresh}>
+        <select className="form-select form-select-sm" style={{ width: 150 }} value={status} aria-label="Filter by status" onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+          {SUGGESTION_STATUSES.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}
+        </select>
+      </PanelHeader>
+      <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
+        <div className="d-grid gap-3">
+          {state.data?.data?.map((item) => (
+            <article className="card border-0 shadow-sm" key={item.id}>
+              <div className="card-body row g-3">
+                <div className="col-md-7">
+                  <div className="d-flex flex-wrap align-items-center gap-2 mb-1"><h5 className="mb-0">{item.name}</h5><StatusBadge value={item.status} /></div>
+                  <p className="mb-1">{item.address}</p>
+                  <p className="small text-muted mb-1">{[item.area, item.district].filter(Boolean).join(", ")}{item.phone ? ` · ${item.phone}` : ""}</p>
+                  {item.facilities?.length > 0 && <p className="small mb-1">Facilities: {item.facilities.map(labelize).join(", ")}</p>}
+                  {item.notes && <p className="small mb-1">“{item.notes}”</p>}
+                  <p className="small text-muted mb-2">Suggested by {item.user?.name || "a user"} · {dateTime(item.created_at)}{item.reviewer ? ` · Reviewed by ${item.reviewer.name}` : ""}</p>
+                  {item.review_note && <p className="small">Note: {item.review_note}</p>}
+                  {item.status === "pending" && (
+                    <div className="d-flex gap-2">
+                      <button type="button" className="btn btn-sm btn-success" onClick={() => review(item, "approve")}>Approve</button>
+                      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => review(item, "reject")}>Reject</button>
+                    </div>
+                  )}
+                </div>
+                <div className="col-md-5">
+                  <MapView center={{ lat: item.latitude, lng: item.longitude }} zoom={15} mosques={[{ id: item.id, name: item.name, address: item.address, lat: item.latitude, lng: item.longitude }]} className="mc-map mc-map--sm" />
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+        <Pager payload={state.data?.meta} onPage={setPage} />
+      </PanelState>
+      {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
     </>
   );
 }

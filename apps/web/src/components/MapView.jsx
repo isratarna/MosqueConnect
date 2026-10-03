@@ -271,6 +271,8 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
                   onCloseClick={() => selectMosque(null)}
                 >
                   <div style={{ maxWidth: 240 }}>
+                    {/* [Urmee · F3 Part 2] Cover photo in the map popup (only when the mosque has one). */}
+                    {mosque.photo_url && <img src={mosque.photo_url} alt={`Photo of ${mosque.name}`} width="240" height="120" style={{ width: "100%", height: 96, objectFit: "cover", borderRadius: 6, marginBottom: 6 }} loading="lazy" />}
                     <div className="d-flex align-items-center gap-2 mb-1">
                       <strong>{mosque.name}</strong>
                       {(mosque.verified || mosque.verification_status === "verified") && <VerifiedBadge />}

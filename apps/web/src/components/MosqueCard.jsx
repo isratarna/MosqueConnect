@@ -20,7 +20,11 @@ export default function MosqueCard({ mosque }) {
       <img
         src={mosque.photo}
         className="mc-card-img"
-        alt={mosque.name}
+        // [Urmee · F3 Part 2] Meaningful alt text and fixed width/height so the card doesn't jump while the
+        // cover photo loads.
+        alt={`Photo of ${mosque.name}`}
+        width="400"
+        height="220"
         loading="lazy"
         onError={(event) => {
           event.currentTarget.onerror = null;
