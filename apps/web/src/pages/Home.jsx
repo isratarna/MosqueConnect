@@ -96,7 +96,7 @@ export default function Home() {
     <>
       <EidBanner />
       {user ? (
-        <div className="mc-auth-experience">
+        <div className="mc-auth-experience mc-auth-nearby-experience">
           <MyMosques />
           <MyFeed />
           <UrgentBloodRequests />
