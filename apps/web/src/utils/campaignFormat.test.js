@@ -13,3 +13,7 @@ test("campaign values receive readable formatting", () => {
   assert.notEqual(formatCampaignDate("2026-08-25"), "Not specified");
   assert.equal(formatCampaignDate("bad"), "Not specified");
 });
+
+test("compact money keeps the taka symbol", () => {
+  assert.match(formatCampaignMoney(2100000, "BDT", { compact: true }), /^৳\s?2\.1M$/);
+});

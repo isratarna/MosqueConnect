@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import GlobalSearch from "../components/GlobalSearch";
+import ContactForm from "../components/home/ContactForm";
+import ImpactStats from "../components/home/ImpactStats";
 import ManualLocationDialog from "../components/home/ManualLocationDialog";
 import { MyFeed, MyMosques, UrgentBloodRequests } from "../components/home/PersonalSections";
 import {
@@ -23,7 +25,6 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useGeolocation, requestGeolocation, hasLocation } from "../hooks/useGeolocation";
-import { fetchPublicStats, impactStatsFrom, sendContactMessage } from "../utils/communityHubApi";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import { useAuth } from "../context/AuthContext";
@@ -132,7 +133,7 @@ export default function Home() {
         </>
       )}
       <SupportSection />
-      <ImpactSection />
+      <ImpactStats />
       <AboutSection />
       <UpcomingEventsSection />
       {isLocationModalOpen && <ManualLocationDialog onClose={() => setIsLocationModalOpen(false)} />}
@@ -711,66 +712,7 @@ function SupportSection() {
   );
 }
 
-function ImpactSection() {
-  const impactIcons = [Landmark, UsersRound, Heart, HandHeart];
-  const [stats, setStats] = useState(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchPublicStats({ signal: controller.signal })
-      .then((data) => setStats(impactStatsFrom(data.data)))
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
-  // Real numbers only: until they load (or if they can't), the section stays hidden.
-  if (!stats?.length) return null;
-  return (
-    <section id="impact" className="mc-impact mc-motion-section mc-atmospheric-section" data-mc-parallax="0.18">
-      <div className="container">
-        <div className="mc-impact__headline">
-          <h2>Stronger together, for a better community</h2>
-          <p>Your connection helps build stronger, more vibrant communities.</p>
-        </div>
-        <div className="row text-center g-0 mc-impact__stats">
-          {stats.map((s, index) => {
-            const Icon = impactIcons[index];
-            return (
-              <div className="col-6 col-lg-3" key={s.label}>
-                <Icon size={22} strokeWidth={1.5} aria-hidden="true" />
-                <div className="mc-stat-value"><AnimatedStat value={s.value} /></div>
-                <div>{s.label}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function AboutSection() {
-  const [sending, setSending] = useState(false);
-  const [result, setResult] = useState(null);
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    const formElement = e.currentTarget;
-    const form = new FormData(formElement);
-    setSending(true);
-    setResult(null);
-    try {
-      const data = await sendContactMessage({
-        name: form.get("name").trim(),
-        email: form.get("email").trim(),
-        message: form.get("message").trim(),
-        website: form.get("website") || "",
-      });
-      formElement.reset();
-      setResult({ ok: true, text: data.message });
-    } catch (err) {
-      setResult({ ok: false, text: err.status === 429 ? "You've sent a few messages already. Please try again in a few minutes." : err.message });
-    } finally {
-      setSending(false);
-    }
-  };
   return (
     <section id="about" className="py-5 mc-motion-section mc-atmospheric-section" data-mc-parallax="0.16">
       <div className="container">
@@ -793,15 +735,7 @@ function AboutSection() {
           <div className="col-lg-6">
             <div className="card mc-card p-4">
               <h3 className="mc-form-title">Get in touch</h3>
-              <form onSubmit={onSubmit}>
-                <div className="mb-3"><input name="name" className="form-control" placeholder="Your name" aria-label="Your name" required maxLength={100} /></div>
-                <div className="mb-3"><input name="email" type="email" className="form-control" placeholder="Your email" aria-label="Your email" required /></div>
-                <div className="mb-3"><textarea name="message" className="form-control" rows="3" placeholder="Your message" aria-label="Your message" required minLength={10} maxLength={3000} /></div>
-                {/* Honeypot: hidden from people; bots that fill it in are rejected. */}
-                <div className="mc-honeypot" aria-hidden="true"><label htmlFor="contact-website">Website</label><input id="contact-website" name="website" tabIndex={-1} autoComplete="off" /></div>
-                {result && <div className={`alert ${result.ok ? "alert-success" : "alert-danger"} py-2 small`} role={result.ok ? "status" : "alert"}>{result.text}</div>}
-                <button className="btn btn-mc w-100" type="submit" disabled={sending}>{sending ? "Sending…" : "Send message"}</button>
-              </form>
+              <ContactForm />
             </div>
           </div>
         </div>
@@ -910,45 +844,4 @@ function UpcomingEventsSection() {
       </div>
     </section>
   );
-}
-
-function AnimatedStat({ value }) {
-  const nodeRef = useRef(null);
-  const [display, setDisplay] = useState(value);
-
-  useEffect(() => {
-    const match = /^(\d[\d,]*)([Kk]?)(\+?)$/.exec(value);
-    if (!match || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
-
-    const end = Number(match[1].replace(/,/g, ""));
-    let frame;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) {
-        if (frame) cancelAnimationFrame(frame);
-        return;
-      }
-      if (frame) cancelAnimationFrame(frame);
-      setDisplay(`0${match[2]}${match[3]}`);
-      const start = performance.now();
-      const tick = (now) => {
-        const progress = Math.min((now - start) / 800, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        setDisplay(`${Math.round(end * eased).toLocaleString()}${match[2]}${match[3]}`);
-        if (progress < 1) frame = requestAnimationFrame(tick);
-      };
-      frame = requestAnimationFrame(tick);
-    }, { threshold: 0.65 });
-
-    const node = nodeRef.current;
-    if (node instanceof Element) {
-      observer.observe(node);
-    }
-
-    return () => {
-      observer.disconnect();
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, [value]);
-
-  return <span ref={nodeRef}>{display}</span>;
 }

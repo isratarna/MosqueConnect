@@ -55,15 +55,14 @@ export function lostFoundQuery(filters = {}) {
   return query ? `?${query}` : "";
 }
 
-/** Turn GET /api/stats/public into the home page's impact tiles. */
+/** Turn GET /api/stats/public into the home page's four impact tiles (numbers; the component formats them). */
 export function impactStatsFrom(stats) {
   if (!stats) return [];
-  const compact = (value) => new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(Number(value) || 0);
   return [
-    { key: "mosques", value: compact(stats.mosques_count), label: "Mosques listed" },
-    { key: "members", value: compact(stats.members_count), label: "Community members" },
-    { key: "donations", value: `৳${compact(stats.donations_confirmed_total)}`, label: "Donations confirmed" },
-    { key: "volunteers", value: compact(stats.volunteer_signups_count), label: "Volunteer sign-ups" },
+    { key: "mosques", value: Number(stats.mosques_count) || 0, label: "Mosques connected" },
+    { key: "members", value: Number(stats.members_count) || 0, label: "Community members" },
+    { key: "donations", value: Number(stats.donations_confirmed_total) || 0, label: "Donations confirmed", money: true },
+    { key: "volunteers", value: Number(stats.volunteer_signups_count) || 0, label: "Volunteer sign-ups" },
   ];
 }
 

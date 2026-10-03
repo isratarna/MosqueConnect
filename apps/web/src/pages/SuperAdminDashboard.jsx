@@ -6,6 +6,7 @@ import {
   FileCheck2,
   Flag,
   LayoutDashboard,
+  Mail,
   Megaphone,
   PencilLine,
   ScrollText,
@@ -18,6 +19,7 @@ import {
   AuditPanel,
   BroadcastPanel,
   ClaimsPanel,
+  ContactMessagesPanel,
   CorrectionsPanel,
   ModerationPanel,
   MosquesPanel,
@@ -38,6 +40,7 @@ const SECTIONS = [
   { id: "moderation", label: "Moderation", icon: SlidersHorizontal },
   { id: "reports", label: "Reports", icon: Flag },
   { id: "broadcasts", label: "Broadcasts", icon: Megaphone },
+  { id: "contact", label: "Contact messages", icon: Mail },
   { id: "statistics", label: "Statistics", icon: Activity },
   { id: "audit", label: "Audit Log", icon: ScrollText },
   { id: "settings", label: "Settings", icon: Settings },
@@ -69,6 +72,7 @@ export default function SuperAdminDashboard() {
       case "moderation": return <ModerationPanel />;
       case "reports": return <ReportsPanel />;
       case "broadcasts": return <BroadcastPanel />;
+      case "contact": return <ContactMessagesPanel />;
       case "statistics": return <StatisticsPanel />;
       case "audit": return <AuditPanel />;
       case "settings": return <SettingsPanel />;
