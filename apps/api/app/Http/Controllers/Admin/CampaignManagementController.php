@@ -9,11 +9,12 @@ use App\Http\Requests\StoreManualCampaignDonationRequest;
 use App\Http\Requests\UpdateCampaignRequest;
 use App\Http\Resources\CampaignDonationResource;
 use App\Http\Resources\CampaignResource;
+use App\Jobs\NotifyMosqueFollowers;
 use App\Models\Campaign;
 use App\Models\CampaignDonation;
 use App\Models\Mosque;
+use App\Models\Notification;
 use App\Services\CampaignDonationService;
-use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -23,7 +24,6 @@ use Illuminate\Validation\ValidationException;
 class CampaignManagementController extends Controller
 {
     public function __construct(
-        private readonly NotificationService $notifications,
         private readonly CampaignDonationService $donations,
     ) {}
 
@@ -55,7 +55,7 @@ class CampaignManagementController extends Controller
         ]);
 
         if ($campaign->status === Campaign::STATUS_ACTIVE) {
-            $this->notifications->notifyCampaignPublished($mosque, $campaign->id, $campaign->title);
+            $this->dispatchPublished($campaign);
         }
 
         return (new CampaignResource($this->hydrate($campaign)))
@@ -189,9 +189,20 @@ class CampaignManagementController extends Controller
     private function notifyIfActivated(Campaign $campaign): void
     {
         if ($campaign->wasChanged('status') && $campaign->status === Campaign::STATUS_ACTIVE) {
-            $campaign->loadMissing('mosque');
-            $this->notifications->notifyCampaignPublished($campaign->mosque, $campaign->id, $campaign->title);
+            $this->dispatchPublished($campaign);
         }
+    }
+
+    private function dispatchPublished(Campaign $campaign): void
+    {
+        $campaign->loadMissing('mosque');
+        dispatch(new NotifyMosqueFollowers(
+            $campaign->mosque_id,
+            Notification::TYPE_CAMPAIGN,
+            "New Donation Campaign: {$campaign->title}",
+            "{$campaign->mosque->name} launched a new donation campaign: {$campaign->title}.",
+            ['type' => Notification::REFERENCE_CAMPAIGN, 'id' => $campaign->id],
+        ))->afterCommit();
     }
 
     private function hydrate(Campaign $campaign): Campaign

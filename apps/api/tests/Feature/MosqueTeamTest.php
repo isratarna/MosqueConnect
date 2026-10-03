@@ -192,7 +192,7 @@ class MosqueTeamTest extends TestCase
         ]);
         $this->app['auth']->forgetGuards();
 
-        $this->postJson('/api/auth/verify-otp', ['phone' => $phone, 'otp' => '123456'])
+        $this->postJson('/api/auth/verify-otp', ['phone' => $phone, 'otp' => '123456', 'accept_terms' => true])
             ->assertOk()
             ->assertJsonPath('user.pending_mosque_invites_count', 1);
 

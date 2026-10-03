@@ -38,22 +38,31 @@ class PhoneOtpController extends Controller
     public function verifyOtp(Request $request, PhoneOtpService $otps, MosqueTeamService $team): JsonResponse
     {
         $otpLength = (int) config('otp.length', 6);
+        $isNewUser = ! User::query()->where('phone', $request->input('phone'))->exists();
 
         $validated = $request->validate([
             'phone' => ['required', 'string', 'regex:/^\+[1-9]\d{7,14}$/'],
             'otp' => ['required', 'string', 'digits:'.$otpLength],
+            'name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'accept_terms' => [Rule::requiredIf($isNewUser), 'accepted'],
         ]);
 
-        $user = DB::transaction(function () use ($otps, $validated): User {
+        $user = DB::transaction(function () use ($otps, $validated, $isNewUser): User {
             $otps->consume($validated['phone'], $validated['otp']);
 
-            return User::firstOrCreate(
+            $user = User::firstOrCreate(
                 ['phone' => $validated['phone']],
                 [
-                    'name' => $validated['phone'],
+                    'name' => $validated['name'] ?? $validated['phone'],
                     'role' => User::ROLE_NORMAL_USER,
                 ],
             );
+
+            if ($user->wasRecentlyCreated && $isNewUser) {
+                $user->forceFill(['terms_accepted_at' => now()])->save();
+            }
+
+            return $user;
         });
 
         if ($user->isSuspended()) {

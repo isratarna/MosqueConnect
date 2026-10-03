@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VerificationRequestManagementController;
 use App\Http\Controllers\Admin\VolunteerRegistrationManagementController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\Auth\AccountController;
 use App\Http\Controllers\Auth\PhoneOtpController;
 use App\Http\Controllers\BloodRequestController;
 use App\Http\Controllers\CampaignController;
@@ -81,6 +82,13 @@ Route::prefix('auth')->group(function () {
         Route::post('/logout', [PhoneOtpController::class, 'logout']);
         Route::get('/me', [PhoneOtpController::class, 'me']);
         Route::patch('/me', [PhoneOtpController::class, 'updateProfile']);
+        Route::delete('/me', [AccountController::class, 'destroy']);
+        Route::get('/me/export', [AccountController::class, 'export']);
+        Route::post('/logout-all', [AccountController::class, 'logoutAll']);
+        Route::post('/me/phone/send-otp', [AccountController::class, 'sendPhoneChangeOtp'])
+            ->middleware('throttle:otp-send');
+        Route::post('/me/phone/verify', [AccountController::class, 'verifyPhoneChange'])
+            ->middleware('throttle:otp-verify');
     });
 });
 
@@ -150,9 +158,14 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
+    Route::delete('/notifications', [NotificationController::class, 'clearRead']);
+    Route::get('/me/notification-preferences', [NotificationController::class, 'preferences']);
+    Route::put('/me/notification-preferences', [NotificationController::class, 'updatePreferences']);
 
     // Follow / unfollow mosque
     Route::post('/mosques/{mosque}/follow', [MosqueFollowController::class, 'follow']);
+    Route::patch('/mosques/{mosque}/follow', [MosqueFollowController::class, 'muteNotifications']);
     Route::delete('/mosques/{mosque}/follow', [MosqueFollowController::class, 'unfollow']);
     Route::put('/mosques/{mosque}/reviews/me', [MosqueReviewController::class, 'upsert']);
     Route::delete('/mosques/{mosque}/reviews/me', [MosqueReviewController::class, 'destroy']);

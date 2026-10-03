@@ -123,10 +123,14 @@ class PhoneOtpAuthenticationTest extends TestCase
         $this->postJson('/api/auth/verify-otp', [
             'phone' => '+15555550100',
             'otp' => '123456',
+            'name' => 'New Member',
+            'accept_terms' => true,
             'role' => User::ROLE_SUPER_ADMIN,
         ])->assertOk()
             ->assertJsonPath('user.phone', '+15555550100')
+            ->assertJsonPath('user.name', 'New Member')
             ->assertJsonPath('user.role', User::ROLE_NORMAL_USER)
+            ->assertJsonPath('user.terms_accepted_at', fn ($value) => $value !== null)
             ->assertJsonPath('token_type', 'Bearer')
             ->assertJsonStructure(['token']);
 
@@ -134,6 +138,20 @@ class PhoneOtpAuthenticationTest extends TestCase
             'phone' => '+15555550100',
             'role' => User::ROLE_NORMAL_USER,
         ]);
+        $this->assertNotNull(User::where('phone', '+15555550100')->firstOrFail()->terms_accepted_at);
+    }
+
+    public function test_new_user_must_accept_terms_before_otp_login(): void
+    {
+        $this->createOtp('+15555550109', '123456');
+
+        $this->postJson('/api/auth/verify-otp', [
+            'phone' => '+15555550109',
+            'otp' => '123456',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('accept_terms');
+
+        $this->assertDatabaseMissing('users', ['phone' => '+15555550109']);
     }
 
     public function test_valid_otp_logs_in_existing_user_and_preserves_role(): void
@@ -162,6 +180,7 @@ class PhoneOtpAuthenticationTest extends TestCase
         $payload = [
             'phone' => '+15555550100',
             'otp' => '123456',
+            'accept_terms' => true,
         ];
 
         $this->postJson('/api/auth/verify-otp', $payload)->assertOk();
