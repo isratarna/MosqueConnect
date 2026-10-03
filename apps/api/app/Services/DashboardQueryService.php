@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Campaign;
 use App\Models\CampaignDonation;
 use App\Models\Event;
+use App\Models\EventRegistration;
 use App\Models\GoodsDonation;
 use App\Models\Mosque;
 use App\Models\PrayerTime;
@@ -62,7 +63,7 @@ class DashboardQueryService
         return $mosque->events()
             ->published()
             ->whereDate('event_date', '>=', today())
-            ->withCount('registrations')
+            ->withCount(['registrations as registrations_count' => fn ($query) => $query->whereIn('status', [EventRegistration::STATUS_REGISTERED, EventRegistration::STATUS_ATTENDED])])
             ->orderBy('event_date')
             ->orderBy('start_time')
             ->orderBy('id')

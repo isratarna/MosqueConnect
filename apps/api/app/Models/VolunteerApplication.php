@@ -44,6 +44,11 @@ class VolunteerApplication extends Model
         'volunteer_opportunity_id',
         'user_id',
         'status',
+        'hours',
+        'attendance_status',
+        'note',
+        'checked_in_at',
+        'certificate_code',
         'reviewed_by',
         'reviewed_at',
         'cancelled_at',
@@ -122,6 +127,8 @@ class VolunteerApplication extends Model
     protected function casts(): array
     {
         return [
+            'checked_in_at' => 'datetime',
+            'hours' => 'decimal:1',
             'reviewed_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
