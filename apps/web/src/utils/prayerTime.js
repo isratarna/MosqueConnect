@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE, formatTimeOfDay } from "./intl.js";
+
 export function parseClockTime(timeStr, reference = new Date()) {
   const value = String(timeStr || "").trim();
   const match = value.match(/^(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?$/);
@@ -28,15 +30,17 @@ export function parseClockTime(timeStr, reference = new Date()) {
   );
 }
 
-export function formatClockTime(timeStr) {
+// The API sends 24-hour ASCII times ("13:30"); they are only localised here, at
+// the point of display. "bn-BD" renders Bangla digits (১:৩০ PM).
+export function formatClockTime(timeStr, locale = DEFAULT_LOCALE) {
   const parsed = parseClockTime(timeStr);
   if (!parsed) return timeStr || "—";
 
-  return parsed.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return formatTimeOfDay(parsed, locale);
 }
 
-export function dhuhrJamaatLabel(prayer) {
+export function dhuhrJamaatLabel(prayer, locale = DEFAULT_LOCALE, label = "Dhuhr") {
   const time = prayer?.Dhuhr || prayer?.dhuhr;
   if (!time) return null;
-  return `Dhuhr ${formatClockTime(time)}`;
+  return `${label} ${formatClockTime(time, locale)}`;
 }

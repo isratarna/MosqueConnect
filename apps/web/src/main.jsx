@@ -2,6 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
+// Initialises i18next (language detection, <html lang>) before anything renders.
+import "./i18n";
+
 // Bootstrap CSS supplies layout and form primitives; interactive widgets are React-driven.
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./index.css";

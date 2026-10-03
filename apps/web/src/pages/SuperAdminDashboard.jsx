@@ -24,20 +24,22 @@ import {
   UsersPanel,
 } from "../components/super-admin/AdminPanels";
 import { useAuth } from "../context/AuthContext";
+import { useLocale } from "../hooks/useLocale";
 
 const SECTIONS = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "claims", label: "Mosque Claims", icon: FileCheck2 },
-  { id: "users", label: "Users", icon: Users },
-  { id: "mosques", label: "Mosques", icon: Building2 },
-  { id: "moderation", label: "Moderation", icon: SlidersHorizontal },
-  { id: "reports", label: "Reports", icon: Flag },
-  { id: "statistics", label: "Statistics", icon: Activity },
-  { id: "audit", label: "Audit Log", icon: ScrollText },
-  { id: "settings", label: "Settings", icon: Settings },
+  { id: "overview", labelKey: "superAdmin.sections.overview", icon: LayoutDashboard },
+  { id: "claims", labelKey: "superAdmin.sections.claims", icon: FileCheck2 },
+  { id: "users", labelKey: "superAdmin.sections.users", icon: Users },
+  { id: "mosques", labelKey: "superAdmin.sections.mosques", icon: Building2 },
+  { id: "moderation", labelKey: "superAdmin.sections.moderation", icon: SlidersHorizontal },
+  { id: "reports", labelKey: "superAdmin.sections.reports", icon: Flag },
+  { id: "statistics", labelKey: "superAdmin.sections.statistics", icon: Activity },
+  { id: "audit", labelKey: "superAdmin.sections.audit", icon: ScrollText },
+  { id: "settings", labelKey: "superAdmin.sections.settings", icon: Settings },
 ];
 
 export default function SuperAdminDashboard() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -74,23 +76,23 @@ export default function SuperAdminDashboard() {
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 border-bottom pb-3 mb-4">
           <div className="d-flex align-items-center gap-3">
             <span className="rounded-circle bg-danger-subtle text-danger p-3"><ShieldCheck size={28} /></span>
-            <div><h2 className="fw-bold mb-0">System Administration</h2><p className="text-muted mb-0 small">Signed in as {user?.name} · Full platform oversight</p></div>
+            <div><h2 className="fw-bold mb-0">{t("superAdmin.title")}</h2><p className="text-muted mb-0 small">{t("superAdmin.signedInAs", { name: user?.name })}</p></div>
           </div>
-          <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">Super Admin</span>
+          <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">{t("profile.superAdmin")}</span>
         </div>
 
         <div className="row g-4">
           <aside className="col-xl-2 col-lg-3">
-            <nav className="card border-0 shadow-sm p-2 sticky-lg-top" style={{ top: 92 }} aria-label="Super admin sections">
+            <nav className="card border-0 shadow-sm p-2 sticky-lg-top" style={{ top: 92 }} aria-label={t("superAdmin.navLabel")}>
               <div className="nav nav-pills flex-row flex-lg-column gap-1">
-                {SECTIONS.map(({ id, label, icon: Icon }) => (
+                {SECTIONS.map(({ id, labelKey, icon: Icon }) => (
                   <button
                     type="button"
                     key={id}
                     className={`nav-link text-start d-flex align-items-center gap-2 ${section === id ? "active" : "text-dark"}`}
                     onClick={() => selectSection(id)}
                   >
-                    <Icon size={17} aria-hidden="true" />{label}
+                    <Icon size={17} aria-hidden="true" />{t(labelKey)}
                   </button>
                 ))}
               </div>

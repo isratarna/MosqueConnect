@@ -4,10 +4,21 @@ import { ArrowLeft, CheckCircle, Clock, Save, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 import { fetchPrayerSchedule, updatePrayerSchedule } from "../services/prayerScheduleService";
+import { useLocale } from "../hooks/useLocale";
 
 const PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah"];
+// `PRAYERS` holds the keys the API uses; these are their translations.
+const PRAYER_LABEL_KEYS = {
+  Fajr: "prayer.fajr",
+  Dhuhr: "prayer.dhuhr",
+  Asr: "prayer.asr",
+  Maghrib: "prayer.maghrib",
+  Isha: "prayer.isha",
+  Jummah: "prayer.jummah",
+};
 
 export default function MosqueAdminPrayerSchedule() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -37,7 +48,7 @@ export default function MosqueAdminPrayerSchedule() {
 
     const managed = selectedMosque;
     if (managed) { setMosque(managed); loadSchedule(managed.id); }
-    else { setActionError("No mosque is assigned to your account."); setLoading(false); }
+    else { setActionError(t("admin.prayerSchedule.noMosque")); setLoading(false); }
   }, [user, navigate, selectedMosque?.id]);
 
   const loadSchedule = async (mosqueId) => {
@@ -47,7 +58,7 @@ export default function MosqueAdminPrayerSchedule() {
         setSchedule(data);
       }
     } catch (err) {
-      setActionError(err.message || "Unable to load the prayer schedule.");
+      setActionError(err.message || t("admin.prayerSchedule.loadError"));
     } finally {
       setLoading(false);
     }
@@ -80,9 +91,9 @@ export default function MosqueAdminPrayerSchedule() {
 
     try {
       await updatePrayerSchedule(mosque.id, schedule);
-      showSuccess("Prayer schedule updated successfully!");
+      showSuccess(t("admin.prayerSchedule.saved"));
     } catch (err) {
-      showError(err.message || "An error occurred while saving the schedule.");
+      showError(err.message || t("admin.prayerSchedule.saveError"));
     } finally {
       setSubmitting(false);
     }
@@ -92,7 +103,7 @@ export default function MosqueAdminPrayerSchedule() {
     return (
       <div className="container py-5 text-center" style={{ minHeight: "80vh" }}>
         <div className="spinner-border text-mc" role="status">
-          <span className="visually-hidden">Loading...</span>
+          <span className="visually-hidden">{t("common.loading")}</span>
         </div>
       </div>
     );
@@ -109,13 +120,13 @@ export default function MosqueAdminPrayerSchedule() {
       <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3 border-bottom pb-3">
         <div>
           <Link to="/admin/dashboard" className="text-secondary small fw-bold text-decoration-none d-flex align-items-center gap-1 mb-2">
-            <ArrowLeft size={14} /> Back to Dashboard
+            <ArrowLeft size={14} /> {t("admin.prayerSchedule.back")}
           </Link>
           <h2 className="fw-bold mb-1 d-flex align-items-center gap-2">
             <Clock size={28} className="text-mc" />
-            Manage Prayer Schedule
+            {t("admin.prayerSchedule.title")}
           </h2>
-          <p className="text-muted mb-0 small">Update Adhan and Iqamah (Jamat) times for the community.</p>
+          <p className="text-muted mb-0 small">{t("admin.prayerSchedule.subtitle")}</p>
         </div>
       </div>
 
@@ -136,7 +147,7 @@ export default function MosqueAdminPrayerSchedule() {
       {hasEmptyFields && (
         <div className="alert alert-info py-2 px-3 mb-4 d-flex align-items-center gap-2 shadow-sm">
           <Clock size={18} />
-          <span className="small">Please fill in the missing prayer times to complete the schedule.</span>
+          <span className="small">{t("admin.prayerSchedule.fillMissing")}</span>
         </div>
       )}
 
@@ -148,15 +159,15 @@ export default function MosqueAdminPrayerSchedule() {
               <table className="table align-middle">
                 <thead>
                   <tr>
-                    <th style={{ width: "25%" }} className="fw-bold text-muted small text-uppercase">Prayer</th>
-                    <th style={{ width: "35%" }} className="fw-bold text-muted small text-uppercase">Adhan Time</th>
-                    <th style={{ width: "40%" }} className="fw-bold text-muted small text-uppercase">Iqamah (Jamat) Time</th>
+                    <th style={{ width: "25%" }} className="fw-bold text-muted small text-uppercase">{t("admin.prayerSchedule.prayer")}</th>
+                    <th style={{ width: "35%" }} className="fw-bold text-muted small text-uppercase">{t("admin.prayerSchedule.adhan")}</th>
+                    <th style={{ width: "40%" }} className="fw-bold text-muted small text-uppercase">{t("admin.prayerSchedule.iqamah")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {PRAYERS.map((prayer) => (
                     <tr key={prayer}>
-                      <td className="fw-bold text-dark">{prayer}</td>
+                      <td className="fw-bold text-dark">{t(PRAYER_LABEL_KEYS[prayer])}</td>
                       <td>
                         <input
                           type="time"
@@ -192,7 +203,7 @@ export default function MosqueAdminPrayerSchedule() {
                 ) : (
                   <Save size={18} />
                 )}
-                {submitting ? "Saving Schedule..." : "Save Changes"}
+                {submitting ? t("admin.prayerSchedule.saving") : t("admin.prayerSchedule.saveChanges")}
               </button>
             </div>
             

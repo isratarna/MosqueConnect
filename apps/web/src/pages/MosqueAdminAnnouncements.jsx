@@ -15,10 +15,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../utils/api";
+import { formatApiDate } from "../utils/intl";
+import { useLocale } from "../hooks/useLocale";
 
 
 
 export default function MosqueAdminAnnouncements() {
+  const { t, locale } = useLocale();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -47,7 +50,7 @@ export default function MosqueAdminAnnouncements() {
 
   useEffect(() => {
     const managed = selectedMosque;
-    if (!managed) { setActionError("No mosque is assigned to your account."); setLoading(false); return; }
+    if (!managed) { setActionError(t("admin.announcements.noMosque")); setLoading(false); return; }
     const controller = new AbortController();
     setMosque(managed);
     setLoading(true);
@@ -92,7 +95,7 @@ export default function MosqueAdminAnnouncements() {
         method: editingId ? "PATCH" : "POST", body: { title, body, urgency, status },
       });
       setAnnouncements((items) => editingId ? items.map((item) => item.id === editingId ? data : item) : [data, ...items]);
-      showSuccess(editingId ? "Announcement updated successfully!" : "Announcement created successfully!");
+      showSuccess(editingId ? t("admin.announcements.updated") : t("admin.announcements.created"));
       setShowForm(false);
     } catch (err) { setActionError(err.message); }
     finally { setSubmittingForm(false); }
@@ -106,7 +109,7 @@ export default function MosqueAdminAnnouncements() {
     try {
       const { data } = await apiRequest(`/api/admin/mosques/${mosque.id}/announcements/${id}/${item.status === "published" ? "unpublish" : "publish"}`, { method: "PATCH" });
       setAnnouncements((items) => items.map((entry) => entry.id === id ? data : entry));
-      showSuccess("Announcement status updated!");
+      showSuccess(t("admin.announcements.statusUpdated"));
     } catch (err) { setActionError(err.message); }
     finally { setActionBusy(false); }
   };
@@ -120,7 +123,7 @@ export default function MosqueAdminAnnouncements() {
       await apiRequest(`/api/admin/mosques/${mosque.id}/announcements/${deletingId}`, { method: "DELETE" });
       setAnnouncements((items) => items.filter((item) => item.id !== deletingId));
       setDeletingId(null);
-      showSuccess("Announcement deleted successfully.");
+      showSuccess(t("admin.announcements.deleted"));
     } catch (err) { setActionError(err.message); }
     finally { setActionBusy(false); }
   };
@@ -129,7 +132,7 @@ export default function MosqueAdminAnnouncements() {
     return (
       <div className="container py-5 text-center" style={{ minHeight: "80vh" }}>
         <div className="spinner-border text-mc" role="status">
-          <span className="visually-hidden">Loading...</span>
+          <span className="visually-hidden">{t("common.loading")}</span>
         </div>
       </div>
     );
@@ -142,23 +145,23 @@ export default function MosqueAdminAnnouncements() {
       <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3 border-bottom pb-3">
         <div>
           <Link to="/admin/dashboard" className="text-secondary small fw-bold text-decoration-none d-flex align-items-center gap-1 mb-2">
-            <ArrowLeft size={14} /> Back to Dashboard
+            <ArrowLeft size={14} /> {t("admin.announcements.back")}
           </Link>
           <h2 className="fw-bold mb-1 d-flex align-items-center gap-2">
             <Megaphone size={28} className="text-mc" />
-            Manage Announcements
+            {t("admin.announcements.title")}
           </h2>
-          <p className="text-muted mb-0 small">Publish news, warnings, and updates to your community.</p>
+          <p className="text-muted mb-0 small">{t("admin.announcements.subtitle")}</p>
         </div>
         <button 
           className="btn btn-mc d-flex align-items-center gap-2"
           onClick={showForm && !editingId ? () => setShowForm(false) : handleOpenCreate}
         >
-          {showForm && !editingId ? "Cancel Creation" : <><Plus size={18} /> New Announcement</>}
+          {showForm && !editingId ? t("admin.announcements.cancelCreation") : <><Plus size={18} /> {t("admin.announcements.newAnnouncement")}</>}
         </button>
       </div>
 
-      {actionError && <div className="alert alert-danger" role="alert">{actionError} <button className="btn btn-sm btn-outline-danger" onClick={() => setRevision((n) => n + 1)}>Retry</button></div>}
+      {actionError && <div className="alert alert-danger" role="alert">{actionError} <button className="btn btn-sm btn-outline-danger" onClick={() => setRevision((n) => n + 1)}>{t("common.retry")}</button></div>}
       {actionSuccess && (
         <div className="alert alert-success py-2 px-3 mb-4 d-flex align-items-center gap-2 shadow-sm animate-fade-in">
           <CheckCircle size={18} />
@@ -171,41 +174,41 @@ export default function MosqueAdminAnnouncements() {
         <div className="card border-0 shadow-sm mb-5 border-top border-4 border-mc bg-light">
           <div className="card-body p-4">
             <div className="d-flex justify-content-between align-items-start mb-4">
-              <h5 className="fw-bold mb-0">{editingId ? "Edit Announcement" : "Create New Announcement"}</h5>
-              <button className="btn-close" onClick={() => setShowForm(false)} aria-label="Close form"></button>
+              <h5 className="fw-bold mb-0">{editingId ? t("admin.announcements.editTitle") : t("admin.announcements.createTitle")}</h5>
+              <button className="btn-close" onClick={() => setShowForm(false)} aria-label={t("admin.announcements.closeForm")}></button>
             </div>
             
             <form onSubmit={handleSubmit}>
               <div className="row g-3">
                 <div className="col-md-12 mb-3">
-                  <label className="form-label fw-semibold small">Title <span className="text-danger">*</span></label>
-                  <input type="text" className="form-control" placeholder="e.g. Mosque Renovation Progress" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                  <label className="form-label fw-semibold small">{t("admin.announcements.titleLabel")} <span className="text-danger">*</span></label>
+                  <input type="text" className="form-control" placeholder={t("admin.announcements.titlePlaceholder")} value={title} onChange={(e) => setTitle(e.target.value)} required />
                 </div>
                 <div className="col-12 mb-3">
-                  <label className="form-label fw-semibold small">Message Content <span className="text-danger">*</span></label>
-                  <textarea className="form-control" rows="4" placeholder="Provide details about the announcement..." value={body} onChange={(e) => setBody(e.target.value)} required></textarea>
+                  <label className="form-label fw-semibold small">{t("admin.announcements.message")} <span className="text-danger">*</span></label>
+                  <textarea className="form-control" rows="4" placeholder={t("admin.announcements.messagePlaceholder")} value={body} onChange={(e) => setBody(e.target.value)} required></textarea>
                 </div>
                 <div className="col-md-6 mb-3">
-                  <label className="form-label fw-semibold small">Priority Level</label>
+                  <label className="form-label fw-semibold small">{t("admin.announcements.priority")}</label>
                   <select className="form-select" value={urgency} onChange={(e) => setUrgency(e.target.value)}>
-                    <option value="low">Low (General Info)</option>
-                    <option value="medium">Medium (Warning / Alert)</option>
-                    <option value="high">High (Urgent)</option>
+                    <option value="low">{t("admin.announcements.priorityLow")}</option>
+                    <option value="medium">{t("admin.announcements.priorityMedium")}</option>
+                    <option value="high">{t("admin.announcements.priorityHigh")}</option>
                   </select>
                 </div>
                 <div className="col-md-6 mb-3">
-                  <label className="form-label fw-semibold small">Status</label>
+                  <label className="form-label fw-semibold small">{t("admin.announcements.status")}</label>
                   <select className="form-select" value={status} onChange={(e) => setStatus(e.target.value)}>
-                    <option value="published">Published (Visible to all)</option>
-                    <option value="draft">Draft (Hidden)</option>
+                    <option value="published">{t("admin.announcements.statusPublished")}</option>
+                    <option value="draft">{t("admin.announcements.statusDraft")}</option>
                   </select>
                 </div>
               </div>
               <div className="d-flex justify-content-end gap-2 mt-2">
-                <button type="button" className="btn btn-light border" onClick={() => setShowForm(false)} disabled={submittingForm}>Cancel</button>
+                <button type="button" className="btn btn-light border" onClick={() => setShowForm(false)} disabled={submittingForm}>{t("common.cancel")}</button>
                 <button type="submit" className="btn btn-mc d-flex align-items-center gap-2" disabled={submittingForm}>
                   {submittingForm ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> : <CheckCircle size={16} />}
-                  {submittingForm ? "Saving..." : editingId ? "Save Changes" : "Create Announcement"}
+                  {submittingForm ? t("admin.announcements.saving") : editingId ? t("admin.announcements.saveChanges") : t("admin.announcements.create")}
                 </button>
               </div>
             </form>
@@ -222,16 +225,16 @@ export default function MosqueAdminAnnouncements() {
               <div className="modal-content border-0 shadow-lg">
                 <div className="modal-header border-0 pb-0">
                   <h5 className="modal-title fw-bold text-danger d-flex align-items-center gap-2">
-                    <AlertCircle size={22} /> Confirm Deletion
+                    <AlertCircle size={22} /> {t("admin.announcements.deleteTitle")}
                   </h5>
-                  <button type="button" className="btn-close" onClick={() => setDeletingId(null)} aria-label="Close"></button>
+                  <button type="button" className="btn-close" onClick={() => setDeletingId(null)} aria-label={t("common.close")}></button>
                 </div>
                 <div className="modal-body py-4">
-                  <p className="mb-0">Are you sure you want to permanently delete this announcement? This action cannot be undone.</p>
+                  <p className="mb-0">{t("admin.announcements.deleteBody")}</p>
                 </div>
                 <div className="modal-footer border-0 pt-0">
-                  <button type="button" className="btn btn-light border" onClick={() => setDeletingId(null)}>Cancel</button>
-                  <button type="button" className="btn btn-danger" onClick={executeDelete}>Yes, Delete</button>
+                  <button type="button" className="btn btn-light border" onClick={() => setDeletingId(null)}>{t("common.cancel")}</button>
+                  <button type="button" className="btn btn-danger" onClick={executeDelete}>{t("admin.announcements.deleteYes")}</button>
                 </div>
               </div>
             </div>
@@ -243,9 +246,9 @@ export default function MosqueAdminAnnouncements() {
       {announcements.length === 0 ? (
         <div className="text-center py-5 text-muted border rounded shadow-sm bg-white mt-4">
           <Megaphone size={48} className="mb-3 opacity-25 mx-auto" />
-          <h5 className="fw-bold">No Announcements</h5>
-          <p className="mb-0">You haven't posted any announcements yet.</p>
-          <button className="btn btn-outline-mc mt-3" onClick={handleOpenCreate}>Create Your First</button>
+          <h5 className="fw-bold">{t("admin.announcements.emptyTitle")}</h5>
+          <p className="mb-0">{t("admin.announcements.emptyCopy")}</p>
+          <button className="btn btn-outline-mc mt-3" onClick={handleOpenCreate}>{t("admin.announcements.createFirst")}</button>
         </div>
       ) : (
         <div className="d-flex flex-column gap-3">
@@ -258,19 +261,19 @@ export default function MosqueAdminAnnouncements() {
                     <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
                       <h5 className="fw-bold mb-0 text-dark">{announce.title}</h5>
                       <span className={`badge ${announce.status === 'published' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-dark border border-warning-subtle'}`}>
-                        {announce.status === 'published' ? 'Published' : 'Draft'}
+                        {announce.status === 'published' ? t("status.published") : t("status.draft")}
                       </span>
-                      {announce.urgency === 'high' && <span className="badge bg-danger">Urgent</span>}
+                      {announce.urgency === 'high' && <span className="badge bg-danger">{t("urgency.urgent")}</span>}
                     </div>
                     
                     <p className="text-secondary small mb-3">{announce.body}</p>
                     
                     <div className="d-flex align-items-center gap-2 small text-muted">
-                      <Clock size={14} /> <span>Posted: {announce.date}</span>
+                      <Clock size={14} /> <span>{t("admin.announcements.posted", { date: formatApiDate(announce.date, locale) })}</span>
                       {announce.urgency !== 'low' && (
                         <>
                           <span className="mx-1">•</span>
-                          <span>Priority: <span className="text-capitalize">{announce.urgency}</span></span>
+                          <span>{t("admin.announcements.priorityMeta", { level: t(`urgency.${announce.urgency}`, { defaultValue: announce.urgency }) })}</span>
                         </>
                       )}
                     </div>
@@ -282,19 +285,19 @@ export default function MosqueAdminAnnouncements() {
                         className={`btn btn-sm ${announce.status === 'published' ? 'btn-outline-warning' : 'btn-outline-success'} d-flex align-items-center justify-content-center gap-2 w-100`}
                         onClick={() => handleToggleStatus(announce.id)}
                       >
-                        {announce.status === 'published' ? <><EyeOff size={14} /> Unpublish</> : <><Eye size={14} /> Publish</>}
+                        {announce.status === 'published' ? <><EyeOff size={14} /> {t("admin.announcements.unpublish")}</> : <><Eye size={14} /> {t("admin.announcements.publish")}</>}
                       </button>
                       <button 
                         className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center gap-2 w-100"
                         onClick={() => handleOpenEdit(announce)}
                       >
-                        <Edit size={14} /> Edit
+                        <Edit size={14} /> {t("admin.announcements.edit")}
                       </button>
                       <button 
                         className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center gap-2 w-100"
                         onClick={() => confirmDelete(announce.id)}
                       >
-                        <Trash2 size={14} /> Delete
+                        <Trash2 size={14} /> {t("admin.announcements.delete")}
                       </button>
                     </div>
                   </div>

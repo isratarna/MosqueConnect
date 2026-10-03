@@ -26,10 +26,13 @@ import MosqueEventsSection from "../components/events/MosqueEventsSection";
 import MosqueCampaignsSection from "../components/campaigns/MosqueCampaignsSection";
 import { directionsUrl, fetchMosqueById } from "../utils/mosqueDiscovery";
 import { formatClockTime } from "../utils/prayerTime";
+import { formatApiDate, formatNumber } from "../utils/intl";
+import { useLocale } from "../hooks/useLocale";
 import { useFollow } from "../context/FollowContext";
 import MosqueClaimForm from "../components/MosqueClaimForm";
 
 export default function MosqueProfile() {
+  const { t, locale } = useLocale();
   const { id } = useParams();
   const [mosque, setMosque] = useState(null);
   const [status, setStatus] = useState("loading");
@@ -53,7 +56,7 @@ export default function MosqueProfile() {
         if (!active) return;
         setMosque(null);
         setStatus("error");
-        setError(requestError.message || "Mosque details could not be loaded.");
+        setError(requestError.message || t("error.mosqueLoad"));
       });
 
     return () => {
@@ -65,7 +68,7 @@ export default function MosqueProfile() {
     return (
       <div className="container py-5 text-center" role="status">
         <LoaderCircle size={36} className="text-mc spin" aria-hidden="true" />
-        <p className="text-muted mt-3 mb-0">Loading mosque profile…</p>
+        <p className="text-muted mt-3 mb-0">{t("mosque.loading")}</p>
       </div>
     );
   }
@@ -74,15 +77,15 @@ export default function MosqueProfile() {
     return (
       <div className="container py-5 text-center">
         <TriangleAlert size={42} className="text-warning" aria-hidden="true" />
-        <h4 className="mt-3">Mosque not found</h4>
-        <p className="text-muted">{error || "This mosque could not be loaded."}</p>
+        <h4 className="mt-3">{t("mosque.notFound")}</h4>
+        <p className="text-muted">{error || t("mosque.loadFailed")}</p>
         <div className="d-flex justify-content-center gap-2 flex-wrap">
           <button type="button" className="btn btn-outline-mc" onClick={() => setRetryKey((value) => value + 1)}>
-            Try again
+            {t("common.tryAgain")}
           </button>
           <Link to="/browse" className="btn btn-mc">
             <ArrowLeft size={16} aria-hidden="true" />
-            Back to Browse
+            {t("mosque.backToBrowse")}
           </Link>
         </div>
       </div>
@@ -99,10 +102,10 @@ export default function MosqueProfile() {
 
   return (
     <div className="container py-4 mc-motion-stagger">
-      <nav aria-label="breadcrumb" className="mb-3">
+      <nav aria-label={t("common.breadcrumb")} className="mb-3">
         <ol className="breadcrumb small">
-          <li className="breadcrumb-item"><Link to="/" className="text-mc text-decoration-none">Home</Link></li>
-          <li className="breadcrumb-item"><Link to="/browse" className="text-mc text-decoration-none">Browse</Link></li>
+          <li className="breadcrumb-item"><Link to="/" className="text-mc text-decoration-none">{t("nav.home")}</Link></li>
+          <li className="breadcrumb-item"><Link to="/browse" className="text-mc text-decoration-none">{t("mosque.breadcrumbBrowse")}</Link></li>
           <li className="breadcrumb-item active">{mosque.name}</li>
         </ol>
       </nav>
@@ -119,7 +122,7 @@ export default function MosqueProfile() {
         {mosque.rating !== null && (
           <span className="badge bg-success">
             <Star size={13} className="me-1" fill="currentColor" aria-hidden="true" />
-            {mosque.rating}
+            {formatNumber(mosque.rating, locale)}
           </span>
         )}
         {mosque.verified && <VerifiedBadge />}
@@ -133,7 +136,7 @@ export default function MosqueProfile() {
           {directions && (
             <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-mc btn-sm">
               <Navigation size={16} aria-hidden="true" />
-              Get Directions
+              {t("mosque.getDirectionsButton")}
             </a>
           )}
           <button
@@ -141,7 +144,7 @@ export default function MosqueProfile() {
             onClick={() => toggleFollow(mosque)}
           >
             <Heart size={16} fill={following ? "currentColor" : "none"} aria-hidden="true" />
-            {following ? "Following" : "Follow"}
+            {following ? t("mosque.following") : t("mosque.follow")}
           </button>
         </div>
       </div>
@@ -154,27 +157,27 @@ export default function MosqueProfile() {
         <div className="col-lg-8">
           <div className="card mc-card mb-4" id="prayer-schedule">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />Prayer &amp; Jamat Times</h5>
+              <h5 className="fw-bold mb-3"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.prayerTimes")}</h5>
               {hasDailyPrayer ? (
                 <PrayerTimeline prayers={prayer} schedule={prayerSchedule} />
               ) : (
-                <p className="text-muted mb-0">Prayer times have not been published for this mosque yet.</p>
+                <p className="text-muted mb-0">{t("mosque.prayerNotPublished")}</p>
               )}
             </div>
           </div>
 
           <div className="card mc-card mb-4">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><Sun size={18} className="text-mc me-2" aria-hidden="true" />Jummah Prayer</h5>
+              <h5 className="fw-bold mb-3"><Sun size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.jummahPrayer")}</h5>
               {jumuahSessions.length ? (
                 <div className="row row-cols-1 row-cols-md-2 g-2">
                   {jumuahSessions.map((session) => (
                     <div className="col" key={session.id || session.sequence || session.label}>
                       <div className="mc-prayer-cell bg-light rounded-3">
                         <small className="text-muted d-block">{session.label}</small>
-                        <span className="h5">{formatClockTime(session.jamaat_time)}</span>
+                        <span className="h5">{formatClockTime(session.jamaat_time, locale)}</span>
                         {session.khutbah_time && (
-                          <small className="text-muted d-block">Khutbah {formatClockTime(session.khutbah_time)}</small>
+                          <small className="text-muted d-block">{t("mosque.khutbah", { time: formatClockTime(session.khutbah_time, locale) })}</small>
                         )}
                         {session.notes && (
                           <small className="text-muted d-block">{session.notes}</small>
@@ -184,14 +187,14 @@ export default function MosqueProfile() {
                   ))}
                 </div>
               ) : (
-                <p className="text-muted mb-0">Jumuah times have not been published for this mosque yet.</p>
+                <p className="text-muted mb-0">{t("mosque.jumuahNotPublished")}</p>
               )}
             </div>
           </div>
 
           <div className="card mc-card mb-4">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><Megaphone size={18} className="text-mc me-2" aria-hidden="true" />Announcements</h5>
+              <h5 className="fw-bold mb-3"><Megaphone size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.announcements")}</h5>
               {announcements.length ? (
                 announcements.map((announcement) => {
                   const announcementId = announcement.id;
@@ -205,25 +208,25 @@ export default function MosqueProfile() {
                             {announcement.title}
                           </Link>
                         </strong>
-                        <span className={`badge bg-${urgencyClass(announcement.urgency)} text-uppercase`}>{announcement.urgency}</span>
+                        <span className={`badge bg-${urgencyClass(announcement.urgency)} text-uppercase`}>{t(`urgency.${announcement.urgency}`, { defaultValue: announcement.urgency })}</span>
                       </div>
                       <p className="mb-1 small text-muted">{announcement.body}</p>
                       <div className="d-flex align-items-center gap-3">
                         {publishedOn && (
                           <small className="text-muted">
                             <CalendarDays size={14} className="me-1" aria-hidden="true" />
-                            {publishedOn}
+                            {formatApiDate(publishedOn, locale)}
                           </small>
                         )}
                         <Link to={getAnnouncementDetailsPath(announcementId)} className="small text-mc text-decoration-none">
-                          Read details
+                          {t("mosque.readDetails")}
                         </Link>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <p className="text-muted mb-0">No announcements right now.</p>
+                <p className="text-muted mb-0">{t("mosque.noAnnouncements")}</p>
               )}
             </div>
           </div>
@@ -235,17 +238,17 @@ export default function MosqueProfile() {
         <div className="col-lg-4">
           <div className="card mc-card mb-4">
             <div className="card-body">
-              <h6 className="fw-bold mb-3"><Building2 size={18} className="text-mc me-2" aria-hidden="true" />Facilities</h6>
+              <h6 className="fw-bold mb-3"><Building2 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.facilities")}</h6>
               {facilities.length ? (
                 <div>{facilities.map((facility) => <FacilityBadge key={facility} facilityKey={facility} />)}</div>
               ) : (
-                <p className="text-muted mb-0 small">Facility details have not been published yet.</p>
+                <p className="text-muted mb-0 small">{t("mosque.facilitiesNotPublished")}</p>
               )}
             </div>
           </div>
           <div className="card mc-card">
             <div className="card-body">
-              <h6 className="fw-bold mb-3"><MapIcon size={18} className="text-mc me-2" aria-hidden="true" />Location</h6>
+              <h6 className="fw-bold mb-3"><MapIcon size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.location")}</h6>
               <MapView
                 center={{ lat: mosque.lat, lng: mosque.lng }}
                 zoom={15}

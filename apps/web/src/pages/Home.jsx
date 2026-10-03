@@ -22,6 +22,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
+import { useLocale } from "../hooks/useLocale";
 import { IMPACT_STATS } from "../data/mosques";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
@@ -30,8 +31,10 @@ import { DEFAULT_CENTER } from "../config";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
 import { directionsUrl } from "../utils/mosqueDiscovery";
 import { dhuhrJamaatLabel } from "../utils/prayerTime";
+import { formatNumber } from "../utils/intl";
 
 export default function Home() {
+  const { t } = useLocale();
   const { user, loading: authLoading } = useAuth();
   const origin = useGeolocation();
   const discovery = useMosqueDiscovery(origin);
@@ -54,7 +57,7 @@ export default function Home() {
   }, [nearby, nearest]);
 
   if (authLoading) {
-    return <div className="mc-home-auth-loading" aria-label="Loading homepage" />;
+    return <div className="mc-home-auth-loading" aria-label={t("home.loadingAria")} />;
   }
 
   return (
@@ -96,6 +99,7 @@ export default function Home() {
 }
 
 function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMosqueSelect }) {
+  const { t } = useLocale();
   const { mosques, status: apiStatus, error: apiError, retry: retryApi } = discovery;
 
   useEffect(() => {
@@ -125,42 +129,42 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
 
           <div className="mc-auth-home-map__label">
             <MapPin size={14} aria-hidden="true" />
-            <h1 id="nearby-map-title">Nearby mosques</h1>
+            <h1 id="nearby-map-title">{t("home.nearbyMosques")}</h1>
           </div>
           <Link to="/browse" className="mc-auth-home-map__browse btn btn-sm">
-            Browse mosques <ChevronRight size={14} aria-hidden="true" />
+            {t("home.browseMosques")} <ChevronRight size={14} aria-hidden="true" />
           </Link>
 
           <div className="mc-auth-home-map__feedback-stack">
             {(isFindingLocation || isLoadingMosques) && (
               <MapFeedback
                 icon={<LoaderCircle className="spin" size={20} aria-hidden="true" />}
-                title={isFindingLocation ? "Finding your location" : "Finding nearby mosques"}
-                message={isFindingLocation ? "Your browser may ask for location permission." : "Checking mosques closest to you."}
+                title={isFindingLocation ? t("home.findingLocation") : t("home.findingNearby")}
+                message={isFindingLocation ? t("home.permissionPrompt") : t("home.checkingClosest")}
               />
             )}
 
             {origin.status === "failure" && (
               <MapFeedback
                 icon={<TriangleAlert size={21} aria-hidden="true" />}
-                title={origin.errorCode === "denied" ? "Location permission denied" : "Location unavailable"}
-                message={origin.message || "We could not determine your current location."}
+                title={origin.errorCode === "denied" ? t("home.locationDenied") : t("home.locationUnavailable")}
+                message={origin.errorCode ? t(`geo.${origin.errorCode}`) : t("home.locationFallback")}
               >
                 <button type="button" className="btn btn-mc btn-sm" onClick={() => requestGeolocation({ force: true })}>
-                  <RefreshCw size={14} aria-hidden="true" /> Try again
+                  <RefreshCw size={14} aria-hidden="true" /> {t("home.tryAgain")}
                 </button>
-                <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse manually</Link>
+                <Link to="/browse" className="btn btn-outline-mc btn-sm">{t("home.browseManually")}</Link>
               </MapFeedback>
             )}
 
             {apiStatus === "error" && origin.status === "success" && (
               <MapFeedback
                 icon={<TriangleAlert size={21} aria-hidden="true" />}
-                title="Could not load nearby mosques"
+                title={t("home.loadError")}
                 message={apiError}
               >
                 <button type="button" className="btn btn-mc btn-sm" onClick={retryApi}>
-                  <RefreshCw size={14} aria-hidden="true" /> Retry
+                  <RefreshCw size={14} aria-hidden="true" /> {t("home.retry")}
                 </button>
               </MapFeedback>
             )}
@@ -168,10 +172,10 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
             {apiStatus === "success" && mosques.length === 0 && (
               <MapFeedback
                 icon={<Landmark size={21} aria-hidden="true" />}
-                title="No nearby mosques found"
-                message="There are no mosque records near this location yet."
+                title={t("home.noNearby")}
+                message={t("home.noNearbyMessage")}
               >
-                <Link to="/browse" className="btn btn-outline-mc btn-sm">Browse all mosques</Link>
+                <Link to="/browse" className="btn btn-outline-mc btn-sm">{t("home.browseAll")}</Link>
               </MapFeedback>
             )}
           </div>
@@ -195,21 +199,21 @@ function MapFeedback({ icon, title, message, children }) {
 }
 
 function Hero({ origin, nearby, nearest, onRequestLocation }) {
+  const { t } = useLocale();
+
   return (
     <header className="mc-hero mc-home-hero" data-mc-parallax="0.26">
       <div className="container mc-hero__inner">
         <div className="mc-hero__content">
-          <h1>Find. Connect. Pray.</h1>
-          <p className="mc-hero__copy">
-            Discover mosques near you and stay connected to your faith and community.
-          </p>
+          <h1>{t("home.hero.title")}</h1>
+          <p className="mc-hero__copy">{t("home.hero.copy")}</p>
           <div className="mc-hero__search">
-            <Link to="/browse" className="mc-hero__search-input" aria-label="Browse mosques">
+            <Link to="/browse" className="mc-hero__search-input" aria-label={t("home.hero.browseAria")}>
               <Search size={17} aria-hidden="true" />
-              <span>Search by mosque name, area, or city</span>
+              <span>{t("home.hero.searchPlaceholder")}</span>
               <SlidersHorizontal size={17} aria-hidden="true" />
             </Link>
-            <a href="#map" className="mc-hero__nearby" title="Find nearby" aria-label="Find nearby">
+            <a href="#map" className="mc-hero__nearby" title={t("home.hero.findNearby")} aria-label={t("home.hero.findNearby")}>
               <LocateFixed size={17} aria-hidden="true" />
             </a>
           </div>
@@ -217,12 +221,12 @@ function Hero({ origin, nearby, nearest, onRequestLocation }) {
         <div className="mc-location-card">
           <div className="mc-location-card__icon"><MapPin size={22} aria-hidden="true" /></div>
           <div>
-            <h2>Enable your location</h2>
-            <p>Find mosques, prayer times, and nearby Islamic facilities around you.</p>
+            <h2>{t("home.hero.enableLocation")}</h2>
+            <p>{t("home.hero.enableLocationCopy")}</p>
           </div>
           <LocationControls origin={origin} nearby={nearby} nearest={nearest} onRequest={onRequestLocation} />
           <Link to="/browse" className="btn btn-light mc-location-card__secondary w-100">
-            Enter location manually
+            {t("home.hero.enterManually")}
           </Link>
         </div>
       </div>
@@ -231,6 +235,7 @@ function Hero({ origin, nearby, nearest, onRequestLocation }) {
 }
 
 function LocationControls({ origin, nearby, nearest, onRequest }) {
+  const { t } = useLocale();
   const handleClick = (e) => {
     e.preventDefault();
     onRequest();
@@ -239,26 +244,27 @@ function LocationControls({ origin, nearby, nearest, onRequest }) {
   return (
     <div>
       <div className="mb-2" aria-live="polite">
-        {origin.status === "idle" && <small className="text-muted">Location not set</small>}
-        {origin.status === "requesting" && <small className="text-muted">Requesting permission…</small>}
-        {origin.status === "locating" && <small className="text-muted">Locating…</small>}
+        {origin.status === "idle" && <small className="text-muted">{t("home.location.notSet")}</small>}
+        {origin.status === "requesting" && <small className="text-muted">{t("home.location.requesting")}</small>}
+        {origin.status === "locating" && <small className="text-muted">{t("home.location.locating")}</small>}
         {origin.status === "success" && (
           <div>
-            <div className="fw-semibold">{nearby.length} mosques nearby</div>
-            <div className="small text-muted">Closest: {nearest ? nearest.name : "—"}</div>
+            <div className="fw-semibold">{t("home.location.mosquesNearby", { count: nearby.length })}</div>
+            <div className="small text-muted">{t("home.location.closest", { name: nearest ? nearest.name : t("common.dash") })}</div>
           </div>
         )}
-        {origin.status === "failure" && <small className="text-danger">Location unavailable — try manual search</small>}
+        {origin.status === "failure" && <small className="text-danger">{t("home.location.unavailableManual")}</small>}
       </div>
 
       <button className="btn btn-mc w-100 mb-2" onClick={handleClick} aria-pressed={origin.status === "success"}>
-        <LocateFixed size={16} aria-hidden="true" /> {origin.status === "success" ? "Location set" : "Use my location"}
+        <LocateFixed size={16} aria-hidden="true" /> {origin.status === "success" ? t("home.location.set") : t("home.location.use")}
       </button>
     </div>
   );
 }
 
 function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosqueId, onMosqueSelect }) {
+  const { t, locale } = useLocale();
   const [activeIndex, setActiveIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isInteracting, setIsInteracting] = useState(false);
@@ -357,9 +363,9 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
       <div className="container">
         {showMap && (
           <div className="mc-section-heading">
-            <h2>Nearby mosques</h2>
+            <h2>{t("home.nearbyMosques")}</h2>
             <Link to="/browse" className="btn btn-outline-mc btn-sm">
-              Browse mosques <ChevronRight size={15} aria-hidden="true" />
+              {t("home.browseMosques")} <ChevronRight size={15} aria-hidden="true" />
             </Link>
           </div>
         )}
@@ -385,21 +391,21 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
           )}
 
           <div className="mc-nearby-showcase">
-            <div className="mc-nearby-showcase__controls" aria-label="Nearby mosque controls">
-              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToPrevious} aria-label="Previous mosque">
+            <div className="mc-nearby-showcase__controls" aria-label={t("home.carousel.controls")}>
+              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToPrevious} aria-label={t("home.carousel.previous")}>
                 <ChevronRight size={14} aria-hidden="true" className="mc-rotate-180" />
               </button>
               <button
                 type="button"
                 className="btn btn-outline-mc btn-sm"
                 onClick={() => setIsPaused((paused) => !paused)}
-                aria-label={isPaused ? "Resume nearby mosques" : "Pause nearby mosques"}
+                aria-label={isPaused ? t("home.carousel.resume") : t("home.carousel.pause")}
                 aria-pressed={isPaused}
-                title={isPaused ? "Resume nearby mosques" : "Pause nearby mosques"}
+                title={isPaused ? t("home.carousel.resume") : t("home.carousel.pause")}
               >
                 {isPaused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}
               </button>
-              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToNext} aria-label="Next mosque">
+              <button type="button" className="btn btn-outline-mc btn-sm" onClick={goToNext} aria-label={t("home.carousel.next")}>
                 <ChevronRight size={14} aria-hidden="true" />
               </button>
             </div>
@@ -463,7 +469,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                             <div className="d-flex align-items-center gap-2 min-w-0">
                               <h5 className="mb-0 mc-nearby-card__title text-truncate">{mosque.name}</h5>
                             </div>
-                            <span className="badge mc-badge flex-shrink-0">{mosque.distance} km</span>
+                            <span className="badge mc-badge flex-shrink-0">{t("common.distanceKm", { distance: mosque.distance })}</span>
                           </div>
 
                           <div className="text-muted small mb-2 mc-nearby-card__meta">
@@ -473,17 +479,17 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                           <div className="d-flex align-items-center justify-content-between gap-2 small text-muted mb-2 mc-nearby-card__status">
                             <span className="mc-distance">
-                              <Navigation size={13} aria-hidden="true" />{mosque.distance} km away
+                              <Navigation size={13} aria-hidden="true" />{t("home.carousel.kmAway", { distance: mosque.distance })}
                             </span>
                             <span className="d-flex align-items-center gap-1">
                               {mosque.verified && <VerifiedBadge />}
-                              {mosque.rating !== null ? `${mosque.rating} rating` : "Not rated"}
+                              {mosque.rating !== null ? t("common.rating", { rating: mosque.rating }) : t("common.notRated")}
                             </span>
                           </div>
 
                           <div className="mc-next-prayer mb-2">
-                            <span>Next Jamat</span>
-                            <strong>{dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}</strong>
+                            <span>{t("home.carousel.nextJamat")}</span>
+                            <strong>{dhuhrJamaatLabel(mosque.prayer, locale, t("prayer.dhuhr")) || t("home.carousel.timesUnavailable")}</strong>
                           </div>
                         </div>
 
@@ -493,7 +499,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                             className="btn btn-mc btn-sm flex-fill"
                             onClick={(event) => event.stopPropagation()}
                           >
-                            View profile
+                            {t("home.carousel.viewProfile")}
                           </Link>
                           {directionsUrl(mosque) && (
                             <a
@@ -501,8 +507,8 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                               target="_blank"
                               rel="noopener noreferrer"
                               className="btn btn-outline-mc btn-sm mc-icon-button"
-                              title="Get directions"
-                              aria-label={`Get directions to ${mosque.name}`}
+                              title={t("home.carousel.getDirections")}
+                              aria-label={t("home.carousel.getDirectionsTo", { name: mosque.name })}
                               onClick={(event) => event.stopPropagation()}
                             >
                               <Navigation size={16} aria-hidden="true" />
@@ -523,20 +529,21 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 }
 
 function SupportSection() {
+  const { t } = useLocale();
   const items = [
-    { icon: HandHeart, title: "Money Donation", type: "money", desc: "Support a mosque or a specific cause securely." },
-    { icon: Heart, title: "Blood Donation", type: "blood", desc: "Respond to live blood requests or register as a donor." },
-    { icon: UsersRound, title: "Volunteer", type: "volunteer", desc: "Join events, charity drives and mosque services." },
-    { icon: Landmark, title: "Goods Donation", type: "goods", desc: "Donate essential goods mosques currently need." },
+    { icon: HandHeart, title: t("home.support.money.title"), type: "money", desc: t("home.support.money.desc") },
+    { icon: Heart, title: t("home.support.blood.title"), type: "blood", desc: t("home.support.blood.desc") },
+    { icon: UsersRound, title: t("home.support.volunteer.title"), type: "volunteer", desc: t("home.support.volunteer.desc") },
+    { icon: Landmark, title: t("home.support.goods.title"), type: "goods", desc: t("home.support.goods.desc") },
   ];
 
   return (
     <section id="support" className="mc-support-section mc-motion-section mc-atmospheric-section" data-mc-parallax="0.16">
       <div className="container">
         <div className="mc-support-intro">
-          <p className="mc-kicker">Support</p>
-          <h2>Support the community</h2>
-          <p>Contribute in the way that suits you best.</p>
+          <p className="mc-kicker">{t("home.support.kicker")}</p>
+          <h2>{t("home.support.title")}</h2>
+          <p>{t("home.support.copy")}</p>
         </div>
         <div className="row g-4 mc-motion-stagger">
           {items.map((it) => (
@@ -553,11 +560,11 @@ function SupportSection() {
         <div className="mc-custom-support">
           <div className="mc-custom-support__icon"><Heart size={24} fill="currentColor" aria-hidden="true" /></div>
           <div className="mc-custom-support__copy">
-            <h3>Have another way to help?</h3>
-            <p>Choose your own contribution amount and support the community in your own way.</p>
+            <h3>{t("home.support.otherTitle")}</h3>
+            <p>{t("home.support.otherCopy")}</p>
           </div>
           <Link to="/support?type=custom#custom" className="btn btn-outline-mc mc-custom-support__action">
-            Custom Support <ChevronRight size={16} aria-hidden="true" />
+            {t("home.support.custom")} <ChevronRight size={16} aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -566,22 +573,23 @@ function SupportSection() {
 }
 
 function ImpactSection() {
+  const { t } = useLocale();
   const impactIcons = [Landmark, UsersRound, Heart, HandHeart];
   return (
     <section id="impact" className="mc-impact mc-motion-section mc-atmospheric-section" data-mc-parallax="0.18">
       <div className="container">
         <div className="mc-impact__headline">
-          <h2>Stronger together, for a better community</h2>
-          <p>Your connection helps build stronger, more vibrant communities.</p>
+          <h2>{t("home.impact.title")}</h2>
+          <p>{t("home.impact.copy")}</p>
         </div>
         <div className="row text-center g-0 mc-impact__stats">
           {IMPACT_STATS.map((s, index) => {
             const Icon = impactIcons[index];
             return (
-              <div className="col-6 col-lg-3" key={s.label}>
+              <div className="col-6 col-lg-3" key={s.key}>
                 <Icon size={22} strokeWidth={1.5} aria-hidden="true" />
-                <div className="mc-stat-value"><AnimatedStat value={s.value} /></div>
-                <div>{s.label}</div>
+                <div className="mc-stat-value"><AnimatedStat stat={s} /></div>
+                <div>{t(s.labelKey)}</div>
               </div>
             );
           })}
@@ -592,38 +600,34 @@ function ImpactSection() {
 }
 
 function AboutSection() {
+  const { t } = useLocale();
   const onSubmit = (e) => {
     e.preventDefault();
     e.currentTarget.reset();
-    alert("Thanks! We will get back to you. (demo)");
+    alert(t("home.about.thanks"));
   };
   return (
     <section id="about" className="py-5 mc-motion-section mc-atmospheric-section" data-mc-parallax="0.16">
       <div className="container">
         <div className="row g-5 align-items-center">
           <div className="col-lg-6">
-            <p className="mc-kicker">About MosqueConnect</p>
-            <h2>Bringing scattered mosque information together</h2>
-            <p className="mc-about-copy">
-              Jamat times, Jummah announcements, events and donation campaigns are usually
-              shared by word of mouth, posters, or group chats, often incomplete or outdated.
-              MosqueConnect gives every mosque a verified profile that only approved
-              administrators can edit, so the community always has one accurate source of truth.
-            </p>
+            <p className="mc-kicker">{t("home.about.kicker")}</p>
+            <h2>{t("home.about.title")}</h2>
+            <p className="mc-about-copy">{t("home.about.copy")}</p>
             <ul className="mc-trust-list">
-              <li><ShieldCheck size={20} aria-hidden="true" />Verified, trustworthy mosque profiles</li>
-              <li><UsersRound size={20} aria-hidden="true" />Family-friendly facility filters</li>
-              <li><Clock3 size={20} aria-hidden="true" />Notifications for the mosques you follow</li>
+              <li><ShieldCheck size={20} aria-hidden="true" />{t("home.about.trustVerified")}</li>
+              <li><UsersRound size={20} aria-hidden="true" />{t("home.about.trustFamily")}</li>
+              <li><Clock3 size={20} aria-hidden="true" />{t("home.about.trustNotifications")}</li>
             </ul>
           </div>
           <div className="col-lg-6">
             <div className="card mc-card p-4">
-              <h3 className="mc-form-title">Get in touch</h3>
+              <h3 className="mc-form-title">{t("home.about.contactTitle")}</h3>
               <form onSubmit={onSubmit}>
-                <div className="mb-3"><input className="form-control" placeholder="Your name" required /></div>
-                <div className="mb-3"><input type="email" className="form-control" placeholder="Your email" required /></div>
-                <div className="mb-3"><textarea className="form-control" rows="3" placeholder="Your message" required /></div>
-                <button className="btn btn-mc w-100" type="submit">Send message</button>
+                <div className="mb-3"><input className="form-control" placeholder={t("home.about.namePlaceholder")} required /></div>
+                <div className="mb-3"><input type="email" className="form-control" placeholder={t("home.about.emailPlaceholder")} required /></div>
+                <div className="mb-3"><textarea className="form-control" rows="3" placeholder={t("home.about.messagePlaceholder")} required /></div>
+                <button className="btn btn-mc w-100" type="submit">{t("home.about.send")}</button>
               </form>
             </div>
           </div>
@@ -633,15 +637,24 @@ function AboutSection() {
   );
 }
 
-function AnimatedStat({ value }) {
+// Impact figures are stored as numbers and formatted for the active language
+// (Bangla digits; "২১ লাখ" in place of "2.1M"), so they animate in either one.
+function formatStat(stat, current, locale) {
+  const options = stat.compact
+    ? { notation: "compact", compactDisplay: locale.startsWith("bn") ? "long" : "short", maximumFractionDigits: 1 }
+    : undefined;
+
+  return `${stat.prefix ?? ""}${formatNumber(current, locale, options)}${stat.suffix ?? ""}`;
+}
+
+function AnimatedStat({ stat }) {
+  const { locale } = useLocale();
   const nodeRef = useRef(null);
-  const [display, setDisplay] = useState(value);
+  const [current, setCurrent] = useState(stat.value);
 
   useEffect(() => {
-    const match = /^(\d[\d,]*)([Kk]?)(\+?)$/.exec(value);
-    if (!match || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
 
-    const end = Number(match[1].replace(/,/g, ""));
     let frame;
     const observer = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) {
@@ -649,12 +662,12 @@ function AnimatedStat({ value }) {
         return;
       }
       if (frame) cancelAnimationFrame(frame);
-      setDisplay(`0${match[2]}${match[3]}`);
+      setCurrent(0);
       const start = performance.now();
       const tick = (now) => {
         const progress = Math.min((now - start) / 800, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
-        setDisplay(`${Math.round(end * eased).toLocaleString()}${match[2]}${match[3]}`);
+        setCurrent(Math.round(stat.value * eased));
         if (progress < 1) frame = requestAnimationFrame(tick);
       };
       frame = requestAnimationFrame(tick);
@@ -669,7 +682,7 @@ function AnimatedStat({ value }) {
       observer.disconnect();
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [value]);
+  }, [stat.value]);
 
-  return <span ref={nodeRef}>{display}</span>;
+  return <span ref={nodeRef}>{formatStat(stat, current, locale)}</span>;
 }

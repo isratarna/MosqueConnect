@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test src/utils/campaignFormat.test.js src/utils/eventFilters.test.js src/utils/mosqueDiscovery.test.js src/utils/notificationUtils.test.js src/utils/prayerTime.test.js",
+    "test": "node --test src/utils/campaignFormat.test.js src/utils/eventFilters.test.js src/utils/intl.test.js src/utils/mosqueDiscovery.test.js src/utils/network.test.js src/utils/notificationUtils.test.js src/utils/prayerTime.test.js src/i18n/locales.test.js",
     "test:e2e": "playwright test",
     "preview": "vite preview"
   },
@@ -15,9 +15,12 @@
     "@react-google-maps/api": "^2.20.3",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
+    "i18next": "^26.4.2",
+    "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^1.25.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-i18next": "^17.0.15",
     "react-router-dom": "^7.18.2"
   },
   "devDependencies": {

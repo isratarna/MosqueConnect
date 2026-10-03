@@ -5,16 +5,19 @@ import CommunityCard, { CommunityCategoryIcon } from "../components/CommunityCar
 import EventList from "../components/events/EventList";
 import EventRegistrationFeedback from "../components/events/EventRegistrationFeedback";
 import useEventRegistration from "../hooks/useEventRegistration";
-import { isCommunityCategory } from "../data/community";
+import { useLocale } from "../hooks/useLocale";
+import { translate } from "../i18n/translate";
+import { eventCategoryLabel } from "../utils/labels";
+import { BLOOD_SOURCE, isCommunityCategory } from "../data/community";
 import { apiRequest } from "../utils/api";
 import { fetchEventCollection } from "../utils/eventApi";
 import { filterEvents, getEventMosqueName } from "../utils/eventFilters";
 
 const CATEGORY_FILTERS = [
-  { key: "announcement", label: "Announcement" },
-  { key: "event", label: "Event" },
-  { key: "blood", label: "Blood Request" },
-  { key: "volunteer", label: "Volunteer" },
+  { key: "announcement", labelKey: "community.filters.announcement" },
+  { key: "event", labelKey: "community.filters.event" },
+  { key: "blood", labelKey: "community.filters.blood" },
+  { key: "volunteer", labelKey: "community.filters.volunteer" },
 ];
 const INITIAL_VISIBLE_ITEMS = 5;
 
@@ -27,6 +30,7 @@ function feedUrgency(urgency) {
 }
 
 export default function Community() {
+  const { t, locale } = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedCategory = searchParams.get("category");
   const activeCategory = isCommunityCategory(requestedCategory) ? requestedCategory : "all";
@@ -58,7 +62,8 @@ export default function Community() {
     ]).then(([announcements, blood, volunteers]) => {
       const updates = [
         ...announcements.data.map((item) => ({ ...item, category: "announcement", summary: item.body, area: item.mosque?.address, mosqueId: item.mosque_id, mosqueName: item.mosque?.name, mosqueVerified: item.mosque?.verified, urgency: feedUrgency(item.urgency), publishedAt: item.published_at })),
-        ...blood.data.map((item) => ({ ...item, id: "blood-" + item.id, category: "blood", title: item.blood_group + " blood requested", summary: item.notes || "Contact the requester to help.", area: item.hospital_or_location, mosqueName: "Community blood request", urgency: feedUrgency(item.urgency), publishedAt: item.created_at, actionPath: "/blood-donation" })),
+        // Title and fallback summary are worded in the card, so they follow the active language.
+        ...blood.data.map((item) => ({ ...item, id: "blood-" + item.id, category: "blood", summary: item.notes, area: item.hospital_or_location, mosqueName: BLOOD_SOURCE, urgency: feedUrgency(item.urgency), publishedAt: item.created_at, actionPath: "/blood-donation" })),
         ...volunteers.data.map((item) => ({ ...item, id: "volunteer-" + item.id, category: "volunteer", summary: item.description, area: item.location, mosqueId: item.mosque_id, mosqueName: item.mosque?.name, publishedAt: item.created_at, actionPath: "/volunteers" })),
       ].map((item) => {
         const days = (Date.now() - new Date(item.publishedAt).getTime()) / 86400000;
@@ -87,7 +92,7 @@ export default function Community() {
       })
       .catch((error) => {
         if (error.name !== "AbortError") {
-          setEventsError(error.message || "Published events could not be loaded.");
+          setEventsError(error.message || translate("community.events.loadError"));
         }
       })
       .finally(() => {
@@ -97,12 +102,14 @@ export default function Community() {
     return () => controller.abort();
   }, [eventRequestKey]);
 
-  const mosques = useMemo(
+  const mosqueOptions = useMemo(
     () => [...new Set([
       ...communityUpdates.map((item) => item.mosqueName),
-      ...events.map(getEventMosqueName),
-    ].filter(Boolean))].sort(),
-    [events, communityUpdates],
+      ...events.map((event) => getEventMosqueName(event, t("event.mosqueTbd"))),
+    ].filter(Boolean))]
+      .map((value) => ({ value, label: value === BLOOD_SOURCE ? t("community.bloodSource") : value }))
+      .sort((first, second) => first.label.localeCompare(second.label, locale)),
+    [events, communityUpdates, t, locale],
   );
   const areas = useMemo(
     () => [...new Set([
@@ -155,7 +162,9 @@ export default function Community() {
     return communityUpdates.filter((item) => {
       if (item.category === "event") return false;
 
-      const matchesSearch = !normalizedSearch || [item.title, item.summary, item.mosqueName, item.area]
+      const title = item.category === "blood" ? t("community.bloodRequested", { group: item.blood_group }) : item.title;
+      const mosqueLabel = item.mosqueName === BLOOD_SOURCE ? t("community.bloodSource") : item.mosqueName;
+      const matchesSearch = !normalizedSearch || [title, item.summary, mosqueLabel, item.area]
         .join(" ")
         .toLowerCase()
         .includes(normalizedSearch);
@@ -167,7 +176,7 @@ export default function Community() {
 
       return matchesSearch && matchesCategory && matchesMosque && matchesArea && matchesDate && matchesUrgency;
     });
-  }, [activeCategory, area, dateGroup, mosque, search, urgentOnly, communityUpdates]);
+  }, [activeCategory, area, dateGroup, mosque, search, urgentOnly, communityUpdates, t]);
 
   const filteredEvents = useMemo(() => filterEvents(events, {
     search,
@@ -176,7 +185,8 @@ export default function Community() {
     category: eventCategory,
     dateGroup,
     upcomingOnly: upcomingEventsOnly,
-  }), [area, dateGroup, eventCategory, events, mosque, search, upcomingEventsOnly]);
+    mosqueFallback: t("event.mosqueTbd"),
+  }), [area, dateGroup, eventCategory, events, mosque, search, upcomingEventsOnly, t]);
 
   const feedItems = filteredUpdates.slice(0, visibleItems);
   const showEvents = activeCategory === "all" || activeCategory === "event";
@@ -186,25 +196,26 @@ export default function Community() {
     <section className="mc-community-page mc-atmospheric-section">
       <div className="container py-5">
         <header className="mc-community-page__intro mc-motion-section">
-          <p className="mc-kicker">Community hub</p>
-          <h1>Stay connected to your mosque community</h1>
-          <p>Find official mosque announcements, prayer updates, events, support requests, and community notices in one place.</p>
+          <p className="mc-kicker">{t("community.kicker")}</p>
+          <h1>{t("community.title")}</h1>
+          <p>{t("community.copy")}</p>
         </header>
 
-        <section className="mc-community-filter mc-card mc-motion-section" aria-label="Search and filter community updates">
+        <section className="mc-community-filter mc-card mc-motion-section" aria-label={t("community.filterSection")}>
           <div className="mc-community-filter__search">
             <Search size={18} aria-hidden="true" />
             <input
               type="search"
               className="form-control"
-              placeholder="Search announcements, events, or community notices"
+              placeholder={t("community.searchPlaceholder")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              aria-label="Search community updates"
+              aria-label={t("community.searchAria")}
             />
-            <div className="mc-community-filter__categories" role="group" aria-label="Filter by category">
-              {CATEGORY_FILTERS.map(({ key, label }) => {
+            <div className="mc-community-filter__categories" role="group" aria-label={t("community.categoryGroup")}>
+              {CATEGORY_FILTERS.map(({ key, labelKey }) => {
                 const isActive = activeCategory === key;
+                const label = t(labelKey);
 
                 return (
                   <button
@@ -225,35 +236,35 @@ export default function Community() {
           </div>
           <div className="row g-2 mt-1">
             <div className="col-sm-6 col-lg">
-              <select className="form-select" value={mosque} onChange={(event) => setMosque(event.target.value)} aria-label="Filter by mosque">
-                <option value="">All mosques</option>
-                {mosques.map((option) => <option key={option} value={option}>{option}</option>)}
+              <select className="form-select" value={mosque} onChange={(event) => setMosque(event.target.value)} aria-label={t("community.mosqueAria")}>
+                <option value="">{t("community.allMosques")}</option>
+                {mosqueOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </div>
             <div className="col-sm-6 col-lg">
-              <select className="form-select" value={area} onChange={(event) => setArea(event.target.value)} aria-label="Filter by area or event venue">
-                <option value="">All areas / venues</option>
+              <select className="form-select" value={area} onChange={(event) => setArea(event.target.value)} aria-label={t("community.areaAria")}>
+                <option value="">{t("community.allAreas")}</option>
                 {areas.map((option) => <option key={option} value={option}>{option}</option>)}
               </select>
             </div>
             <div className="col-sm-6 col-lg">
-              <select className="form-select" value={dateGroup} onChange={(event) => setDateGroup(event.target.value)} aria-label="Filter by date">
-                <option value="">Any date</option>
-                <option value="today">Today</option>
-                <option value="this-week">This week</option>
-                <option value="upcoming">Upcoming</option>
+              <select className="form-select" value={dateGroup} onChange={(event) => setDateGroup(event.target.value)} aria-label={t("community.dateAria")}>
+                <option value="">{t("community.anyDate")}</option>
+                <option value="today">{t("community.today")}</option>
+                <option value="this-week">{t("community.thisWeek")}</option>
+                <option value="upcoming">{t("community.upcoming")}</option>
               </select>
             </div>
             <div className="col-sm-6 col-lg-auto d-flex align-items-center">
               <div className="form-check form-switch mc-community-filter__urgent">
                 <input id="urgent-community-only" className="form-check-input" type="checkbox" checked={urgentOnly} onChange={(event) => setUrgentOnly(event.target.checked)} />
-                <label className="form-check-label" htmlFor="urgent-community-only">Urgent only</label>
+                <label className="form-check-label" htmlFor="urgent-community-only">{t("community.urgentOnly")}</label>
               </div>
             </div>
             {hasFilters && (
               <div className="col-sm-6 col-lg-auto">
                 <button type="button" className="btn btn-outline-mc w-100" onClick={clearFilters}>
-                  <FilterX size={15} aria-hidden="true" /> Clear
+                  <FilterX size={15} aria-hidden="true" /> {t("community.clear")}
                 </button>
               </div>
             )}
@@ -264,24 +275,26 @@ export default function Community() {
           <section className="mc-community-section mc-motion-section" aria-labelledby="upcoming-events-heading">
             <div className="mc-community-section__heading">
               <div>
-                <p className="mc-kicker">Published by mosques</p>
-                <h2 id="upcoming-events-heading">Upcoming events</h2>
+                <p className="mc-kicker">{t("community.events.kicker")}</p>
+                <h2 id="upcoming-events-heading">{t("community.events.title")}</h2>
               </div>
               {!eventsLoading && !eventsError && (
                 <span className="mc-community-section__count" aria-live="polite">
-                  {filteredEvents.length} matching{eventsMeta?.total > events.length ? ` of ${eventsMeta.total}` : ""}
+                  {eventsMeta?.total > events.length
+                    ? t("community.events.matchingOf", { count: filteredEvents.length, total: eventsMeta.total })
+                    : t("community.events.matching", { count: filteredEvents.length })}
                 </span>
               )}
             </div>
 
-            <div className="mc-event-discovery-controls" aria-label="Filter events">
-              <select className="form-select" value={eventCategory} onChange={(event) => setEventCategory(event.target.value)} aria-label="Filter events by category">
-                <option value="">All event categories</option>
-                {eventCategories.map((category) => <option value={category} key={category}>{category}</option>)}
+            <div className="mc-event-discovery-controls" aria-label={t("community.events.filterLabel")}>
+              <select className="form-select" value={eventCategory} onChange={(event) => setEventCategory(event.target.value)} aria-label={t("community.events.categoryAria")}>
+                <option value="">{t("community.events.allCategories")}</option>
+                {eventCategories.map((category) => <option value={category} key={category}>{eventCategoryLabel(t, category)}</option>)}
               </select>
               <div className="form-check form-switch mb-0">
                 <input id="upcoming-events-only" className="form-check-input" type="checkbox" checked={upcomingEventsOnly} onChange={(event) => setUpcomingEventsOnly(event.target.checked)} />
-                <label className="form-check-label" htmlFor="upcoming-events-only">Upcoming only</label>
+                <label className="form-check-label" htmlFor="upcoming-events-only">{t("community.events.upcomingOnly")}</label>
               </div>
             </div>
 
@@ -296,7 +309,7 @@ export default function Community() {
               registeredEventIds={registration.registeredEventIds}
               registrationLoadingIds={registration.registrationLoadingIds}
               registrationEnabled={registration.registrationEnabled}
-              emptyMessage="No events match the current search and filters."
+              emptyMessage={t("community.events.empty")}
               layout="rail"
             />
           </section>
@@ -305,12 +318,12 @@ export default function Community() {
         {showCommunityFeed && <section className="mc-community-section mc-motion-section" aria-labelledby="community-feed-heading">
           <div className="mc-community-section__heading">
             <div>
-              <p className="mc-kicker">Community feed</p>
-              <h2 id="community-feed-heading">Latest community updates</h2>
+              <p className="mc-kicker">{t("community.feed.kicker")}</p>
+              <h2 id="community-feed-heading">{t("community.feed.title")}</h2>
             </div>
-            <span className="mc-community-section__count" aria-live="polite">{filteredUpdates.length} updates</span>
+            <span className="mc-community-section__count" aria-live="polite">{t("community.feed.updates", { count: filteredUpdates.length })}</span>
           </div>
-          {feedLoading ? <p role="status">Loading community updates...</p> : feedError ? <div className="alert alert-danger" role="alert">{feedError} <button className="btn btn-sm btn-outline-danger" onClick={retryEvents}>Retry</button></div> : feedItems.length ? (
+          {feedLoading ? <p role="status">{t("community.feed.loading")}</p> : feedError ? <div className="alert alert-danger" role="alert">{feedError} <button className="btn btn-sm btn-outline-danger" onClick={retryEvents}>{t("common.retry")}</button></div> : feedItems.length ? (
             <>
               <div className="mc-community-feed-list mc-motion-stagger">
                 {feedItems.map((item) => (
@@ -320,7 +333,7 @@ export default function Community() {
               {visibleItems < filteredUpdates.length && (
                 <div className="text-center mt-4">
                   <button type="button" className="btn btn-outline-mc" onClick={() => setVisibleItems((current) => current + INITIAL_VISIBLE_ITEMS)}>
-                    Load more updates
+                    {t("community.feed.loadMore")}
                   </button>
                 </div>
               )}
@@ -335,12 +348,14 @@ export default function Community() {
 }
 
 function EmptyState({ onClear }) {
+  const { t } = useLocale();
+
   return (
     <div className="mc-community-empty mc-card text-center">
       <Search size={30} aria-hidden="true" />
-      <h3>No matching updates</h3>
-      <p>Try a different search or clear the current filters.</p>
-      <button type="button" className="btn btn-outline-mc" onClick={onClear}>Clear filters</button>
+      <h3>{t("community.feed.emptyTitle")}</h3>
+      <p>{t("community.feed.emptyCopy")}</p>
+      <button type="button" className="btn btn-outline-mc" onClick={onClear}>{t("community.feed.clearFilters")}</button>
     </div>
   );
 }

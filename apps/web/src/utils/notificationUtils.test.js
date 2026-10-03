@@ -3,15 +3,15 @@ import test from "node:test";
 import {
   formatNotificationTime,
   getNotificationPath,
-  getNotificationTypeLabel,
+  getNotificationTypeKey,
   isNotificationRead,
   normalizeNotification,
 } from "./notificationUtils.js";
 
-test("notification types use the supported labels", () => {
-  assert.equal(getNotificationTypeLabel("event"), "Event");
-  assert.equal(getNotificationTypeLabel("prayer_schedule"), "Prayer schedule");
-  assert.equal(getNotificationTypeLabel("unknown"), "Notification");
+test("notification types map to translation keys", () => {
+  assert.equal(getNotificationTypeKey("event"), "notification.types.event");
+  assert.equal(getNotificationTypeKey("prayer_schedule"), "notification.types.prayer_schedule");
+  assert.equal(getNotificationTypeKey("unknown"), "notification.types.default");
 });
 
 test("Laravel is_read values are normalized consistently", () => {

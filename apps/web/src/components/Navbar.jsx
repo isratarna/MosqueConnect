@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, ShieldCheck, UserRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+import LanguageSwitcher from "./LanguageSwitcher";
+import { statusLabel } from "../utils/labels";
 import NotificationList from "./notifications/NotificationList";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -11,6 +15,7 @@ import logo from "../assets/Logo.png";
 const NAVBAR_NOTIFICATION_LIMIT = 6;
 
 export default function Navbar() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false); // mobile collapse
@@ -51,7 +56,7 @@ export default function Navbar() {
     <nav className={`navbar navbar-expand-lg navbar-dark mc-navbar sticky-top${isScrolled ? " is-scrolled" : ""}`}>
       <div className="container px-3 px-lg-0">
         <Link className="navbar-brand mc-brand me-2 me-lg-0" to="/" onClick={close}>
-          <img src={logo} alt="MosqueConnect logo" className="mc-brand-logo me-2" />
+          <img src={logo} alt={t('common.logoAlt')} className="mc-brand-logo me-2" />
           <span className="mc-brand-title">
             Mosque<span className="mc-brand-accent">Connect</span>
           </span>
@@ -59,7 +64,7 @@ export default function Navbar() {
         <button
           className="navbar-toggler ms-2 ms-lg-0"
           type="button"
-          aria-label="Toggle navigation"
+          aria-label={t('common.toggleNavigation')}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
@@ -69,35 +74,39 @@ export default function Navbar() {
         <div className={"collapse navbar-collapse mt-1 mt-lg-0" + (open ? " show" : "")}>
           <ul className="navbar-nav ms-auto align-items-start align-items-lg-center gap-1 gap-lg-1 py-1 py-lg-0">
             <li className="nav-item">
-              <NavLink end className={navLinkClass} to="/" onClick={close}>Home</NavLink>
+              <NavLink end className={navLinkClass} to="/" onClick={close}>{t('nav.home')}</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className={navLinkClass} to="/browse" onClick={close}>Browse Mosques</NavLink>
+              <NavLink className={navLinkClass} to="/browse" onClick={close}>{t('nav.browse')}</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className={navLinkClass} to="/support" onClick={close}>Support</NavLink>
+              <NavLink className={navLinkClass} to="/support" onClick={close}>{t('nav.support')}</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className={navLinkClass} to="/campaigns" onClick={close}>Campaigns</NavLink>
+              <NavLink className={navLinkClass} to="/campaigns" onClick={close}>{t('nav.campaigns')}</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className={navLinkClass} to="/community" onClick={close}>Community</NavLink>
+              <NavLink className={navLinkClass} to="/community" onClick={close}>{t('nav.community')}</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className={navLinkClass} to="/blood-donation" onClick={close}>Blood Donation</NavLink>
+              <NavLink className={navLinkClass} to="/blood-donation" onClick={close}>{t('nav.bloodDonation')}</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className={navLinkClass} to="/volunteers" onClick={close}>Volunteers</NavLink>
+              <NavLink className={navLinkClass} to="/volunteers" onClick={close}>{t('nav.volunteers')}</NavLink>
+            </li>
+
+            <li className="nav-item ms-lg-3 mt-1 mt-lg-0 me-2">
+              <LanguageSwitcher />
             </li>
 
             {!user ? (
               <>
                 <li className="nav-item ms-lg-2 mt-1 mt-lg-0">
-                  <Link className="btn btn-outline-mc btn-sm w-100 w-lg-auto" to="/login" onClick={close}>Login</Link>
+                  <Link className="btn btn-outline-mc btn-sm w-100 w-lg-auto" to="/login" onClick={close}>{t('nav.login')}</Link>
                 </li>
                 <li className="nav-item mt-1 mt-lg-0">
                   <Link className="btn btn-warning btn-sm text-dark fw-semibold w-100 w-lg-auto" to="/register" onClick={close}>
-                    Register
+                    {t('nav.register')}
                   </Link>
                 </li>
               </>
@@ -127,6 +136,7 @@ export default function Navbar() {
 }
 
 function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
+  const { t } = useTranslation();
   const wrapperRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -154,12 +164,12 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       .catch((requestError) => {
         if (requestError.name === "AbortError") return;
         handleRequestError(requestError);
-        setError(requestError.message || "Notifications could not be loaded.");
+        setError(requestError.message || t('notification.loadError'));
       })
       .finally(() => {
         if (!signal?.aborted) setLoading(false);
       });
-  }, [handleRequestError]);
+  }, [handleRequestError, t]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -211,7 +221,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
         setNotifications((current) => current.map((item) => (
           item.id === notification.id ? { ...item, is_read: 0 } : item
         )));
-        setActionError(requestError.message || "The notification could not be marked as read.");
+        setActionError(requestError.message || t('notification.markReadError'));
       }
     }
 
@@ -231,7 +241,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       await markAllAsRead();
     } catch (requestError) {
       setNotifications(previous);
-      setActionError(requestError.message || "Notifications could not be marked as read.");
+      setActionError(requestError.message || t('notification.markAllReadError'));
     } finally {
       setMarkingAll(false);
     }
@@ -245,15 +255,15 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       <button
         type="button"
         className="nav-link mc-notification-trigger position-relative"
-        title="Notifications"
-        aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"}
+        title={t('notification.title')}
+        aria-label={unreadCount ? t('notification.ariaLabelUnread', { unread: unreadCount }) : t('notification.title')}
         aria-expanded={isOpen}
         aria-haspopup="true"
         onClick={onToggle}
       >
         <Bell size={18} aria-hidden="true" />
         {unreadCount > 0 && <span className="mc-notification-badge" aria-hidden="true">{displayCount}</span>}
-        {unreadLoading && <span className="visually-hidden" role="status">Loading unread count</span>}
+        {unreadLoading && <span className="visually-hidden" role="status">{t('notification.loadingUnread')}</span>}
       </button>
       <div
         ref={dropdownRef}
@@ -262,8 +272,8 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       >
         <div className="mc-notif-menu__header">
           <div>
-            <strong>Notifications</strong>
-            {unreadCount > 0 && <span>{unreadCount} unread</span>}
+            <strong>{t('notification.title')}</strong>
+            {unreadCount > 0 && <span>{t('notification.unreadCount', { unread: unreadCount })}</span>}
           </div>
           <button
             type="button"
@@ -272,7 +282,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
             disabled={!hasUnread || markingAll}
           >
             <CheckCheck size={14} aria-hidden="true" />
-            {markingAll ? "Marking..." : "Mark all read"}
+            {markingAll ? t('notification.marking') : t('notification.markAllRead')}
           </button>
         </div>
         {actionError && <div className="mc-notif-menu__error" role="alert">{actionError}</div>}
@@ -287,7 +297,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
           />
         </div>
         <div className="mc-notif-menu__footer">
-          <Link to="/notifications" onClick={onNavigate}>View all notifications</Link>
+          <Link to="/notifications" onClick={onNavigate}>{t('notification.viewAll')}</Link>
         </div>
       </div>
     </li>
@@ -295,6 +305,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
 }
 
 function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
+  const { t } = useTranslation();
   const wrapperRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -334,17 +345,17 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
           {user.name}
           {isAdminApproved && (
             <span className="badge bg-success-subtle text-success border border-success-subtle ms-1" style={{ fontSize: "10px" }}>
-              Admin
+              {t('profile.admin')}
             </span>
           )}
           {isAdminPending && (
             <span className="badge bg-warning-subtle text-warning border border-warning-subtle text-dark ms-1" style={{ fontSize: "10px" }}>
-              Pending
+              {t('profile.pending')}
             </span>
           )}
           {isSuperAdmin && (
             <span className="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" style={{ fontSize: "10px" }}>
-              Super Admin
+              {t('profile.superAdmin')}
             </span>
           )}
         </span>
@@ -353,36 +364,35 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
         ref={dropdownRef}
         className={"dropdown-menu dropdown-menu-end" + (isOpen ? " show" : "")}
       >
-        {/* User identity header */}
         <li className="px-3 py-2 border-bottom">
           <div className="fw-bold small">{user.fullName || user.name}</div>
           <div className="text-muted" style={{ fontSize: "11px" }}>
             {isSuperAdmin ? (
-              <span>System Administrator</span>
+              <span>{t('profile.systemAdministrator')}</span>
             ) : user.role === "mosque_admin" ? (
               <div className="mt-0.5">
-                <div>Admin: <strong>{user.mosqueName}</strong></div>
+                <div>{t('profile.adminLabel')}: <strong>{user.mosqueName}</strong></div>
                 <div className="mt-1">
-                  Status:{" "}
+                  {t('profile.status')}:{" "}
                   <span className={`badge py-0.5 px-1 bg-${user.status === "approved" ? "success" : user.status === "rejected" ? "danger" : "warning text-dark"}`}>
-                    {user.status}
+                    {statusLabel(t, user.status)}
                   </span>
                 </div>
               </div>
             ) : (
-              <span>Community Member</span>
+              <span>{t('profile.communityMember')}</span>
             )}
           </div>
         </li>
 
         <li>
           <Link className="dropdown-item d-flex align-items-center" to="/profile" onClick={onClose}>
-            <UserRound size={15} className="me-2" aria-hidden="true" />My Profile
+            <UserRound size={15} className="me-2" aria-hidden="true" />{t('profile.myProfile')}
           </Link>
         </li>
         <li>
           <Link className="dropdown-item d-flex align-items-center" to="/profile" onClick={onClose}>
-            <Heart size={15} className="me-2" aria-hidden="true" />Followed Mosques
+            <Heart size={15} className="me-2" aria-hidden="true" />{t('profile.followedMosques')}
           </Link>
         </li>
 
@@ -391,7 +401,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
             <li><hr className="dropdown-divider" /></li>
             <li>
               <Link className="dropdown-item d-flex align-items-center text-success fw-bold" to="/admin/dashboard" onClick={onClose}>
-                <Landmark size={15} className="me-2" aria-hidden="true" />Mosque Dashboard
+                <Landmark size={15} className="me-2" aria-hidden="true" />{t('profile.mosqueDashboard')}
               </Link>
             </li>
           </>
@@ -402,7 +412,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
             <li><hr className="dropdown-divider" /></li>
             <li>
               <Link className="dropdown-item d-flex align-items-center text-danger fw-bold" to="/super-admin/dashboard" onClick={onClose}>
-                <ShieldCheck size={15} className="me-2" aria-hidden="true" />System Dashboard
+                <ShieldCheck size={15} className="me-2" aria-hidden="true" />{t('profile.systemDashboard')}
               </Link>
             </li>
           </>
@@ -420,7 +430,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
               onLogout();
             }}
           >
-            <LogOut size={15} className="me-2" aria-hidden="true" />Logout
+            <LogOut size={15} className="me-2" aria-hidden="true" />{t('profile.logout')}
           </button>
         </li>
       </ul>
