@@ -27,6 +27,8 @@ use App\Policies\VolunteerOpportunityPolicy;
 use App\Services\ClaimReview\ClaimDocumentReviewer;
 use App\Services\ClaimReview\DocumentAiClaimReviewer;
 use App\Services\ClaimReview\GoogleDocumentAiClient;
+use App\Services\Journey\GeoapifyRoutingClient;
+use App\Services\Journey\RoutesClient;
 use App\Services\Otp\LogSmsOtpSender;
 use App\Services\Otp\MissingSmsOtpSender;
 use App\Services\Otp\SmsOtpSender;
@@ -50,6 +52,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(GoogleDocumentAiClient::class, fn () => new GoogleDocumentAiClient(config('services.google_document_ai', [])));
         $this->app->bind(ClaimDocumentReviewer::class, DocumentAiClaimReviewer::class);
+        $this->app->bind(RoutesClient::class, fn () => new GeoapifyRoutingClient(
+            config('services.geoapify.key'),
+            (int) config('services.geoapify.timeout', 15),
+        ));
     }
 
     /**
@@ -89,6 +95,22 @@ class AppServiceProvider extends ServiceProvider
                 ->response(fn () => response()->json([
                     'message' => "You can suggest up to {$limit} corrections a day. Please try again tomorrow.",
                 ], 429));
+        });
+
+        // Journey plan routing API call kore (credit khoroch hoy), tai guest
+        // ghontay 5 ta, login kora user dine 20 ta plan korte pare.
+        RateLimiter::for('journey-plan', function (Request $request) {
+            $user = $request->user('sanctum');
+            $limits = config('journey.plan.throttle');
+            $message = $user
+                ? "You can plan up to {$limits['user_per_day']} journeys a day. Please try again tomorrow."
+                : "You can plan up to {$limits['guest_per_hour']} journeys an hour. Log in to plan more.";
+
+            $limit = $user
+                ? Limit::perDay((int) $limits['user_per_day'])->by('journey|user|'.$user->id)
+                : Limit::perHour((int) $limits['guest_per_hour'])->by('journey|ip|'.$request->ip());
+
+            return $limit->response(fn () => response()->json(['message' => $message], 429));
         });
 
         // Usage tracking is public, so each IP may count at most 30 events per mosque per hour.

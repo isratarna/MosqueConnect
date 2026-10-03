@@ -75,6 +75,9 @@ export default function Navbar() {
               <NavLink className={navLinkClass} to="/browse" onClick={close}>Browse Mosques</NavLink>
             </li>
             <li className="nav-item">
+              <NavLink className={navLinkClass} to="/journey" onClick={close}>Journey</NavLink>
+            </li>
+            <li className="nav-item">
               <NavLink className={navLinkClass} to="/support" onClick={close}>Support</NavLink>
             </li>
             <li className="nav-item">
