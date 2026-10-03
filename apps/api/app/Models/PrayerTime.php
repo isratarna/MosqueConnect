@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'mosque_id',
+    'period_id',
     'prayer',
     'adhan_time',
     'jamaat_time',
@@ -51,6 +52,11 @@ class PrayerTime extends Model
     public function mosque(): BelongsTo
     {
         return $this->belongsTo(Mosque::class);
+    }
+
+    public function period(): BelongsTo
+    {
+        return $this->belongsTo(PrayerSchedulePeriod::class, 'period_id');
     }
 
     public function label(): string

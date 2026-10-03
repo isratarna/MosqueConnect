@@ -10,7 +10,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class PrayerScheduleResource extends JsonResource
 {
     /** @param list<array<string, mixed>>|null $computedSchedule */
-    public function __construct(Mosque $resource, private readonly ?array $computedSchedule = null, private readonly ?string $date = null)
+    public function __construct(Mosque $resource, private readonly ?array $computedSchedule = null, private readonly ?string $date = null, private readonly ?array $period = null)
     {
         parent::__construct($resource);
     }
@@ -33,6 +33,7 @@ class PrayerScheduleResource extends JsonResource
         if ($this->date !== null) {
             $data['date'] = $this->date;
         }
+        $data['period'] = $this->period;
         $data['prayer_schedule'] = $schedule;
         $data['jumuah_sessions'] = $this->resource->jumuahSessions
             ->map(fn ($session): array => [

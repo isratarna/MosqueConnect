@@ -53,7 +53,7 @@ class MosqueEditor
     {
         return [
             'prayer_schedule' => ['sometimes', 'array'],
-            'prayer_schedule.*.prayer' => ['required_with:prayer_schedule', 'string', Rule::in(PrayerTime::PRAYERS)],
+            'prayer_schedule.*.prayer' => ['required_with:prayer_schedule', 'string', 'distinct', Rule::in(PrayerTime::PRAYERS)],
             'prayer_schedule.*.adhan_time' => ['required_with:prayer_schedule', 'date_format:H:i'],
             'prayer_schedule.*.jamaat_time' => ['required_with:prayer_schedule', 'date_format:H:i'],
             'jumuah_sessions' => ['sometimes', 'array'],

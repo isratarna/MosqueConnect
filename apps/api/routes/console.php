@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Campaign;
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::call(function (): void {
@@ -11,8 +13,8 @@ Schedule::call(function (): void {
 })->hourly()->name('expire-ended-campaigns')->withoutOverlapping();
 
 Schedule::command('lost-found:close-stale')->daily()->name('close-stale-lost-found')->withoutOverlapping();
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+Schedule::command('prayer-schedules:notify-starting-periods')->dailyAt('18:00')->name('notify-upcoming-prayer-schedules')->withoutOverlapping();
+Schedule::command('announcements:publish-scheduled')->everyFiveMinutes()->name('publish-scheduled-announcements')->withoutOverlapping();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

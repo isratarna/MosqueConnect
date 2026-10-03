@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Mosque;
+use App\Models\PrayerSchedulePeriod;
 use App\Models\PrayerTime;
 use App\Support\ClockTime;
 use Carbon\CarbonImmutable;
@@ -28,7 +29,13 @@ class PrayerScheduleService
     public function forDate(Mosque $mosque, ?CarbonInterface $date = null): array
     {
         $date ??= CarbonImmutable::now(config('prayer.timezone'));
-        $published = $mosque->prayerTimes->keyBy('prayer');
+        $period = $this->periodForDate($mosque, $date);
+        $times = match (true) {
+            $period !== null => $period->relationLoaded('prayerTimes') ? $period->prayerTimes : $period->prayerTimes()->get(),
+            $mosque->relationLoaded('prayerTimes') => $mosque->prayerTimes,
+            default => $mosque->prayerTimes()->get(),
+        };
+        $published = $times->keyBy('prayer');
         $calculated = null;
         $schedule = [];
 
@@ -69,6 +76,28 @@ class PrayerScheduleService
         }
 
         return $schedule;
+    }
+
+    /**
+     * The dated schedule period that covers a date, if any.
+     *
+     * Admin validation rejects overlapping periods, but if data ever ends up
+     * overlapping the shortest period wins so the most specific timetable is
+     * the one returned. Dates outside every period fall back to the default
+     * (period_id = null) prayer times.
+     */
+    public function periodForDate(Mosque $mosque, ?CarbonInterface $date = null): ?PrayerSchedulePeriod
+    {
+        $date ??= CarbonImmutable::now(config('prayer.timezone'));
+        $day = $date->toDateString();
+        $periods = $mosque->relationLoaded('schedulePeriods')
+            ? $mosque->schedulePeriods
+            : $mosque->schedulePeriods()->with('prayerTimes')->get();
+
+        return $periods
+            ->filter(fn (PrayerSchedulePeriod $period): bool => $period->covers($day))
+            ->sortBy(fn (PrayerSchedulePeriod $period): float => (float) $period->starts_on->diffInDays($period->ends_on))
+            ->first();
     }
 
     private function hasValidCoordinates(Mosque $mosque): bool
