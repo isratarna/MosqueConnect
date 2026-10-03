@@ -6,6 +6,8 @@ import { getAuthHeaders } from "../../utils/authApi";
 import { fetchMosqueById } from "../../utils/mosqueDiscovery";
 import ConfirmDialog from "../ConfirmDialog";
 import { BlockStack, SkeletonRegion } from "../skeletons";
+import { useLocale } from "../../hooks/useLocale";
+import { translate } from "../../i18n/translate";
 
 const MAX_PHOTOS = 10;
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -27,9 +29,9 @@ function uploadPhoto(mosqueId, file, caption, onProgress) {
       let payload = {};
       try { payload = JSON.parse(request.responseText); } catch { /* keep {} */ }
       if (request.status >= 200 && request.status < 300) resolve(payload);
-      else reject(new Error(Object.values(payload.errors || {}).flat().join(" ") || payload.message || "The photo could not be uploaded."));
+      else reject(new Error(Object.values(payload.errors || {}).flat().join(" ") || payload.message || translate("gallery.uploadFailed")));
     };
-    request.onerror = () => reject(new Error("The photo could not be uploaded. Check your connection."));
+    request.onerror = () => reject(new Error(translate("gallery.uploadFailedNetwork")));
     request.send(body);
   });
 }
@@ -39,6 +41,7 @@ function uploadPhoto(mosqueId, file, caption, onProgress) {
  * preview + caption before uploading, progress bar, then set cover / edit caption / delete.
  */
 export default function PhotoGalleryManager({ mosque, onCoverChanged }) {
+  const { t } = useLocale(); // [Urmee · i18n dashboard]
   const [photos, setPhotos] = useState(null);
   const [coverUrl, setCoverUrl] = useState(null);
   const [queue, setQueue] = useState([]); // { key, file, preview, caption, progress, error }
@@ -72,9 +75,9 @@ export default function PhotoGalleryManager({ mosque, onCoverChanged }) {
     const accepted = [];
     const problems = [];
     [...fileList].forEach((file) => {
-      if (!TYPES.includes(file.type)) problems.push(`${file.name}: choose a JPG, PNG or WebP image.`);
-      else if (file.size > MAX_BYTES) problems.push(`${file.name}: must be 4 MB or smaller.`);
-      else if (accepted.length >= room) problems.push(`${file.name}: a mosque can have at most ${MAX_PHOTOS} photos.`);
+      if (!TYPES.includes(file.type)) problems.push(t("gallery.badType", { name: file.name }));
+      else if (file.size > MAX_BYTES) problems.push(t("gallery.badSize", { name: file.name }));
+      else if (accepted.length >= room) problems.push(t("gallery.tooMany", { name: file.name, max: MAX_PHOTOS }));
       else accepted.push({ key: `${file.name}-${file.size}-${Math.random()}`, file, preview: URL.createObjectURL(file), caption: "", progress: 0, error: "" });
     });
     if (problems.length) setError(problems.join(" "));
@@ -102,7 +105,7 @@ export default function PhotoGalleryManager({ mosque, onCoverChanged }) {
       }
     }
     setUploading(false);
-    if (done) setMessage(`${done} photo${done === 1 ? "" : "s"} uploaded.`);
+    if (done) setMessage(t("gallery.uploaded", { count: done }));
     await reload();
   };
 
@@ -124,15 +127,15 @@ export default function PhotoGalleryManager({ mosque, onCoverChanged }) {
   const setCover = (photo) => act(async () => {
     await apiRequest(`${base}/${photo.id}/cover`, { method: "PATCH" });
     onCoverChanged?.(photo.url);
-  }, "Cover photo updated.");
-  const saveCaption = (photo, caption) => act(() => apiRequest(`${base}/${photo.id}`, { method: "PATCH", body: { caption: caption.trim() || null } }), "Caption saved.");
+  }, t("gallery.coverUpdated"));
+  const saveCaption = (photo, caption) => act(() => apiRequest(`${base}/${photo.id}`, { method: "PATCH", body: { caption: caption.trim() || null } }), t("gallery.captionSaved"));
 
   const full = (photos?.length ?? 0) + queue.length >= MAX_PHOTOS;
 
   return (
     <section className="mt-4" aria-labelledby="gallery-manager-title">
-      <h3 id="gallery-manager-title" className="h5 mb-1">Photo gallery</h3>
-      <p className="small text-muted">Up to {MAX_PHOTOS} photos, JPG, PNG or WebP, 4 MB each. The cover photo is the one shown on cards and the map.</p>
+      <h3 id="gallery-manager-title" className="h5 mb-1">{t("gallery.title")}</h3>
+      <p className="small text-muted">{t("gallery.intro", { max: MAX_PHOTOS })}</p>
 
       {error && <div className="alert alert-danger py-2 small" role="alert">{error}</div>}
       {message && <div className="alert alert-success py-2 small" role="status">{message}</div>}
@@ -144,54 +147,54 @@ export default function PhotoGalleryManager({ mosque, onCoverChanged }) {
         onDrop={(event) => { event.preventDefault(); setDragging(false); if (!full) addFiles(event.dataTransfer.files); }}
       >
         <UploadCloud size={26} aria-hidden="true" />
-        <p className="mb-2">Drag photos here or</p>
+        <p className="mb-2">{t("gallery.dragHere")}</p>
         <button type="button" className="btn btn-outline-mc btn-sm" onClick={() => inputRef.current?.click()} disabled={full || uploading}>
-          <ImagePlus size={15} aria-hidden="true" /> Choose photos
+          <ImagePlus size={15} aria-hidden="true" /> {t("gallery.choose")}
         </button>
-        <input ref={inputRef} type="file" accept={TYPES.join(",")} multiple className="visually-hidden" aria-label="Choose photos to upload" onChange={(event) => { addFiles(event.target.files); event.target.value = ""; }} />
-        {full && <p className="small text-muted mt-2 mb-0">The gallery is full. Delete a photo to add another.</p>}
+        <input ref={inputRef} type="file" accept={TYPES.join(",")} multiple className="visually-hidden" aria-label={t("gallery.chooseAria")} onChange={(event) => { addFiles(event.target.files); event.target.value = ""; }} />
+        {full && <p className="small text-muted mt-2 mb-0">{t("gallery.full")}</p>}
       </div>
 
       {queue.length > 0 && (
         <div className="mt-3">
-          <h4 className="h6">Ready to upload</h4>
+          <h4 className="h6">{t("gallery.ready")}</h4>
           <ul className="list-unstyled d-grid gap-2">
             {queue.map((item) => (
               <li key={item.key} className="d-flex gap-3 align-items-start border rounded p-2">
                 <img src={item.preview} alt="" width="84" height="64" className="rounded" style={{ objectFit: "cover" }} />
                 <div className="flex-grow-1">
-                  <label className="visually-hidden" htmlFor={`caption-${item.key}`}>Caption for {item.file.name}</label>
-                  <input id={`caption-${item.key}`} className="form-control form-control-sm" placeholder="Caption (optional)" maxLength={255} value={item.caption} disabled={uploading} onChange={(event) => patchQueue(item.key, { caption: event.target.value })} />
+                  <label className="visually-hidden" htmlFor={`caption-${item.key}`}>{t("gallery.captionFor", { name: item.file.name })}</label>
+                  <input id={`caption-${item.key}`} className="form-control form-control-sm" placeholder={t("gallery.captionOptional")} maxLength={255} value={item.caption} disabled={uploading} onChange={(event) => patchQueue(item.key, { caption: event.target.value })} />
                   {(uploading || item.progress > 0) && (
-                    <div className="progress mt-2" role="progressbar" aria-label={`Uploading ${item.file.name}`} aria-valuenow={item.progress} aria-valuemin="0" aria-valuemax="100" style={{ height: 6 }}>
+                    <div className="progress mt-2" role="progressbar" aria-label={t("gallery.uploadingAria", { name: item.file.name })} aria-valuenow={item.progress} aria-valuemin="0" aria-valuemax="100" style={{ height: 6 }}>
                       <div className="progress-bar bg-success" style={{ width: `${item.progress}%` }} />
                     </div>
                   )}
                   {item.error && <div className="small text-danger mt-1" role="alert">{item.error}</div>}
                 </div>
-                <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => dropFromQueue(item.key)} disabled={uploading} aria-label={`Remove ${item.file.name} from the upload list`}><X size={14} aria-hidden="true" /></button>
+                <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => dropFromQueue(item.key)} disabled={uploading} aria-label={t("gallery.removeFromList", { name: item.file.name })}><X size={14} aria-hidden="true" /></button>
               </li>
             ))}
           </ul>
-          <button type="button" className="btn btn-mc btn-sm" onClick={uploadAll} disabled={uploading}>{uploading ? "Uploading…" : `Upload ${queue.length} photo${queue.length === 1 ? "" : "s"}`}</button>
+          <button type="button" className="btn btn-mc btn-sm" onClick={uploadAll} disabled={uploading}>{uploading ? t("gallery.uploading") : t("gallery.upload", { count: queue.length })}</button>
         </div>
       )}
 
       <div className="mt-4">
-        <SkeletonRegion label="Loading photos…" loading={photos === null}><BlockStack heights={[96]} /></SkeletonRegion>
-        {photos && photos.length === 0 && <p className="text-muted small">No photos yet. Mosques with photos are easier to recognise.</p>}
+        <SkeletonRegion label={t("gallery.loading")} loading={photos === null}><BlockStack heights={[96]} /></SkeletonRegion>
+        {photos && photos.length === 0 && <p className="text-muted small">{t("gallery.none")}</p>}
         {photos && photos.length > 0 && (
           <ul className="mc-admin-photos list-unstyled">
             {photos.map((photo) => {
               const isCover = coverUrl === photo.url;
               return (
                 <li key={photo.id} className="mc-admin-photos__item">
-                  <img src={photo.url} alt={photo.caption || "Mosque photo"} loading="lazy" width="320" height="240" />
-                  {isCover && <span className="badge bg-success mc-admin-photos__badge"><Star size={11} fill="currentColor" aria-hidden="true" /> Cover</span>}
+                  <img src={photo.url} alt={photo.caption || t("gallery.mosquePhoto")} loading="lazy" width="320" height="240" />
+                  {isCover && <span className="badge bg-success mc-admin-photos__badge"><Star size={11} fill="currentColor" aria-hidden="true" /> {t("gallery.cover")}</span>}
                   <CaptionEditor photo={photo} onSave={saveCaption} />
                   <div className="d-flex gap-2 mt-2">
-                    {!isCover && <button type="button" className="btn btn-sm btn-outline-mc" onClick={() => setCover(photo)}>Set as cover</button>}
-                    <button type="button" className="btn btn-sm btn-outline-danger ms-auto" onClick={() => setConfirm(photo)} aria-label={`Delete photo${photo.caption ? `: ${photo.caption}` : ""}`}><Trash2 size={14} aria-hidden="true" /></button>
+                    {!isCover && <button type="button" className="btn btn-sm btn-outline-mc" onClick={() => setCover(photo)}>{t("gallery.setCover")}</button>}
+                    <button type="button" className="btn btn-sm btn-outline-danger ms-auto" onClick={() => setConfirm(photo)} aria-label={photo.caption ? t("gallery.deleteAriaCaption", { caption: photo.caption }) : t("gallery.deleteAria")}><Trash2 size={14} aria-hidden="true" /></button>
                   </div>
                 </li>
               );
@@ -202,11 +205,11 @@ export default function PhotoGalleryManager({ mosque, onCoverChanged }) {
 
       {confirm && (
         <ConfirmDialog
-          title="Delete this photo?"
-          message="It will disappear from the profile, cards and map."
-          confirmLabel="Delete photo"
+          title={t("gallery.deleteTitle")}
+          message={t("gallery.deleteMessage")}
+          confirmLabel={t("gallery.deleteConfirm")}
           tone="danger"
-          onConfirm={() => act(() => apiRequest(`${base}/${confirm.id}`, { method: "DELETE" }), "Photo deleted.")}
+          onConfirm={() => act(() => apiRequest(`${base}/${confirm.id}`, { method: "DELETE" }), t("gallery.deleted"))}
           onClose={() => setConfirm(null)}
         />
       )}
@@ -215,13 +218,14 @@ export default function PhotoGalleryManager({ mosque, onCoverChanged }) {
 }
 
 function CaptionEditor({ photo, onSave }) {
+  const { t } = useLocale();
   const [value, setValue] = useState(photo.caption || "");
   const changed = value !== (photo.caption || "");
   return (
     <div className="d-flex gap-1 mt-2">
-      <label className="visually-hidden" htmlFor={`photo-caption-${photo.id}`}>Caption</label>
-      <input id={`photo-caption-${photo.id}`} className="form-control form-control-sm" placeholder="Add a caption" maxLength={255} value={value} onChange={(event) => setValue(event.target.value)} />
-      {changed && <button type="button" className="btn btn-sm btn-mc" onClick={() => onSave(photo, value)}>Save</button>}
+      <label className="visually-hidden" htmlFor={`photo-caption-${photo.id}`}>{t("gallery.caption")}</label>
+      <input id={`photo-caption-${photo.id}`} className="form-control form-control-sm" placeholder={t("gallery.addCaption")} maxLength={255} value={value} onChange={(event) => setValue(event.target.value)} />
+      {changed && <button type="button" className="btn btn-sm btn-mc" onClick={() => onSave(photo, value)}>{t("gallery.save")}</button>}
     </div>
   );
 }

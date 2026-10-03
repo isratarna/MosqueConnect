@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { LocateFixed } from "lucide-react";
 import { useGoogleMapsLoader } from "../GoogleMapsProvider";
 import { PRESET_PLACES } from "../../utils/journeyApi";
+import { useLocale } from "../../hooks/useLocale";
 
 /*
  * Origin / destination input. Map load hole Google-er notun
@@ -10,6 +11,7 @@ import { PRESET_PLACES } from "../../utils/journeyApi";
  * value: { current: true } (amar location) ba { lat, lng, label }.
  */
 export default function PlaceInput({ id, label, value, onChange, allowCurrent = false }) {
+  const { t } = useLocale();
   const { disabled, isLoaded } = useGoogleMapsLoader();
   const canAutocomplete = !disabled && isLoaded && Boolean(window.google?.maps?.places?.PlaceAutocompleteElement);
 
@@ -26,7 +28,7 @@ export default function PlaceInput({ id, label, value, onChange, allowCurrent = 
             onChange={(e) => onChange(e.target.checked ? { current: true } : null)}
           />
           <label className="form-check-label" htmlFor={`${id}-current`}>
-            <LocateFixed size={13} aria-hidden="true" /> My location
+            <LocateFixed size={13} aria-hidden="true" /> {t("journey.myLocation")}
           </label>
         </div>
       )}
@@ -35,7 +37,7 @@ export default function PlaceInput({ id, label, value, onChange, allowCurrent = 
         <>
           {canAutocomplete && <Autocomplete id={id} onSelect={onChange} />}
           <FallbackPicker id={id} value={value} onChange={onChange} compact={canAutocomplete} />
-          {value?.label && <div className="form-text">Selected: {value.label}</div>}
+          {value?.label && <div className="form-text">{t("journey.place.selected", { label: value.label })}</div>}
         </>
       )}
     </div>
@@ -43,6 +45,7 @@ export default function PlaceInput({ id, label, value, onChange, allowCurrent = 
 }
 
 function Autocomplete({ id, onSelect }) {
+  const { t } = useLocale();
   const hostRef = useRef(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
@@ -64,7 +67,7 @@ function Autocomplete({ id, onSelect }) {
       onSelectRef.current({
         lat: place.location.lat(),
         lng: place.location.lng(),
-        label: place.displayName || place.formattedAddress || "Selected place",
+        label: place.displayName || place.formattedAddress || t("journey.place.selectedPlace"),
       });
     };
 
@@ -73,12 +76,13 @@ function Autocomplete({ id, onSelect }) {
     element.addEventListener("gmp-placeselect", handleSelect);
 
     return () => element.remove();
-  }, [id]);
+  }, [id, t]);
 
   return <div ref={hostRef} className="mc-place-autocomplete mb-1" />;
 }
 
 function FallbackPicker({ id, value, onChange, compact }) {
+  const { t } = useLocale();
   const [text, setText] = useState("");
 
   const applyText = () => {
@@ -86,6 +90,8 @@ function FallbackPicker({ id, value, onChange, compact }) {
     if (match) onChange({ lat: Number(match[1]), lng: Number(match[2]), label: `${match[1]}, ${match[2]}` });
   };
 
+  // [Urmee · i18n journey] The chosen city's label is its translated name, so "Selected: …" reads in the active language.
+  const presetPlace = (place) => ({ lat: place.lat, lng: place.lng, label: t(`journey.cities.${place.key}`) });
   const presetIndex = PRESET_PLACES.findIndex((p) => p.lat === value?.lat && p.lng === value?.lng);
 
   return (
@@ -95,22 +101,22 @@ function FallbackPicker({ id, value, onChange, compact }) {
           id={compact ? undefined : id}
           className="form-select form-select-sm"
           value={presetIndex >= 0 ? String(presetIndex) : ""}
-          onChange={(e) => e.target.value !== "" && onChange(PRESET_PLACES[Number(e.target.value)])}
-          aria-label="Choose a city"
+          onChange={(e) => e.target.value !== "" && onChange(presetPlace(PRESET_PLACES[Number(e.target.value)]))}
+          aria-label={t("journey.place.chooseCity")}
         >
-          <option value="">{compact ? "…or pick a city" : "Pick a city"}</option>
-          {PRESET_PLACES.map((place, index) => <option key={place.label} value={index}>{place.label}</option>)}
+          <option value="">{compact ? t("journey.place.orPickCity") : t("journey.place.pickCity")}</option>
+          {PRESET_PLACES.map((place, index) => <option key={place.key} value={index}>{t(`journey.cities.${place.key}`)}</option>)}
         </select>
       </div>
       <div className="col-sm-6">
         <input
           className="form-control form-control-sm"
-          placeholder="or lat, lng (23.46, 91.18)"
+          placeholder={t("journey.place.coordsPlaceholder")}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onBlur={applyText}
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), applyText())}
-          aria-label="Coordinates"
+          aria-label={t("journey.place.coordinates")}
         />
       </div>
     </div>

@@ -94,8 +94,9 @@ export function percent(value) {
   return value === null || value === undefined ? "–" : `${Number(value).toFixed(Number(value) % 1 === 0 ? 0 : 1)}%`;
 }
 
-export function formatShortDate(value) {
+// [Urmee · i18n dashboard] The locale is now a parameter ("bn-BD" gives Bangla digits and month names); English keeps en-GB.
+export function formatShortDate(value, locale = "en-GB") {
   if (!value) return "";
   const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString(locale === "en-BD" ? "en-GB" : locale, { day: "numeric", month: "short" });
 }

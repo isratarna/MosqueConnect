@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { Car, Clock3, Footprints, LoaderCircle, LocateFixed, Navigation, Route } from "lucide-react";
 import { hasLocation as originHasLocation, requestGeolocation } from "../../hooks/useGeolocation";
 import { useNow } from "../../hooks/useNow";
-import { fetchCatchable, formatMinutes, formatTime, minutesUntil } from "../../utils/journeyApi";
+import { fetchCatchable, minutesUntil } from "../../utils/journeyApi";
+import { formatMinutesT, formatTimeT, prayerNameT } from "../../utils/journeyFormat";
+import { useLocale } from "../../hooks/useLocale";
 import { directionsUrl } from "../../utils/mosqueDiscovery";
 import EstimatedBadge from "../EstimatedBadge";
 import { BlockStack, SkeletonRegion } from "../skeletons";
@@ -13,6 +15,7 @@ import { BlockStack, SkeletonRegion } from "../skeletons";
  * porer jamaat, hete/gari-te pouchano jay kina, proti minute e refresh hoy.
  */
 export default function CatchableJamaatCard({ origin }) {
+  const { t } = useLocale();
   const [mode, setMode] = useState("walk");
   const [state, setState] = useState({ status: "idle", data: [], next: null, error: null });
   const now = useNow(60_000);
@@ -45,30 +48,30 @@ export default function CatchableJamaatCard({ origin }) {
       <div className="card-body">
         <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
           <h2 className="h6 mb-0 d-flex align-items-center gap-2">
-            <Clock3 size={18} aria-hidden="true" /> Next jamat you can catch
+            <Clock3 size={18} aria-hidden="true" /> {t("journey.catch.title")}
           </h2>
-          <div className="btn-group btn-group-sm" role="group" aria-label="Travel mode">
+          <div className="btn-group btn-group-sm" role="group" aria-label={t("journey.catch.travelMode")}>
             <button type="button" className={`btn ${mode === "walk" ? "btn-mc" : "btn-outline-mc"}`} onClick={() => setMode("walk")} aria-pressed={mode === "walk"}>
-              <Footprints size={14} aria-hidden="true" /> Walk
+              <Footprints size={14} aria-hidden="true" /> {t("journey.catch.walk")}
             </button>
             <button type="button" className={`btn ${mode === "drive" ? "btn-mc" : "btn-outline-mc"}`} onClick={() => setMode("drive")} aria-pressed={mode === "drive"}>
-              <Car size={14} aria-hidden="true" /> Drive
+              <Car size={14} aria-hidden="true" /> {t("journey.catch.drive")}
             </button>
           </div>
         </div>
 
         {!hasLocation && (
           <div>
-            <p className="small text-muted mb-2">Share your location to see which jamaat you can still reach in time.</p>
+            <p className="small text-muted mb-2">{t("journey.catch.share")}</p>
             <button type="button" className="btn btn-mc btn-sm" onClick={() => requestGeolocation({ force: true })} disabled={origin.loading}>
-              {origin.loading ? <LoaderCircle className="spin" size={14} aria-hidden="true" /> : <LocateFixed size={14} aria-hidden="true" />} Use my location
+              {origin.loading ? <LoaderCircle className="spin" size={14} aria-hidden="true" /> : <LocateFixed size={14} aria-hidden="true" />} {t("journey.catch.useLocation")}
             </button>
             {origin.status === "failure" && <p className="small text-danger mt-2 mb-0">{origin.message}</p>}
           </div>
         )}
 
         {hasLocation && state.status === "loading" && (
-          <SkeletonRegion label="Checking nearby jamaats…"><BlockStack heights={[48, 48]} /></SkeletonRegion>
+          <SkeletonRegion label={t("journey.catch.checking")}><BlockStack heights={[48, 48]} /></SkeletonRegion>
         )}
 
         {hasLocation && state.status === "error" && <p className="small text-danger mb-0">{state.error}</p>}
@@ -92,7 +95,7 @@ export default function CatchableJamaatCard({ origin }) {
           <p className="small mb-0">
             {state.next
               ? <>{state.next.message} — {state.next.mosque.name}{state.next.estimated && <> <EstimatedBadge /></>}</>
-              : "No mosques with jamaat times found nearby."}
+              : t("journey.catch.nobody")}
           </p>
         )}
       </div>
@@ -101,24 +104,25 @@ export default function CatchableJamaatCard({ origin }) {
 }
 
 function CatchableOption({ option, now, mode, primary = false }) {
+  const { t, locale } = useLocale();
   const startsIn = minutesUntil(option.jamaat_at, now);
   const url = directionsUrl(option.mosque);
-  const travel = `${formatMinutes(option.travel_min)} ${mode === "walk" ? "walk" : "drive"}`;
+  const travel = t(mode === "walk" ? "journey.catch.travelWalk" : "journey.catch.travelDrive", { time: formatMinutesT(t, option.travel_min) });
 
   return (
     <div className="d-flex align-items-start justify-content-between gap-2">
       <div>
         <div className={primary ? "fw-semibold" : ""}>
-          {option.label} at <Link to={`/mosque/${option.mosque.id}`}>{option.mosque.name}</Link>
+          {t("journey.catch.at", { prayer: prayerNameT(t, option.label, option.prayer) })} <Link to={`/mosque/${option.mosque.id}`}>{option.mosque.name}</Link>
           {option.estimated && <> <EstimatedBadge /></>}
         </div>
         <div className="small text-muted">
-          {travel}, starts {startsIn >= 1 ? `in ${formatMinutes(startsIn)}` : "now"} ({formatTime(option.jamaat_at)})
+          {travel}, {startsIn >= 1 ? t("journey.catch.startsIn", { time: formatMinutesT(t, startsIn) }) : t("journey.catch.startsNow")} ({formatTimeT(option.jamaat_at, locale)})
         </div>
       </div>
       {url && (
         <a className={`btn btn-sm ${primary ? "btn-mc" : "btn-outline-mc"} flex-shrink-0`} href={url} target="_blank" rel="noreferrer">
-          <Navigation size={14} aria-hidden="true" /> Directions
+          <Navigation size={14} aria-hidden="true" /> {t("journey.catch.directions")}
         </a>
       )}
     </div>
@@ -126,16 +130,17 @@ function CatchableOption({ option, now, mode, primary = false }) {
 }
 
 export function JourneyEntryCard() {
+  const { t } = useLocale();
   return (
     <div className="mc-journey-card mc-journey-card--entry card h-100">
       <div className="card-body d-flex flex-column">
         <h2 className="h6 d-flex align-items-center gap-2">
-          <Route size={18} aria-hidden="true" /> Travelling? Plan your prayers on the way
+          <Route size={18} aria-hidden="true" /> {t("journey.entry.title")}
         </h2>
         <p className="small text-muted flex-grow-1">
-          Enter a trip such as Dhaka to Chattogram and see which prayers fall on the way, with mosques you can reach before the jamaat.
+          {t("journey.entry.copy")}
         </p>
-        <Link to="/journey" className="btn btn-outline-mc btn-sm align-self-start">Plan a journey</Link>
+        <Link to="/journey" className="btn btn-outline-mc btn-sm align-self-start">{t("journey.entry.cta")}</Link>
       </div>
     </div>
   );

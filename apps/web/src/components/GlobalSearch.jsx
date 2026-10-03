@@ -5,6 +5,8 @@ import { CalendarDays, Clock3, HandHeart, Heart, Landmark, LoaderCircle, Megapho
 import { clearRecent, readRecent, saveRecent } from "../utils/recentSearches";
 import { searchGlobal } from "../utils/searchApi";
 import { isSearchable, MIN_QUERY_LENGTH, nonEmptyGroups, searchPath } from "../utils/searchGroups";
+import { useLocale } from "../hooks/useLocale";
+import { formatNumber } from "../utils/intl";
 
 // [Urmee · F5 Part 2] Wait 300 ms after the last keystroke before calling GET /api/search.
 const DEBOUNCE_MS = 300;
@@ -31,9 +33,10 @@ const TYPE_ICONS = {
  * `onDismiss` lets a parent (the navbar) hide itself when the box is dismissed.
  */
 const GlobalSearch = forwardRef(function GlobalSearch(
-  { id, initialValue = "", placeholder = "Search mosques, events, campaigns…", autoFocus = false, variant = "nav", onDismiss },
+  { id, initialValue = "", placeholder, autoFocus = false, variant = "nav", onDismiss },
   ref,
 ) {
+  const { t, locale } = useLocale(); // [Urmee · i18n shared] placeholder, messages and group names come from the locale files
   const navigate = useNavigate();
   // Every instance gets its own ids (pass `id` to name them, otherwise one is generated),
   // so two boxes on a page never share an element id.
@@ -98,7 +101,7 @@ const GlobalSearch = forwardRef(function GlobalSearch(
 
   const term = value.trim();
   const fresh = result.status === "done" && result.term === term;
-  const groups = useMemo(() => (fresh ? nonEmptyGroups(result.data) : []), [fresh, result.data]);
+  const groups = useMemo(() => (fresh ? nonEmptyGroups(result.data).map((group) => ({ ...group, label: t(`search.groups.${group.key}`) })) : []), [fresh, result.data, t]);
   const hasHits = groups.length > 0;
   const showRecent = term.length === 0 && recent.length > 0;
 
@@ -197,10 +200,10 @@ const GlobalSearch = forwardRef(function GlobalSearch(
 
   const message = (() => {
     if (term.length === 0) return null;
-    if (term.length < MIN_QUERY_LENGTH) return `Type at least ${MIN_QUERY_LENGTH} characters to search.`;
-    if (result.status === "error") return "Search is unavailable right now. Press Enter to try the full search page.";
-    if (!fresh) return "Searching…";
-    if (!hasHits) return `No results for “${term}”.`;
+    if (term.length < MIN_QUERY_LENGTH) return t("search.minCharsShort", { count: MIN_QUERY_LENGTH });
+    if (result.status === "error") return t("search.unavailable");
+    if (!fresh) return t("search.searching");
+    if (!hasHits) return t("search.noResultsShort", { query: term });
     return null;
   })();
 
@@ -218,8 +221,8 @@ const GlobalSearch = forwardRef(function GlobalSearch(
           type="text"
           className="mc-search__input"
           value={value}
-          placeholder={placeholder}
-          aria-label="Search"
+          placeholder={placeholder ?? t("search.placeholder")}
+          aria-label={t("search.label")}
           role="combobox"
           aria-expanded={panelVisible}
           aria-controls={listId}
@@ -238,7 +241,7 @@ const GlobalSearch = forwardRef(function GlobalSearch(
           <button
             type="button"
             className="mc-search__clear"
-            aria-label="Clear search"
+            aria-label={t("search.clear")}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => { setValue(""); setOpen(true); inputRef.current?.focus(); }}
           >
@@ -250,21 +253,21 @@ const GlobalSearch = forwardRef(function GlobalSearch(
       <div
         id={listId}
         role="listbox"
-        aria-label="Search suggestions"
+        aria-label={t("search.suggestions")}
         className="mc-search__panel"
         hidden={!panelVisible}
       >
         {showRecent && (
           <div role="presentation">
             <div className="mc-search__heading" role="presentation">
-              <span>Recent searches</span>
+              <span>{t("search.recent")}</span>
               <button
                 type="button"
                 className="mc-search__heading-action"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => { setRecent(clearRecent()); inputRef.current?.focus(); }}
               >
-                Clear
+                {t("search.clearRecent")}
               </button>
             </div>
             {options.map((option) => renderOption(option, (
@@ -284,7 +287,7 @@ const GlobalSearch = forwardRef(function GlobalSearch(
               <div key={group.key} role="presentation">
                 <div className="mc-search__heading" role="presentation">
                   <span>{group.label}</span>
-                  <span className="mc-search__count">{group.total}</span>
+                  <span className="mc-search__count">{formatNumber(group.total, locale)}</span>
                 </div>
                 {group.items.map((item) => {
                   const Icon = TYPE_ICONS[item.type] ?? Search;
@@ -303,7 +306,7 @@ const GlobalSearch = forwardRef(function GlobalSearch(
             {renderOption({ kind: "all", query: term }, (
               <>
                 <Search size={15} aria-hidden="true" />
-                <span className="mc-search__title">See all results for “{term}”</span>
+                <span className="mc-search__title">{t("search.seeAllFor", { query: term })}</span>
               </>
             ))}
           </>

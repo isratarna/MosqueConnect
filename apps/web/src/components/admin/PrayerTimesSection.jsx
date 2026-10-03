@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { fetchAdminPrayerSchedule, savePrayerSchedule } from "../../utils/dashboardApi";
 import { BlockStack, SkeletonRegion } from "../skeletons";
+import { useLocale } from "../../hooks/useLocale";
 import PrayerTimesGrid, { rowsFromTimes, timesFromRows } from "./PrayerTimesGrid";
 import SchedulePeriodsManager from "./SchedulePeriodsManager";
 
@@ -27,9 +28,10 @@ function useSchedule(mosqueId) {
 }
 
 function Feedback({ loadError, retry, error, message }) {
+  const { t } = useLocale();
   return (
     <>
-      {loadError && <div className="alert alert-danger" role="alert">{loadError} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={retry}>Retry</button></div>}
+      {loadError && <div className="alert alert-danger" role="alert">{loadError} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={retry}>{t("common.retry")}</button></div>}
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {message && <div className="alert alert-success py-2" role="status">{message}</div>}
     </>
@@ -44,6 +46,7 @@ function LoadingRows({ label, rows }) {
 
 /** Dashboard section "Prayer & Jamat": adhan and jamaat for the five daily prayers. */
 export function DailyPrayersForm({ mosqueId }) {
+  const { t } = useLocale(); // [Urmee · i18n dashboard] text from the locale files
   const { schedule, loadError, retry } = useSchedule(mosqueId);
   const [times, setTimes] = useState({});
   const [saving, setSaving] = useState(false);
@@ -65,7 +68,7 @@ export function DailyPrayersForm({ mosqueId }) {
     setMessage("");
     try {
       await savePrayerSchedule(mosqueId, { prayer_schedule: rowsFromTimes(times) });
-      setMessage("Prayer times saved.");
+      setMessage(t("prayerAdmin.saved"));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -76,13 +79,13 @@ export function DailyPrayersForm({ mosqueId }) {
   return (
     <>
     <form onSubmit={onSubmit}>
-      <h2 className="h4 mb-1">Prayer &amp; Jamat times</h2>
-      <p className="text-muted small">Until you publish a time, visitors see an estimate from your map location, marked “estimated”.</p>
+      <h2 className="h4 mb-1">{t("prayerAdmin.heading")}</h2>
+      <p className="text-muted small">{t("prayerAdmin.intro")}</p>
       <Feedback loadError={loadError} retry={retry} error={error} message={message} />
-      {!schedule ? (!loadError && <LoadingRows label="Loading prayer times…" rows={5} />) : (
+      {!schedule ? (!loadError && <LoadingRows label={t("prayerAdmin.loading")} rows={5} />) : (
         <>
           <PrayerTimesGrid times={times} onChange={setTime} idPrefix="default" />
-          <button type="submit" className="btn btn-mc" disabled={saving}>{saving ? "Saving…" : "Save prayer times"}</button>
+          <button type="submit" className="btn btn-mc" disabled={saving}>{saving ? t("prayerAdmin.saving") : t("prayerAdmin.save")}</button>
         </>
       )}
     </form>
@@ -95,6 +98,7 @@ export function DailyPrayersForm({ mosqueId }) {
 
 /** Dashboard section "Jummah": one or more Friday sessions. */
 export function JumuahForm({ mosqueId }) {
+  const { t } = useLocale();
   const { schedule, loadError, retry } = useSchedule(mosqueId);
   const [sessions, setSessions] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -133,7 +137,7 @@ export function JumuahForm({ mosqueId }) {
         })),
       });
       setSessions(fromApi(saved.jumuah_sessions));
-      setMessage("Jumuah times saved.");
+      setMessage(t("jumuahAdmin.saved"));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -143,43 +147,43 @@ export function JumuahForm({ mosqueId }) {
 
   return (
     <form onSubmit={onSubmit}>
-      <h2 className="h4 mb-1">Jummah</h2>
-      <p className="text-muted small">On Fridays these sessions take Dhuhr's place on your profile and in “next jamaat”.</p>
+      <h2 className="h4 mb-1">{t("jumuahAdmin.heading")}</h2>
+      <p className="text-muted small">{t("jumuahAdmin.intro")}</p>
       <Feedback loadError={loadError} retry={retry} error={error} message={message} />
-      {!schedule ? (!loadError && <LoadingRows label="Loading Jumuah sessions…" rows={3} />) : (
+      {!schedule ? (!loadError && <LoadingRows label={t("jumuahAdmin.loading")} rows={3} />) : (
         <>
           <div className="d-grid gap-3 mb-3">
             {sessions.map((row) => (
               <fieldset key={row.sequence} className="border rounded p-3">
-                <legend className="float-none w-auto px-1 fs-6 fw-semibold mb-0">{row.label || `Session ${row.sequence}`}</legend>
+                <legend className="float-none w-auto px-1 fs-6 fw-semibold mb-0">{row.label || t("jumuahAdmin.session", { number: row.sequence })}</legend>
                 <div className="row g-2">
                   <div className="col-sm-6 col-lg-3">
-                    <label className="form-label small" htmlFor={`jumuah-${row.sequence}-label`}>Name</label>
+                    <label className="form-label small" htmlFor={`jumuah-${row.sequence}-label`}>{t("jumuahAdmin.name")}</label>
                     <input id={`jumuah-${row.sequence}-label`} className="form-control" maxLength={255} required value={row.label} onChange={(e) => edit(row.sequence, "label", e.target.value)} />
                   </div>
                   <div className="col-6 col-lg-3">
-                    <label className="form-label small" htmlFor={`jumuah-${row.sequence}-khutbah`}>Khutbah</label>
+                    <label className="form-label small" htmlFor={`jumuah-${row.sequence}-khutbah`}>{t("jumuahAdmin.khutbah")}</label>
                     <input id={`jumuah-${row.sequence}-khutbah`} type="time" className="form-control" value={row.khutbah_time} onChange={(e) => edit(row.sequence, "khutbah_time", e.target.value)} />
                   </div>
                   <div className="col-6 col-lg-3">
-                    <label className="form-label small" htmlFor={`jumuah-${row.sequence}-jamaat`}>Jamaat</label>
+                    <label className="form-label small" htmlFor={`jumuah-${row.sequence}-jamaat`}>{t("jumuahAdmin.jamaat")}</label>
                     <input id={`jumuah-${row.sequence}-jamaat`} type="time" className="form-control" required value={row.jamaat_time} onChange={(e) => edit(row.sequence, "jamaat_time", e.target.value)} />
                   </div>
                   <div className="col-sm-6 col-lg-3">
-                    <label className="form-label small" htmlFor={`jumuah-${row.sequence}-notes`}>Notes</label>
-                    <input id={`jumuah-${row.sequence}-notes`} className="form-control" maxLength={1000} placeholder="e.g. Women's floor open" value={row.notes} onChange={(e) => edit(row.sequence, "notes", e.target.value)} />
+                    <label className="form-label small" htmlFor={`jumuah-${row.sequence}-notes`}>{t("jumuahAdmin.notes")}</label>
+                    <input id={`jumuah-${row.sequence}-notes`} className="form-control" maxLength={1000} placeholder={t("jumuahAdmin.notesPlaceholder")} value={row.notes} onChange={(e) => edit(row.sequence, "notes", e.target.value)} />
                   </div>
                 </div>
                 {row.unsaved && (
-                  <button type="button" className="btn btn-link btn-sm text-danger p-0 mt-2" onClick={() => removeUnsaved(row.sequence)}>Remove this session</button>
+                  <button type="button" className="btn btn-link btn-sm text-danger p-0 mt-2" onClick={() => removeUnsaved(row.sequence)}>{t("jumuahAdmin.remove")}</button>
                 )}
               </fieldset>
             ))}
           </div>
           <div className="d-flex flex-wrap gap-2">
-            <button type="submit" className="btn btn-mc" disabled={saving}>{saving ? "Saving…" : "Save Jumuah times"}</button>
+            <button type="submit" className="btn btn-mc" disabled={saving}>{saving ? t("prayerAdmin.saving") : t("jumuahAdmin.save")}</button>
             {sessions.length < SESSION_NAMES.length && (
-              <button type="button" className="btn btn-outline-secondary" onClick={addSession}><Plus size={16} aria-hidden="true" /> Add a session</button>
+              <button type="button" className="btn btn-outline-secondary" onClick={addSession}><Plus size={16} aria-hidden="true" /> {t("jumuahAdmin.add")}</button>
             )}
           </div>
         </>

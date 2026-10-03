@@ -394,7 +394,7 @@ export default function Browse() {
 
               {hasMore && (
                 <div className="text-center mt-4" ref={sentinelRef}>
-                  <button type="button" className="btn btn-outline-mc" onClick={() => loadMore(true)}>Load more mosques</button>
+                  <button type="button" className="btn btn-outline-mc" onClick={() => loadMore(true)}>{t("browseMore.mosques")}</button>
                 </div>
               )}
             </div>

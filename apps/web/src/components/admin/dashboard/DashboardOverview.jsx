@@ -4,6 +4,7 @@ import AnnouncementsCard from "./AnnouncementsCard";
 import TodayPrayersCard from "./TodayPrayersCard";
 import AttentionCard from "./AttentionCard";
 import { ActiveCampaignsCard, FollowersCard, UpcomingEventsCard } from "./ActivityCards";
+import { useLocale } from "../../../hooks/useLocale";
 import { fetchDashboard } from "../../../utils/dashboardApi";
 import { can } from "../../../utils/teamRoles";
 
@@ -13,6 +14,7 @@ import { can } from "../../../utils/teamRoles";
  * show an error with Retry, and Quick post / Announcements keep working.
  */
 export default function DashboardOverview({ mosqueId, mosqueName, abilities = [], onNavigate }) {
+  const { t } = useLocale();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
@@ -25,14 +27,14 @@ export default function DashboardOverview({ mosqueId, mosqueName, abilities = []
     setError("");
     fetchDashboard(mosqueId, { signal: controller.signal })
       .then(setData)
-      .catch((err) => { if (err.name !== "AbortError") setError(err.message || "The dashboard could not be loaded."); });
+      .catch((err) => { if (err.name !== "AbortError") setError(err.message || t("dashboard.overview.loadFailed")); });
     return () => controller.abort();
   }, [mosqueId, revision]);
 
   // Keep showing the last good data while a reload is in flight.
   const loading = !data && !error;
   const failed = data?.failed_sections || [];
-  const cardError = (key) => (!data && error) || (failed.includes(key) ? "This card could not be loaded." : "");
+  const cardError = (key) => (!data && error) || (failed.includes(key) ? t("dashboard.overview.cardFailed") : "");
 
   // Cards follow the user's team role: editors don't get prayer editing,
   // prayer-times members don't get the content cards.

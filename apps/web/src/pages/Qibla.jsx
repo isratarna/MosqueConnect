@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { LocateFixed, Navigation } from "lucide-react";
 import { hasLocation, requestGeolocation, useGeolocation } from "../hooks/useGeolocation";
 import { compassPoint, headingFromEvent, qiblaBearing } from "../utils/qibla";
+import { useLocale } from "../hooks/useLocale";
+import { formatNumber } from "../utils/intl";
 
 /**
  * Qibla compass. The bearing to the Kaaba is calculated from the user's location. With a
@@ -9,13 +11,14 @@ import { compassPoint, headingFromEvent, qiblaBearing } from "../utils/qibla";
  * bearing from north. iOS only gives sensor access after a tap, hence "Turn on compass".
  */
 export default function Qibla() {
+  const { t, locale } = useLocale(); // [Urmee · i18n shared] text from the locale files; degrees use the active language's digits
   const origin = useGeolocation();
   const located = hasLocation(origin);
   const bearing = useMemo(() => (located ? qiblaBearing(origin.lat, origin.lng) : null), [located, origin.lat, origin.lng]);
   const [heading, setHeading] = useState(null);
   const [sensor, setSensor] = useState("idle"); // idle | on | denied | unavailable
 
-  useEffect(() => { document.title = "Qibla compass · MosqueConnect"; }, []);
+  useEffect(() => { document.title = t("qibla.pageTitle"); }, [t]);
 
   useEffect(() => {
     if (sensor !== "on") return undefined;
@@ -63,23 +66,23 @@ export default function Qibla() {
     <section className="mc-community-page mc-atmospheric-section">
       <div className="container py-5" style={{ maxWidth: 560 }}>
         <header className="mc-community-page__intro text-center">
-          <p className="mc-kicker">Prayer</p>
-          <h1>Qibla compass</h1>
-          <p>The direction of the Kaaba in Makkah from where you are.</p>
+          <p className="mc-kicker">{t("qibla.kicker")}</p>
+          <h1>{t("qibla.heading")}</h1>
+          <p>{t("qibla.intro")}</p>
         </header>
 
         {!located ? (
           <div className="mc-card p-4 text-center">
-            <p>We need your location to work out the Qibla direction.</p>
+            <p>{t("qibla.needLocation")}</p>
             <button type="button" className="btn btn-mc" onClick={() => requestGeolocation({ force: true })} disabled={origin.loading}>
-              <LocateFixed size={16} aria-hidden="true" /> {origin.loading ? "Locating…" : "Use my location"}
+              <LocateFixed size={16} aria-hidden="true" /> {origin.loading ? t("qibla.locating") : t("qibla.useLocation")}
             </button>
-            {origin.status === "failure" && <p className="small text-danger mt-3 mb-0" role="alert">{origin.message} You can also set a location manually on the home page.</p>}
+            {origin.status === "failure" && <p className="small text-danger mt-3 mb-0" role="alert">{origin.message} {t("qibla.setManually")}</p>}
           </div>
         ) : (
           <div className="mc-card p-4 text-center">
             <div className={`mc-qibla${facingQibla ? " is-aligned" : ""}`}>
-              <svg viewBox="-110 -110 220 220" role="img" aria-label={`Qibla is ${Math.round(bearing)} degrees ${compassPoint(bearing)} of north`}>
+              <svg viewBox="-110 -110 220 220" role="img" aria-label={t("qibla.dialAria", { degrees: formatNumber(Math.round(bearing), locale), point: t(`qibla.points.${compassPoint(bearing)}`) })}>
                 <g style={{ transform: `rotate(${dialRotation}deg)`, transformOrigin: "0 0", transition: "transform 0.2s linear" }}>
                   <circle r="100" className="mc-qibla__dial" />
                   {["N", "E", "S", "W"].map((label, index) => (
@@ -95,24 +98,24 @@ export default function Qibla() {
               </svg>
             </div>
 
-            <p className="h4 mb-1">{Math.round(bearing)}° {compassPoint(bearing)}</p>
-            <p className="text-muted small mb-3">from true north{origin.status === "manual" && origin.areaName ? ` · from ${origin.areaName}` : ""}</p>
+            <p className="h4 mb-1">{formatNumber(Math.round(bearing), locale)}° {t(`qibla.points.${compassPoint(bearing)}`)}</p>
+            <p className="text-muted small mb-3">{t("qibla.fromNorth")}{origin.status === "manual" && origin.areaName ? t("qibla.fromArea", { area: origin.areaName }) : ""}</p>
 
             {heading !== null ? (
               <p className={facingQibla ? "text-success fw-semibold" : "text-muted"} role="status">
-                {facingQibla ? "You are facing the Qibla." : "Turn until the arrow points to the top mark."}
+                {facingQibla ? t("qibla.facing") : t("qibla.turn")}
               </p>
             ) : sensor === "on" ? (
-              <p className="text-muted small" role="status">Waiting for the compass… move your phone in a figure of eight.</p>
+              <p className="text-muted small" role="status">{t("qibla.waiting")}</p>
             ) : (
               <>
                 <button type="button" className="btn btn-outline-mc btn-sm" onClick={enableCompass}>
-                  <Navigation size={14} aria-hidden="true" /> Turn on compass
+                  <Navigation size={14} aria-hidden="true" /> {t("qibla.turnOn")}
                 </button>
                 <p className="small text-muted mt-2 mb-0" role={sensor === "idle" ? undefined : "status"}>
-                  {sensor === "denied" && "Compass access was denied, so only the fixed direction is shown."}
-                  {sensor === "unavailable" && "This device has no compass sensor. Face the direction shown above, measured from north."}
-                  {sensor === "idle" && "On a phone, this makes the dial turn as you turn. Otherwise use the bearing above."}
+                  {sensor === "denied" && t("qibla.denied")}
+                  {sensor === "unavailable" && t("qibla.unavailable")}
+                  {sensor === "idle" && t("qibla.idleHint")}
                 </p>
               </>
             )}

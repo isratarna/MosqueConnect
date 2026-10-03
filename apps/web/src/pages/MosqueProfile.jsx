@@ -147,7 +147,7 @@ function ContactLinks({ mosque }) {
     mosque.phone && { href: `tel:${mosque.phone.replace(/\s/g, "")}`, icon: Phone, label: mosque.phone, event: "call" },
     whatsapp && { href: whatsapp, icon: MessageCircle, label: "WhatsApp", external: true },
     mosque.email && { href: `mailto:${mosque.email}`, icon: Mail, label: mosque.email },
-    website && { href: website, icon: Globe, label: "Website", external: true },
+    website && { href: website, icon: Globe, label: t("mosque.websiteLabel"), external: true },
     facebook && { href: facebook, icon: ExternalLink, label: "Facebook", external: true },
   ].filter(Boolean);
   if (!links.length) return <p className="small text-muted mb-0">{t("mosque.noContact")}</p>;
@@ -264,7 +264,7 @@ export default function MosqueProfile() {
   const eidJamaats = Array.isArray(mosque.eid_jamaats) ? mosque.eid_jamaats : [];
   const hasDailyPrayer = Object.values(prayer).some(Boolean) || prayerSchedule.length > 0;
   const directions = directionsUrl(mosque);
-  const confirmedLabel = communityConfirmedLabel(mosque.times_confirmed_by_community_at);
+  const confirmedLabel = communityConfirmedLabel(mosque.times_confirmed_by_community_at, new Date(), t, locale);
   const freshness = updatedAgoLabel(mosque.schedule_updated_at, new Date(), t, locale);
   const place = [mosque.area, mosque.district].filter(Boolean).join(", ");
   // The claim box only helps where a claim can succeed: no admin yet, and the viewer is a visitor or a normal user.

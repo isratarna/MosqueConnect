@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import Modal from "./Modal";
+import { useLocale } from "../hooks/useLocale";
 
 /**
  * Confirms an action, optionally asking for a reason. Accessible and
@@ -12,16 +13,19 @@ import Modal from "./Modal";
 export default function ConfirmDialog({
   title,
   message,
-  confirmLabel = "Confirm",
+  confirmLabel,
   tone = "primary",
   reason,
-  reasonLabel = "Reason",
+  reasonLabel,
   reasonPlaceholder = "",
   maxLength = 2000,
   onConfirm,
   onClose,
   children,
 }) {
+  const { t } = useLocale(); // [Urmee · i18n shared] default labels come from the locale files; callers can still pass their own
+  const confirmText = confirmLabel ?? t("common.confirm");
+  const reasonText = reasonLabel ?? t("common.reasonDefault");
   const reasonId = useId();
   const [text, setText] = useState("");
   const [touched, setTouched] = useState(false);
@@ -39,7 +43,7 @@ export default function ConfirmDialog({
       await onConfirm(text.trim());
       onClose();
     } catch (requestError) {
-      setError(requestError?.message || "The action could not be completed.");
+      setError(requestError?.message || t("common.actionFailed"));
       setBusy(false);
     }
   };
@@ -51,9 +55,9 @@ export default function ConfirmDialog({
       busy={busy}
       footer={(
         <>
-          <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>{t("common.cancel")}</button>
           <button type="submit" form={`${reasonId}-form`} className={`btn btn-${tone}`} disabled={busy}>
-            {busy ? <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Working…</> : confirmLabel}
+            {busy ? <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />{t("common.working")}</> : confirmText}
           </button>
         </>
       )}
@@ -64,7 +68,7 @@ export default function ConfirmDialog({
         {reason && (
           <div>
             <label className="form-label fw-semibold" htmlFor={reasonId}>
-              {reasonLabel}{reason === "required" ? <span className="text-danger"> *</span> : <span className="text-muted fw-normal"> (optional)</span>}
+              {reasonText}{reason === "required" ? <span className="text-danger"> *</span> : <span className="text-muted fw-normal"> {t("common.optional")}</span>}
             </label>
             <textarea
               id={reasonId}
@@ -80,7 +84,7 @@ export default function ConfirmDialog({
               onBlur={() => setTouched(true)}
             />
             <div id={`${reasonId}-help`} className={touched && missing ? "invalid-feedback d-block" : "form-text"}>
-              {touched && missing ? `${reasonLabel} is required.` : `${text.length}/${maxLength}`}
+              {touched && missing ? t("common.reasonRequired", { label: reasonText }) : `${text.length}/${maxLength}`}
             </div>
           </div>
         )}

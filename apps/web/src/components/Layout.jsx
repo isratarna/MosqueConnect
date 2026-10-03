@@ -25,6 +25,7 @@ function isMapSubtree(node) {
 // App shell: navbar + routed page + footer.
 // Also handles scrolling to #anchors (e.g. /#support) after navigation.
 export default function Layout({ children }) {
+  const { t } = useTranslation(); // [Urmee · i18n leftovers]
   const { pathname, hash } = useLocation();
   const pageRef = useRef(null);
 
@@ -167,7 +168,7 @@ export default function Layout({ children }) {
 
   return (
     <>
-      <a className="mc-skip-link" href="#main-content">Skip to main content</a>
+      <a className="mc-skip-link" href="#main-content">{t("layout.skip")}</a>
       <Navbar />
       <MaintenanceBanner />
       <main ref={pageRef} id="main-content" tabIndex={-1} className="mc-page-shell">{children}</main>

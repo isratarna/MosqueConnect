@@ -79,7 +79,7 @@ export default function Navbar() {
     <nav className={`navbar navbar-expand-lg navbar-dark mc-navbar sticky-top${isScrolled ? " is-scrolled" : ""}`}>
       <div className="container px-3 px-lg-0">
         <Link className="navbar-brand mc-brand me-2 me-lg-0" to="/" onClick={close}>
-          <img src={logo} alt="MosqueConnect logo" className="mc-brand-logo me-2" />
+          <img src={logo} alt={t("common.logoAlt")} className="mc-brand-logo me-2" />
           <span className="mc-brand-title">
             Mosque<span className="mc-brand-accent">Connect</span>
           </span>
