@@ -61,8 +61,12 @@ use App\Http\Controllers\VolunteerRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
+    // CI writes the deployed commit SHA into REVISION when packing the release.
+    $revision = base_path('REVISION');
+
     return response()->json([
         'status' => 'ok',
+        'commit' => is_file($revision) ? trim(file_get_contents($revision)) : null,
     ]);
 });
 

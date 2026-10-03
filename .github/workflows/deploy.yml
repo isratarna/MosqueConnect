@@ -42,6 +42,7 @@ jobs:
         run: |
           set -e
           mkdir -p apps/api/storage/logs apps/api/storage/framework/{views,cache,sessions} apps/api/bootstrap/cache
+          echo "$GITHUB_SHA" > apps/api/REVISION
           tar czf release.tar.gz -C apps/api \
             --exclude=.git \
             --exclude=node_modules \
