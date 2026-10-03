@@ -12,6 +12,7 @@ use App\Services\Journey\GeoapifyRoutingClient;
 use App\Services\Journey\RoutesClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -189,6 +190,21 @@ class JourneyPlannerTest extends TestCase
         $this->postJson('/api/journeys/plan', $this->payload())
             ->assertStatus(503)
             ->assertJsonPath('message', 'The journey planner is not configured yet (GEOAPIFY_API_KEY is missing).');
+    }
+
+    public function test_a_routing_connection_failure_returns_a_safe_error_without_saving_a_plan(): void
+    {
+        Http::fake(['api.geoapify.com/v1/routing*' => Http::failedConnection(
+            'cURL error 60: SSL certificate problem for https://api.geoapify.com/v1/routing?apiKey=private-test-api-key',
+        )]);
+        $this->app->instance(RoutesClient::class, new GeoapifyRoutingClient('private-test-api-key'));
+
+        $response = $this->postJson('/api/journeys/plan', $this->payload())
+            ->assertStatus(503)
+            ->assertExactJson(['message' => 'Could not reach the routing service. Please try again.']);
+
+        $this->assertStringNotContainsString('private-test-api-key', $response->getContent());
+        $this->assertDatabaseCount('journey_plans', 0);
     }
 
     /** @return array<string, mixed> */

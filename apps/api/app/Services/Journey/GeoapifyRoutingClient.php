@@ -2,9 +2,12 @@
 
 namespace App\Services\Journey;
 
+use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Geoapify Routing API (route) ar Route Matrix API (detour time).
@@ -24,8 +27,7 @@ class GeoapifyRoutingClient implements RoutesClient
 
     public function route(array $origin, array $destination, string $mode, bool $trafficAware): array
     {
-        $response = $this->send(fn () => Http::timeout($this->timeout)
-            ->acceptJson()
+        $response = $this->send(fn () => $this->request()
             ->get(self::ROUTING_URL, array_filter([
                 // Geoapify waypoint "lat,lon" order-e, "|" diye alada.
                 'waypoints' => "{$origin['lat']},{$origin['lng']}|{$destination['lat']},{$destination['lng']}",
@@ -49,8 +51,7 @@ class GeoapifyRoutingClient implements RoutesClient
     {
         $location = fn (array $point): array => ['location' => [$point['lng'], $point['lat']]];
 
-        $response = $this->send(fn () => Http::timeout($this->timeout)
-            ->acceptJson()
+        $response = $this->send(fn () => $this->request()
             ->withQueryParameters(['apiKey' => $this->key])
             ->post(self::MATRIX_URL, array_filter([
                 'mode' => $mode,
@@ -133,6 +134,19 @@ class GeoapifyRoutingClient implements RoutesClient
         return $mode === 'drive' && $trafficAware ? 'approximated' : null;
     }
 
+    private function request(): PendingRequest
+    {
+        $request = Http::timeout($this->timeout)->acceptJson();
+
+        // Windows PHP builds using OpenSSL may have no CA bundle configured.
+        // Use the system trust store while keeping TLS verification enabled.
+        if (PHP_OS_FAMILY === 'Windows' && defined('CURLSSLOPT_NATIVE_CA')) {
+            $request->withOptions(['curl' => [CURLOPT_SSL_OPTIONS => CURLSSLOPT_NATIVE_CA]]);
+        }
+
+        return $request;
+    }
+
     /** @param callable(): Response $request */
     private function send(callable $request): Response
     {
@@ -142,7 +156,14 @@ class GeoapifyRoutingClient implements RoutesClient
 
         try {
             return $request();
-        } catch (ConnectionException) {
+        } catch (ConnectionException $exception) {
+            $cause = $exception->getPrevious();
+            $context = $cause instanceof ConnectException ? $cause->getHandlerContext() : [];
+
+            // The raw exception includes the API key in the URL; log only the
+            // transport error number (e.g. 60 for certificate trust failures).
+            Log::warning('Geoapify connection failed.', ['curl_errno' => $context['errno'] ?? null]);
+
             throw new RoutesUnavailableException('Could not reach the routing service. Please try again.');
         }
     }

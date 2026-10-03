@@ -5,8 +5,11 @@ namespace Tests\Unit\Journey;
 use App\Services\Journey\GeoapifyRoutingClient;
 use App\Services\Journey\NoRouteException;
 use App\Services\Journey\RoutesUnavailableException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Promise\Create;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class GeoapifyRoutingClientTest extends TestCase
@@ -67,6 +70,60 @@ class GeoapifyRoutingClientTest extends TestCase
             && ! isset($request['traffic']));
 
         $this->assertSame([[300.0, null]], $durations);
+    }
+
+    public function test_windows_requests_use_native_certificate_trust_for_routes_and_matrices(): void
+    {
+        if (PHP_OS_FAMILY !== 'Windows' || ! defined('CURLSSLOPT_NATIVE_CA')) {
+            $this->markTestSkipped('Native certificate trust requires Windows and a supported cURL version.');
+        }
+
+        $optionsByEndpoint = [];
+        Http::fake(function (Request $request, array $options) use (&$optionsByEndpoint) {
+            $endpoint = parse_url($request->url(), PHP_URL_PATH);
+            $optionsByEndpoint[$endpoint] = $options;
+
+            return Http::response($endpoint === '/v1/routing'
+                ? $this->routeResponse()
+                : ['sources_to_targets' => [[['time' => 300]]]]);
+        });
+
+        $client = new GeoapifyRoutingClient('test-key');
+        $client->route(self::ORIGIN, self::DESTINATION, 'drive', false);
+        $client->matrix([self::ORIGIN], [self::DESTINATION], 'drive', false);
+
+        $this->assertSame(['/v1/routing', '/v1/routematrix'], array_keys($optionsByEndpoint));
+        foreach ($optionsByEndpoint as $options) {
+            $this->assertSame(CURLSSLOPT_NATIVE_CA, $options['curl'][CURLOPT_SSL_OPTIONS] ?? null);
+            $this->assertTrue($options['verify'] ?? true, 'TLS certificate verification must remain enabled.');
+        }
+    }
+
+    public function test_connection_failures_return_a_safe_error_and_log_only_transport_diagnostics(): void
+    {
+        $key = 'private-test-api-key';
+        Http::fake(fn (Request $request) => Create::rejectionFor(new ConnectException(
+            'cURL error 60: SSL certificate problem for '.$request->url(),
+            $request->toPsrRequest(),
+            null,
+            ['errno' => 60],
+        )));
+        Log::spy();
+
+        $this->assertThrows(
+            fn () => (new GeoapifyRoutingClient($key))->route(self::ORIGIN, self::DESTINATION, 'drive', false),
+            RoutesUnavailableException::class,
+            'Could not reach the routing service. Please try again.',
+        );
+
+        Log::shouldHaveReceived('warning')->once()->withArgs(function (string $message, array $context) use ($key): bool {
+            $diagnostic = $message.json_encode($context);
+
+            return ($context['curl_errno'] ?? null) === 60
+                && ! str_contains($diagnostic, $key)
+                && ! str_contains($diagnostic, 'apiKey=')
+                && ! str_contains($diagnostic, 'https://api.geoapify.com');
+        });
     }
 
     public function test_a_bad_request_means_no_route(): void
