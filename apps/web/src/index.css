@@ -6953,3 +6953,21 @@ body:lang(bn) {
   --bs-card-bg: var(--mc-surface);
   --bs-card-cap-bg: var(--mc-surface-raised);
 }
+
+/* [Urmee · F4] Ramadan: profile card, home banner, admin month grid */
+.mc-ramadan-card { border-top: 4px solid var(--mc-gold, #e0944f); }
+.mc-ramadan-card__time { color: var(--mc-rust); display: block; font-size: 2rem; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.mc-ramadan-banner {
+  align-items: center;
+  background: linear-gradient(90deg, var(--mc-rust, #b64512), var(--mc-gold, #e0944f));
+  color: #fff;
+  display: flex;
+  font-weight: 600;
+  gap: 0.6rem;
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  text-align: center;
+  text-decoration: none;
+}
+.mc-ramadan-banner:hover { color: #fff; filter: brightness(1.05); }
+.mc-ramadan-editor__table { max-height: 420px; overflow-y: auto; }

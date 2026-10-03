@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { fetchAdminPrayerSchedule, savePrayerSchedule } from "../../utils/dashboardApi";
 import { BlockStack, SkeletonRegion } from "../skeletons";
+import PrayerTimesGrid, { rowsFromTimes, timesFromRows } from "./PrayerTimesGrid";
+import SchedulePeriodsManager from "./SchedulePeriodsManager";
 
-const DAILY = [["fajr", "Fajr"], ["dhuhr", "Dhuhr"], ["asr", "Asr"], ["maghrib", "Maghrib"], ["isha", "Isha"]];
 const SESSION_NAMES = ["First Jumuah", "Second Jumuah", "Third Jumuah", "Fourth Jumuah"];
 
 /** Loads the admin prayer schedule once per mosque, with retry. */
@@ -51,11 +52,7 @@ export function DailyPrayersForm({ mosqueId }) {
 
   useEffect(() => {
     if (!schedule) return;
-    const byPrayer = Object.fromEntries(schedule.prayer_schedule.map((row) => [row.prayer, row]));
-    setTimes(Object.fromEntries(DAILY.map(([key]) => [key, {
-      adhan_time: byPrayer[key]?.adhan_time || "",
-      jamaat_time: byPrayer[key]?.jamaat_time || "",
-    }])));
+    setTimes(timesFromRows(schedule.prayer_schedule));
   }, [schedule]);
 
   const setTime = (prayer, field, value) => setTimes((all) => ({ ...all, [prayer]: { ...all[prayer], [field]: value } }));
@@ -67,7 +64,7 @@ export function DailyPrayersForm({ mosqueId }) {
     setError("");
     setMessage("");
     try {
-      await savePrayerSchedule(mosqueId, { prayer_schedule: DAILY.map(([prayer]) => ({ prayer, ...times[prayer] })) });
+      await savePrayerSchedule(mosqueId, { prayer_schedule: rowsFromTimes(times) });
       setMessage("Prayer times saved.");
     } catch (err) {
       setError(err.message);
@@ -77,40 +74,21 @@ export function DailyPrayersForm({ mosqueId }) {
   }
 
   return (
+    <>
     <form onSubmit={onSubmit}>
       <h2 className="h4 mb-1">Prayer &amp; Jamat times</h2>
       <p className="text-muted small">Until you publish a time, visitors see an estimate from your map location, marked “estimated”.</p>
       <Feedback loadError={loadError} retry={retry} error={error} message={message} />
       {!schedule ? (!loadError && <LoadingRows label="Loading prayer times…" rows={5} />) : (
         <>
-          <div className="table-responsive">
-            <table className="table align-middle">
-              <thead><tr><th scope="col">Prayer</th><th scope="col">Adhan</th><th scope="col">Jamaat</th></tr></thead>
-              <tbody>
-                {DAILY.map(([key, label]) => (
-                  <tr key={key}>
-                    <th scope="row">{label}</th>
-                    {["adhan_time", "jamaat_time"].map((field) => (
-                      <td key={field}>
-                        <input
-                          type="time"
-                          className="form-control"
-                          required
-                          aria-label={`${label} ${field === "adhan_time" ? "adhan" : "jamaat"} time`}
-                          value={times[key]?.[field] || ""}
-                          onChange={(e) => setTime(key, field, e.target.value)}
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <PrayerTimesGrid times={times} onChange={setTime} idPrefix="default" />
           <button type="submit" className="btn btn-mc" disabled={saving}>{saving ? "Saving…" : "Save prayer times"}</button>
         </>
       )}
     </form>
+    {/* [Urmee · F4] Dated periods (winter timetable, Ramadan) sit under the default timetable. */}
+    <SchedulePeriodsManager mosqueId={mosqueId} />
+    </>
   );
 }
 
