@@ -16,6 +16,7 @@ import { Skeleton } from "./skeletons";
  */
 export default function RamadanCard({ mosqueId }) {
   const { t, locale } = useLocale();
+  // [Urmee · VIVA] useNow(1000) = protit second e "ekhon" bodlay, tai countdown live cholte thake.
   const now = useNow(1000); // one tick a second keeps the countdown live
   const [state, setState] = useState({ status: "loading", data: null });
   const [expanded, setExpanded] = useState(false);
@@ -29,10 +30,12 @@ export default function RamadanCard({ mosqueId }) {
     return () => controller.abort();
   }, [mosqueId]);
 
+  // [Urmee · VIVA] Load howar shomoy skeleton, data na thakle (Ramadan na) kichu render kori na.
   if (state.status === "loading") return <div className="card mc-card mb-4 p-4"><Skeleton height="1.4rem" width="50%" /></div>;
   if (!state.data) return null;
 
   const { period, timings } = state.data;
+  // [Urmee · VIVA] ramadanPhase diye bujhi kon countdown (Iftar na Sehri) ar target koto shomoy porjonto. timeLeft diye baki shomoy ber kori.
   const { phase, targetAt, today } = ramadanPhase(timings, now);
   const left = targetAt ? timeLeft(targetAt, now) : null;
   const todayKey = today?.date;

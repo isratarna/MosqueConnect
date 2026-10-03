@@ -10,6 +10,7 @@ const OPTIONS = [
 
 // System | Light | Dark, as icon buttons. It reuses the segmented-control look
 // of the language switcher it sits beside.
+// [Urmee · VIVA] System | Light | Dark -- 3 ta icon button. Click e setPreference(value).
 export default function ThemeSwitcher() {
   const { t } = useTranslation();
   const { preference, setPreference } = useTheme();

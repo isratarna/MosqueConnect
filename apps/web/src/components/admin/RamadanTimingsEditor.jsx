@@ -5,6 +5,7 @@ import { applyTaraweeh, completeRows, dateKey, parseTimingsPaste, rowsForPeriod 
 import { saveRamadanTimings } from "../../utils/scheduleApi";
 import { formatClockTime } from "../../utils/prayerTime";
 
+// [Urmee · VIVA] API ekbar e max 31 din save korte dey. Period tar chaite boro hole warning dekhai.
 const MAX_DAYS = 31; // the API saves at most 31 days per request
 
 /**
@@ -15,6 +16,7 @@ const MAX_DAYS = 31; // the API saves at most 31 days per request
  */
 export default function RamadanTimingsEditor({ mosqueId, period, onSaved }) {
   const { t, locale } = useLocale();
+  // [Urmee · VIVA] State: protita din er Sehri/Iftar/Taraweeh row. paste = textarea er text, taraweeh = "same time" input, previewDate = niche preview er din.
   const [rows, setRows] = useState(() => rowsForPeriod(period, period.ramadan_timings));
   const [paste, setPaste] = useState("");
   const [taraweeh, setTaraweeh] = useState("");
@@ -25,10 +27,13 @@ export default function RamadanTimingsEditor({ mosqueId, period, onSaved }) {
   const [notice, setNotice] = useState(null); // { ok, text }
   const [saving, setSaving] = useState(false);
 
+  // [Urmee · VIVA] Ekta cell (ekta din er ekta time) bodlay.
   const setCell = (date, field, value) => setRows((current) => current.map((row) => (row.date === date ? { ...row, [field]: value } : row)));
+  // [Urmee · VIVA] Preview card er jonno nirbachito din er row ber kore.
   const preview = useMemo(() => rows.find((row) => row.date === previewDate), [rows, previewDate]);
   const dayLabel = (date) => formatApiDate(date, locale, { weekday: "short", day: "numeric", month: "short" });
 
+  // [Urmee · VIVA] "Fill the table" button: paste kora text parse kore matching din er row gulo bhore dey, koyta fill holo ar koyta line bhul seta notice e dekhay.
   const applyPaste = () => {
     const { rows: parsed, problems } = parseTimingsPaste(paste, period);
     const byDate = Object.fromEntries(parsed.map((row) => [row.date, row]));
@@ -41,6 +46,7 @@ export default function RamadanTimingsEditor({ mosqueId, period, onSaved }) {
     });
   };
 
+  // [Urmee · VIVA] Save: faka din bad diye (completeRows) API te pathay. Success/error notice dekhay.
   const save = async () => {
     setSaving(true);
     setNotice(null);

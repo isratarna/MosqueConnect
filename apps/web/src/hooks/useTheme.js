@@ -37,6 +37,7 @@ function update(preference) {
 }
 
 /** Applies the saved theme and keeps it current. Call once, at start-up. */
+// [Urmee · VIVA] App start e ekbar: saved theme lagai, OS setting ba onno tab e choice bodlale follow kori.
 export function initTheme() {
   update(readPreference(browserStorage()));
 
@@ -49,6 +50,7 @@ export function initTheme() {
   });
 }
 
+// [Urmee · VIVA] Choice save kore (localStorage) ar sathe sathe theme lagai.
 export function setThemePreference(preference) {
   writePreference(browserStorage(), preference);
   update(preference);
@@ -60,6 +62,7 @@ function subscribe(listener) {
 }
 
 /** { preference: "system" | "light" | "dark", resolved: "light" | "dark", setPreference } */
+// [Urmee · VIVA] Component ke { preference, resolved, setPreference } dey. useSyncExternalStore diye shobjaygay ek theme dekhay.
 export function useTheme() {
   const current = useSyncExternalStore(subscribe, () => snapshot, () => snapshot);
   return { ...current, setPreference: setThemePreference };

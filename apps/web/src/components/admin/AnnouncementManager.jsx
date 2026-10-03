@@ -50,11 +50,13 @@ export default function AnnouncementManager({ mosqueId, mosqueName = "" }) {
     setTimeout(() => setSuccess(""), 3000);
   };
 
+  // [Urmee · VIVA] Status ar category filter apply kore list ta ber kore (client e).
   const visible = useMemo(() => announcements.filter((item) => (
     (stateFilter === "all" || announcementState(item) === stateFilter)
     && (categoryFilter === "all" || item.category === categoryFilter)
   )), [announcements, stateFilter, categoryFilter]);
 
+  // [Urmee · VIVA] Editor save hole list e notun/update kora item boshay, editor bondho kore, success message dey.
   const onSaved = (saved) => {
     const isEdit = Boolean(editor?.item);
     setAnnouncements((items) => (isEdit ? items.map((item) => (item.id === saved.id ? saved : item)) : [saved, ...items]));
@@ -63,6 +65,7 @@ export default function AnnouncementManager({ mosqueId, mosqueName = "" }) {
   };
 
   // [Urmee · F9] Pin / unpin from the list. The API refuses a 4th pin with a field error, which is shown in the banner.
+  // [Urmee · VIVA] List theke direct pin/unpin. 4th pin hole API error dey, seta upore dekhai.
   const togglePin = async (item) => {
     if (actionBusy) return;
     setActionBusy(true);
@@ -78,6 +81,7 @@ export default function AnnouncementManager({ mosqueId, mosqueName = "" }) {
     }
   };
 
+  // [Urmee · VIVA] Publish/Unpublish button: publish ba unpublish endpoint call kore.
   const toggleStatus = async (item) => {
     if (actionBusy) return;
     setActionBusy(true);

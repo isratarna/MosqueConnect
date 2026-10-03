@@ -103,6 +103,7 @@ export default function Home() {
   return (
     <>
       <EidBanner />
+      {/* [Urmee · VIVA] Home er upore Ramadan banner: nearest mosque Ramadan period e thakle "Iftar in 1h 12m". */}
       {/* [Urmee · F4] "Iftar in 1h 12m at your nearest mosque", only while that mosque is in a Ramadan period. */}
       <RamadanBanner mosque={nearest} />
       {user ? (

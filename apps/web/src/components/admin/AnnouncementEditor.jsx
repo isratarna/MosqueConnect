@@ -10,6 +10,7 @@ const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // the API rejects images over 4 MB
  * [Urmee · F9] Live preview of the announcement as visitors will see it on the mosque page. Janazah notices
  * get the same calm, distinct styling here as on the public pages (.mc-announcement--janazah).
  */
+// [Urmee · VIVA] Live preview: admin jeta likhche public page e thik ei rokom dekhabe. Janazah hole calm styling.
 function AnnouncementPreview({ form, imageUrl }) {
   const { t } = useLocale();
   const janazah = form.category === "janazah";
@@ -32,6 +33,7 @@ function AnnouncementPreview({ form, imageUrl }) {
  * and a live preview. The dashboard's AnnouncementManager embeds it; `announcement` is null for a new post.
  * Server errors (e.g. "at most 3 pinned") are shown next to the field they belong to.
  */
+// [Urmee · VIVA] Ekta editor-ei sob: title, category, janazah template, message, image, now/schedule/draft, expiry, pin, preview. Notun ar edit duto-i eta handle kore (announcement=null hole notun).
 export default function AnnouncementEditor({ mosqueId, mosqueName = "", announcement = null, onSaved, onCancel }) {
   const { t } = useLocale();
   const [form, setForm] = useState(() => formFromAnnouncement(announcement));
@@ -49,6 +51,7 @@ export default function AnnouncementEditor({ mosqueId, mosqueName = "", announce
 
   const set = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.type === "checkbox" ? event.target.checked : event.target.value }));
 
+  // [Urmee · VIVA] Category bodlale: Janazah hole urgency High, title ar message prefill hoy.
   const pickCategory = (event) => {
     const category = event.target.value;
     setForm((current) => ({
@@ -61,12 +64,14 @@ export default function AnnouncementEditor({ mosqueId, mosqueName = "", announce
     }));
   };
 
+  // [Urmee · VIVA] Janazah er naam/shomoy/jayga likhle message nijei lekha hoy.
   const setJanazahField = (field) => (event) => {
     const next = { ...janazah, [field]: event.target.value };
     setJanazah(next);
     setForm((current) => ({ ...current, body: janazahBody(next, mosqueName) })); // the template rewrites the message as the details are typed
   };
 
+  // [Urmee · VIVA] Image e type (jpg/png/webp) ar size (4MB) client e check kore, tarpor state e rakhe.
   const pickImage = (event) => {
     const file = event.target.files?.[0];
     setImageError("");
@@ -76,6 +81,7 @@ export default function AnnouncementEditor({ mosqueId, mosqueName = "", announce
     setImage(file);
   };
 
+  // [Urmee · VIVA] Save: FormData banay, create ba update call kore. API error (jemon 3 er beshi pin) field er niche dekhai. Scheduled post ke now/draft korle publish/unpublish endpoint use kori, karon update e API purono publish_at rekhe dey.
   const submit = async (event) => {
     event.preventDefault();
     if (saving) return;

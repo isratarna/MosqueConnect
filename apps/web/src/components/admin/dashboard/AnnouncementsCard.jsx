@@ -6,6 +6,7 @@ import { formatShortDate } from "../../../utils/dashboardFormat";
 import { announcementState, formatDhaka } from "../../../utils/announcementForm";
 import { useLocale } from "../../../hooks/useLocale";
 
+// [Urmee · VIVA] Chip er rong: draft hold, scheduled nil, published sobuj, expired dhushor.
 const CHIP_CLASS = {
   draft: "bg-warning-subtle text-dark border border-warning-subtle",
   scheduled: "bg-info-subtle text-info-emphasis border border-info-subtle",

@@ -14,6 +14,7 @@ export default function RamadanBanner({ mosque }) {
   const { t } = useLocale();
   const now = useNow(30_000); // a minute-level countdown is enough here
   const [timings, setTimings] = useState(null);
+  // [Urmee · VIVA] Banner shudhu tokhoni dekhay jokhon sobcheye kachher mosque Ramadan period e ache. Outside Ramadan kichu dekhay na.
   const active = Boolean(mosque?.period?.is_ramadan);
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function RamadanBanner({ mosque }) {
     return () => controller.abort();
   }, [active, mosque?.id]);
 
+  // [Urmee · VIVA] Ramadan na hole ba time na thakle kichu render korbo na.
   if (!active || !timings) return null;
   const { phase, targetAt } = ramadanPhase(timings, now);
   if (!targetAt) return null;

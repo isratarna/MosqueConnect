@@ -9,6 +9,7 @@ const LANGUAGE_OPTIONS = [
 
 // Segmented EN | বাং control. Changing the language is handled centrally in
 // src/i18n/index.js, which also saves the choice and updates <html lang>.
+// [Urmee · VIVA] EN | bang toggle. Click e i18n.changeLanguage(code) -- baki shob i18n/index.js e hoy.
 export default function LanguageSwitcher() {
   const { t, i18n } = useTranslation();
   const current = i18n.resolvedLanguage === "bn" ? "bn" : "en";
