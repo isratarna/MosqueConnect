@@ -39,6 +39,7 @@ import { fetchEventCollection } from "../utils/eventApi";
 import { formatEventDate, formatEventTimeRange, getEventMosqueName, isEventPast } from "../utils/eventFilters";
 import EstimatedBadge from "../components/EstimatedBadge";
 import EidBanner from "../components/EidBanner";
+import RamadanBanner from "../components/home/RamadanBanner";
 import CatchableJamaatCard, { JourneyEntryCard } from "../components/journey/CatchableJamaatCard";
 import { EventCardSkeleton, SkeletonRegion } from "../components/skeletons";
 
@@ -102,6 +103,8 @@ export default function Home() {
   return (
     <>
       <EidBanner />
+      {/* [Urmee · F4] "Iftar in 1h 12m at your nearest mosque", only while that mosque is in a Ramadan period. */}
+      <RamadanBanner mosque={nearest} />
       {user ? (
         <div className="mc-auth-experience mc-auth-nearby-experience">
           <MyMosques />

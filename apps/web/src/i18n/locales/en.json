@@ -493,7 +493,8 @@
     "updatedToday": "Updated today",
     "updatedYesterday": "Updated yesterday",
     "updatedDaysAgo": "Updated {{count, number}} days ago",
-    "updatedOn": "Updated on {{date}}"
+    "updatedOn": "Updated on {{date}}",
+    "periodLabel": "{{name}} · until {{date}}"
   },
   "verification": {
     "unverified": "Unverified",
@@ -1429,5 +1430,77 @@
     "system": "System",
     "light": "Light",
     "dark": "Dark"
+  },
+  "schedule": {
+    "prayer": "Prayer",
+    "adhan": "Adhan",
+    "jamaat": "Jamaat",
+    "saving": "Saving…",
+    "loading": "Loading schedule periods…",
+    "periodsTitle": "Schedule periods",
+    "periodsHelp": "Use a period when your times change for part of the year, such as a winter timetable or Ramadan. On those dates the period's times replace the default timetable above.",
+    "addPeriod": "Add period",
+    "noPeriods": "No periods yet. Your default timetable applies all year.",
+    "ramadanBadge": "Ramadan",
+    "editTimes": "Edit times",
+    "editDetails": "Edit details",
+    "close": "Close",
+    "delete": "Delete",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "e.g. Winter timetable",
+      "startsOn": "Starts on",
+      "endsOn": "Ends on",
+      "isRamadan": "This is a Ramadan period (adds Sehri, Iftar and Taraweeh times)",
+      "save": "Save period"
+    },
+    "deleteTitle": "Delete this period?",
+    "deleteMessage": "“{{name}}” and its times will be removed. The default timetable applies on those dates again.",
+    "deleteConfirm": "Delete period",
+    "times": {
+      "title": "Daily prayer times for {{name}}",
+      "help": "These replace the default timetable from {{from}} to {{to}}.",
+      "copyDefault": "Copy the default timetable",
+      "save": "Save prayer times",
+      "saved": "Prayer times saved."
+    },
+    "ramadan": {
+      "title": "Ramadan timetable",
+      "help": "Fill the end of Sehri, Iftar and Taraweeh for each day. Days left blank are not shown to visitors.",
+      "pasteTitle": "Paste from a spreadsheet",
+      "pasteHelp": "Copy the rows from Excel (Sehri, Iftar and, optionally, Taraweeh for each day; a date column is optional) and paste them here.",
+      "pasteApply": "Fill the table",
+      "pasteApplied": "{{count, number}} days filled.",
+      "pasteProblems": "{{count, number}} rows could not be read (check the date and times).",
+      "taraweehAll": "Same Taraweeh time every day",
+      "taraweehApply": "Apply to all days",
+      "day": "Day",
+      "sehri": "Sehri ends",
+      "iftar": "Iftar",
+      "taraweeh": "Taraweeh",
+      "previewTitle": "What visitors will see on {{date}}",
+      "previewPick": "Preview day",
+      "previewEmpty": "No times entered for this day yet.",
+      "tooLong": "This period is longer than 31 days, and only 31 days can be saved at once.",
+      "save": "Save Ramadan timings",
+      "saved": "Ramadan timings saved."
+    }
+  },
+  "ramadan": {
+    "title": "Ramadan timetable",
+    "period": "{{name}} · until {{date}}",
+    "iftarIn": "Iftar in",
+    "sehriEndsIn": "Sehri ends in",
+    "countdown": "{{hours, number}}h {{minutes, number}}m {{seconds, number}}s",
+    "done": "The Ramadan timetable has ended.",
+    "sehri": "Sehri ends",
+    "iftar": "Iftar",
+    "taraweeh": "Taraweeh",
+    "day": "Day",
+    "today": "Today",
+    "showMonth": "Show the whole month",
+    "hideMonth": "Hide the month",
+    "bannerIftar": "Iftar in {{time}} at {{mosque}}",
+    "bannerSehri": "Sehri ends in {{time}} at {{mosque}}"
   }
 }
