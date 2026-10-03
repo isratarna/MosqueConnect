@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'message',
     'reference_type',
     'reference_id',
+    'link',
     'is_read',
 ])]
 class Notification extends Model
@@ -33,6 +34,16 @@ class Notification extends Model
 
     public const TYPE_SYSTEM = 'system';
 
+    public const TYPE_EID = 'eid';
+
+    public const TYPE_TEAM = 'team';
+
+    public const TYPE_SUGGESTION = 'suggestion';
+
+    public const TYPE_COMPLAINT = 'complaint';
+
+    public const TYPE_GOODS_DONATION = 'goods_donation';
+
     public const REFERENCE_EVENT = 'event';
 
     public const REFERENCE_ANNOUNCEMENT = 'announcement';
@@ -41,12 +52,29 @@ class Notification extends Model
 
     public const REFERENCE_CAMPAIGN = 'campaign';
 
+    public const REFERENCE_EID_JAMAAT = 'eid_jamaat';
+
+    public const REFERENCE_MOSQUE_MEMBER = 'mosque_member';
+
+    public const REFERENCE_SUGGESTION = 'mosque_edit_suggestion';
+
+    public const REFERENCE_BROADCAST = 'broadcast';
+
+    public const REFERENCE_COMPLAINT = 'complaint';
+
+    public const REFERENCE_GOODS_DONATION = 'goods_donation';
+
     public const TYPES = [
         self::TYPE_EVENT,
         self::TYPE_ANNOUNCEMENT,
         self::TYPE_PRAYER_SCHEDULE,
         self::TYPE_CAMPAIGN,
         self::TYPE_SYSTEM,
+        self::TYPE_EID,
+        self::TYPE_TEAM,
+        self::TYPE_SUGGESTION,
+        self::TYPE_COMPLAINT,
+        self::TYPE_GOODS_DONATION,
     ];
 
     /**

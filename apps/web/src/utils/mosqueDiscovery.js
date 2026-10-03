@@ -90,6 +90,8 @@ export function normalizeMosque(record, origin, options = {}) {
     jumuah_sessions: jumuahSessions,
     prayer_schedule: prayerSchedule,
     prayer: record.prayer && typeof record.prayer === "object" ? record.prayer : {},
+    prayer_sources: record.prayer_sources && typeof record.prayer_sources === "object" ? record.prayer_sources : {},
+    eid_jamaats: Array.isArray(record.eid_jamaats) ? record.eid_jamaats : [],
   };
 }
 
@@ -287,6 +289,9 @@ export async function fetchFollowedMosques() {
   if (response.status === 401 || response.status === 403) return [];
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.message || translate("error.followedLoad"));
-  return Array.isArray(payload.data) ? payload.data : [];
+  // Same shape as every other mosque in the app, so cards can render them.
+  return Array.isArray(payload.data)
+    ? payload.data.map((record) => normalizeMosque(record, null, { requireDistance: false })).filter(Boolean)
+    : [];
 }
 

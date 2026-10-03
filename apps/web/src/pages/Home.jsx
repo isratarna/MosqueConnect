@@ -23,15 +23,21 @@ import {
 } from "lucide-react";
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
 import { useLocale } from "../hooks/useLocale";
-import { IMPACT_STATS } from "../data/mosques";
+import { fetchPublicStats, sendContactMessage } from "../utils/communityHubApi";
+import { impactTilesFrom } from "../utils/communityHubFormat";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import { useAuth } from "../context/AuthContext";
 import { DEFAULT_CENTER } from "../config";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
 import { directionsUrl } from "../utils/mosqueDiscovery";
-import { dhuhrJamaatLabel } from "../utils/prayerTime";
+import { dhuhrJamaatLabel, isEstimatedPrayer } from "../utils/prayerTime";
 import { formatNumber } from "../utils/intl";
+import EstimatedBadge from "../components/EstimatedBadge";
+import EidBanner from "../components/EidBanner";
+
+const MIN_CARD_WIDTH = 240;
+const CARD_GAP = 16;
 
 export default function Home() {
   const { t } = useLocale();
@@ -62,6 +68,7 @@ export default function Home() {
 
   return (
     <>
+      <EidBanner />
       {user ? (
         <div className="mc-auth-nearby-experience">
           <AuthenticatedNearbySection
@@ -270,14 +277,37 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const [isInteracting, setIsInteracting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const pointerStartX = useRef(0);
-  const [cardWidth, setCardWidth] = useState(260);
+  const viewportRef = useRef(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
 
   useEffect(() => {
-    const handleResize = () => setCardWidth(window.innerWidth < 768 ? 235 : 260);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const viewport = viewportRef.current;
+    if (!viewport) return undefined;
+
+    const measure = () => setViewportWidth(viewport.clientWidth);
+    measure();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    return () => observer.disconnect();
   }, []);
+
+  // As many cards as fit at their minimum width, kept odd so the active card
+  // stays centred, then stretched so the row spans the viewport edge to edge.
+  const fittingCards = Math.max(1, Math.floor((viewportWidth + CARD_GAP) / (MIN_CARD_WIDTH + CARD_GAP)));
+  const visibleCount = Math.max(1, Math.min(
+    fittingCards % 2 ? fittingCards : fittingCards - 1,
+    nearby.length % 2 ? nearby.length : nearby.length - 1,
+  ));
+  const maxOffset = (visibleCount - 1) / 2;
+  const slideWidth = viewportWidth
+    ? (viewportWidth - (visibleCount - 1) * CARD_GAP) / visibleCount
+    : MIN_CARD_WIDTH;
 
   useEffect(() => {
     if (!nearby.length) {
@@ -411,6 +441,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
             </div>
 
             <div
+              ref={viewportRef}
               className={`mc-nearby-showcase__viewport ${isInteracting ? "is-dragging" : ""}`}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -429,12 +460,11 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                 const absOffset = Math.abs(normalizedOffset);
                 const isActive = normalizedOffset === 0;
-                const isVisible = absOffset <= 2;
+                const isVisible = absOffset <= maxOffset;
 
                 if (!isVisible) return null;
 
-                const offsetX = normalizedOffset * 278 + dragOffset * 0.55;
-                const opacity = isActive ? 1 : 0.68;
+                const offsetX = (normalizedOffset + maxOffset) * (slideWidth + CARD_GAP) + dragOffset * 0.55;
                 const zIndex = isActive ? 10 : 5 - absOffset;
 
                 return (
@@ -442,8 +472,10 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                     key={mosque.id}
                     className={`mc-nearby-slide ${isActive ? "is-active" : ""}`}
                     style={{
-                      transform: `translate(calc(-50% + ${offsetX}px), -50%) scale(${isActive ? 1.03 : 0.94})`,
-                      opacity,
+                      left: 0,
+                      width: `${slideWidth}px`,
+                      transform: `translate(${offsetX}px, -50%)`,
+                      opacity: 1,
                       zIndex,
                       transition: isInteracting ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
                       cursor: isActive ? undefined : "pointer",
@@ -489,7 +521,10 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
                           <div className="mc-next-prayer mb-2">
                             <span>{t("home.carousel.nextJamat")}</span>
-                            <strong>{dhuhrJamaatLabel(mosque.prayer, locale, t("prayer.dhuhr")) || t("home.carousel.timesUnavailable")}</strong>
+                            <strong>
+                              {dhuhrJamaatLabel(mosque.prayer, locale, t("prayer.dhuhr")) || t("home.carousel.timesUnavailable")}
+                              {isEstimatedPrayer(mosque.prayer_sources, "Dhuhr") && <EstimatedBadge className="ms-1" />}
+                            </strong>
                           </div>
                         </div>
 
@@ -575,6 +610,16 @@ function SupportSection() {
 function ImpactSection() {
   const { t } = useLocale();
   const impactIcons = [Landmark, UsersRound, Heart, HandHeart];
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchPublicStats({ signal: controller.signal })
+      .then((data) => setStats(impactTilesFrom(data.data)))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  // Real numbers only: until they load (or if they can't), the section stays hidden.
+  if (!stats?.length) return null;
   return (
     <section id="impact" className="mc-impact mc-motion-section mc-atmospheric-section" data-mc-parallax="0.18">
       <div className="container">
@@ -583,7 +628,7 @@ function ImpactSection() {
           <p>{t("home.impact.copy")}</p>
         </div>
         <div className="row text-center g-0 mc-impact__stats">
-          {IMPACT_STATS.map((s, index) => {
+          {stats.map((s, index) => {
             const Icon = impactIcons[index];
             return (
               <div className="col-6 col-lg-3" key={s.key}>
@@ -601,10 +646,28 @@ function ImpactSection() {
 
 function AboutSection() {
   const { t } = useLocale();
-  const onSubmit = (e) => {
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+  const onSubmit = async (e) => {
     e.preventDefault();
-    e.currentTarget.reset();
-    alert(t("home.about.thanks"));
+    const formElement = e.currentTarget;
+    const form = new FormData(formElement);
+    setSending(true);
+    setResult(null);
+    try {
+      const data = await sendContactMessage({
+        name: form.get("name").trim(),
+        email: form.get("email").trim(),
+        message: form.get("message").trim(),
+        website: form.get("website") || "",
+      });
+      formElement.reset();
+      setResult({ ok: true, text: data.message });
+    } catch (err) {
+      setResult({ ok: false, text: err.status === 429 ? t("home.about.rateLimited") : err.message });
+    } finally {
+      setSending(false);
+    }
   };
   return (
     <section id="about" className="py-5 mc-motion-section mc-atmospheric-section" data-mc-parallax="0.16">
@@ -624,10 +687,13 @@ function AboutSection() {
             <div className="card mc-card p-4">
               <h3 className="mc-form-title">{t("home.about.contactTitle")}</h3>
               <form onSubmit={onSubmit}>
-                <div className="mb-3"><input className="form-control" placeholder={t("home.about.namePlaceholder")} required /></div>
-                <div className="mb-3"><input type="email" className="form-control" placeholder={t("home.about.emailPlaceholder")} required /></div>
-                <div className="mb-3"><textarea className="form-control" rows="3" placeholder={t("home.about.messagePlaceholder")} required /></div>
-                <button className="btn btn-mc w-100" type="submit">{t("home.about.send")}</button>
+                <div className="mb-3"><input name="name" className="form-control" placeholder={t("home.about.namePlaceholder")} aria-label={t("home.about.namePlaceholder")} required maxLength={100} /></div>
+                <div className="mb-3"><input name="email" type="email" className="form-control" placeholder={t("home.about.emailPlaceholder")} aria-label={t("home.about.emailPlaceholder")} required /></div>
+                <div className="mb-3"><textarea name="message" className="form-control" rows="3" placeholder={t("home.about.messagePlaceholder")} aria-label={t("home.about.messagePlaceholder")} required minLength={10} maxLength={3000} /></div>
+                {/* Honeypot: hidden from people; bots that fill it in are rejected. */}
+                <div className="mc-honeypot" aria-hidden="true"><label htmlFor="contact-website">Website</label><input id="contact-website" name="website" tabIndex={-1} autoComplete="off" /></div>
+                {result && <div className={`alert ${result.ok ? "alert-success" : "alert-danger"} py-2 small`} role={result.ok ? "status" : "alert"}>{result.text}</div>}
+                <button className="btn btn-mc w-100" type="submit" disabled={sending}>{sending ? t("home.about.sending") : t("home.about.send")}</button>
               </form>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, CircleX, Edit3, Eye, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import ConfirmDialog from "../ConfirmDialog";
 import CampaignProgress from "../campaigns/CampaignProgress";
 import CampaignStatusBadge from "../campaigns/CampaignStatusBadge";
 import {
@@ -27,6 +28,7 @@ export default function CampaignManager({ mosqueId }) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   const load = useCallback((signal) => {
     if (!mosqueId) return Promise.resolve();
@@ -70,10 +72,13 @@ export default function CampaignManager({ mosqueId }) {
     catch (requestError) { setError(requestError.message || t("admin.campaigns.statusFailed")); }
   };
 
-  const remove = async (campaign) => {
-    if (!window.confirm(t("admin.campaigns.confirmDelete", { title: campaign.title }))) return;
-    try { await deleteAdminCampaign(mosqueId, campaign.id); setNotice(t("admin.campaigns.deleted")); setReviewing(null); await load(); }
-    catch (requestError) { setError(requestError.message || t("admin.campaigns.deleteFailed")); }
+  const remove = (campaign) => setDeleting(campaign);
+
+  const confirmRemove = async () => {
+    await deleteAdminCampaign(mosqueId, deleting.id);
+    setNotice(t("admin.campaigns.deleted"));
+    setReviewing(null);
+    await load();
   };
 
   if (!mosqueId) return <div className="alert alert-warning">{t("admin.campaigns.noMosque")}</div>;
@@ -108,6 +113,7 @@ export default function CampaignManager({ mosqueId }) {
           </article>
         ))}
       </div>
+      {deleting && <ConfirmDialog title={t("admin.campaigns.deleteHeading")} message={t("admin.campaigns.confirmDeleteLong", { title: deleting.title })} confirmLabel={t("admin.campaigns.deleteTitle")} tone="danger" onConfirm={confirmRemove} onClose={() => setDeleting(null)} />}
     </div>
   );
 }

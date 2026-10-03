@@ -3,6 +3,7 @@ import { CheckCircle, Clock3, Star } from "lucide-react";
 import { useLocale } from "../hooks/useLocale";
 import { formatClockTime, parseClockTime } from "../utils/prayerTime";
 import { formatTimeOfDay } from "../utils/intl";
+import EstimatedBadge from "./EstimatedBadge";
 
 // `name` is the key the API uses for the prayer; `labelKey` is its translation.
 const DAILY_PRAYERS = [
@@ -68,6 +69,7 @@ export default function PrayerTimeline({ prayers = {}, schedule = [] }) {
         labelKey,
         time: jamaat ? formatClockTime(jamaat, locale) : t("common.dash"),
         adhan: details?.adhan_time ? formatClockTime(details.adhan_time, locale) : null,
+        estimated: details?.source === "calculated",
         date: dt,
       };
     });
@@ -86,6 +88,7 @@ export default function PrayerTimeline({ prayers = {}, schedule = [] }) {
   }, [prayers, scheduleByLabel, nowTick, locale, t]);
 
   const next = list.find((l) => l.status === "next") || list[0];
+  const hasEstimated = list.some((it) => it.estimated);
   const remaining = next && next.date ? next.date.getTime() - now.getTime() : 0;
 
   return (
@@ -105,7 +108,7 @@ export default function PrayerTimeline({ prayers = {}, schedule = [] }) {
             key={it.name}
             className={"mc-prayer-item bg-light rounded-3 me-2 " + (it.status ? `mc-${it.status}` : "")}
             role="group"
-            aria-label={t("prayer.jamaatAria", { name: t(it.labelKey), time: it.time, status: t(STATUS_LABEL_KEYS[it.status] || STATUS_LABEL_KEYS.upcoming) })}
+            aria-label={t(it.estimated ? "prayer.jamaatAriaEstimated" : "prayer.jamaatAria", { name: t(it.labelKey), time: it.time, status: t(STATUS_LABEL_KEYS[it.status] || STATUS_LABEL_KEYS.upcoming) })}
           >
             <small className="text-muted d-block">{t(it.labelKey)}</small>
             <div className="d-flex align-items-center justify-content-center gap-2">
@@ -121,12 +124,20 @@ export default function PrayerTimeline({ prayers = {}, schedule = [] }) {
             {it.adhan && (
               <div className="small text-muted mt-1">{t("prayer.adhan", { time: it.adhan })}</div>
             )}
+            {it.estimated && <EstimatedBadge className="mt-1" />}
             {it.status === "next" && it.date && (
               <div className="small text-muted mt-1">{t("prayer.inTime", { time: formatRemaining(it.date.getTime() - now.getTime(), t) })}</div>
             )}
           </div>
         ))}
       </div>
+
+      {hasEstimated && (
+        <p className="small text-muted mt-2 mb-0">
+          Times marked <EstimatedBadge /> are calculated from the mosque's location. Jamaat times are
+          approximate until the mosque publishes its own.
+        </p>
+      )}
     </div>
   );
 }

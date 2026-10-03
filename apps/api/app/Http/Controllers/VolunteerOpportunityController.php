@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\VolunteerOpportunityResource;
 use App\Models\Mosque;
+use App\Models\VolunteerApplication;
 use App\Models\VolunteerOpportunity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -16,6 +17,10 @@ class VolunteerOpportunityController extends Controller
     {
         $opportunities = VolunteerOpportunity::query()
             ->with(['mosque', 'creator'])
+            ->withCount([
+                'applications as registrations_count' => fn ($query) => $query->whereIn('status', [VolunteerApplication::STATUS_PENDING, VolunteerApplication::STATUS_ACCEPTED]),
+                'applications as accepted_count' => fn ($query) => $query->where('status', VolunteerApplication::STATUS_ACCEPTED),
+            ])
             ->available()
             ->orderBy('opportunity_date')
             ->orderBy('start_time')
@@ -35,10 +40,14 @@ class VolunteerOpportunityController extends Controller
 
     public function adminIndex(Mosque $mosque): AnonymousResourceCollection
     {
-        Gate::authorize('view', $mosque);
+        Gate::authorize('manageContent', $mosque);
 
         $opportunities = $mosque->volunteerOpportunities()
             ->with(['mosque', 'creator'])
+            ->withCount([
+                'applications as registrations_count' => fn ($query) => $query->whereIn('status', [VolunteerApplication::STATUS_PENDING, VolunteerApplication::STATUS_ACCEPTED]),
+                'applications as accepted_count' => fn ($query) => $query->where('status', VolunteerApplication::STATUS_ACCEPTED),
+            ])
             ->orderByDesc('opportunity_date')
             ->orderByDesc('id')
             ->get();
@@ -50,7 +59,10 @@ class VolunteerOpportunityController extends Controller
     {
         Gate::authorize('view', $volunteerOpportunity);
 
-        return new VolunteerOpportunityResource($volunteerOpportunity->load(['mosque', 'creator', 'registeredUsers']));
+        return new VolunteerOpportunityResource($volunteerOpportunity->load(['mosque', 'creator', 'registeredUsers'])->loadCount([
+            'applications as registrations_count' => fn ($query) => $query->whereIn('status', [VolunteerApplication::STATUS_PENDING, VolunteerApplication::STATUS_ACCEPTED]),
+            'applications as accepted_count' => fn ($query) => $query->where('status', VolunteerApplication::STATUS_ACCEPTED),
+        ]));
     }
 
     public function store(Mosque $mosque): JsonResponse

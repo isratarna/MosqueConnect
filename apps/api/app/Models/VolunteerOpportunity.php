@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'mosque_id',
@@ -66,11 +67,17 @@ class VolunteerOpportunity extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function applications(): HasMany
+    {
+        return $this->hasMany(VolunteerApplication::class, 'volunteer_opportunity_id');
+    }
+
     public function registeredUsers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'volunteer_registrations')
-            ->withPivot('id') // if id exists
-            ->withTimestamps();
+        return $this->belongsToMany(User::class, 'volunteer_applications')
+            ->withPivot(['id', 'status', 'created_at', 'reviewed_at', 'cancelled_at'])
+            ->withTimestamps()
+            ->wherePivot('status', '!=', VolunteerApplication::STATUS_CANCELLED);
     }
 
     public function scopeAvailable(Builder $query): Builder

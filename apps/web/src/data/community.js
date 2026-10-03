@@ -6,6 +6,7 @@ export const COMMUNITY_CATEGORIES = [
   { key: "event", labelKey: "community.categories.event" },
   { key: "blood", labelKey: "community.categories.blood" },
   { key: "volunteer", labelKey: "community.categories.volunteer" },
+  { key: "lost_found", labelKey: "community.categories.lost_found" },
 ];
 
 // Stands in for a mosque name on blood requests, which have no mosque. It is

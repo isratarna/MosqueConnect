@@ -5051,12 +5051,12 @@ main {
 
 /*
   The carousel shares the map's measure so the cards line up with the panel
-  above them. The mask fades slides out at those edges rather than letting the
-  overflow clip chop one off mid-card.
+  above them. Home.jsx sizes the slides so a whole number of cards spans that
+  measure exactly, so the outer cards sit flush with the map edges.
 */
 .mc-nearby-showcase__viewport {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 /* ---------- alignment within card grids ---------- */
@@ -5483,4 +5483,1015 @@ body:lang(bn) {
 :lang(bn) .mc-prayer-cell .h5 {
   font-size: 1rem;
   line-height: 1.35;
+}
+/* ---------- calculated prayer times ---------- */
+.mc-estimated {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border: 1px dashed var(--mc-gold);
+  border-radius: 999px;
+  color: #8a6416;
+  background: #fff8e8;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  text-transform: lowercase;
+  vertical-align: middle;
+  cursor: help;
+}
+
+/* ---------- Eid ---------- */
+.mc-eid-banner {
+  padding: 0.65rem 0;
+  background: linear-gradient(90deg, var(--mc-green-dark), var(--mc-green));
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.mc-eid-banner svg {
+  color: var(--mc-gold);
+  flex-shrink: 0;
+}
+
+.mc-eid-jamaat {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(18, 119, 92, 0.15);
+  border-radius: 0.75rem;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mc-eid-jamaat.is-selectable {
+  cursor: pointer;
+}
+
+.mc-eid-jamaat.is-active {
+  border-color: var(--mc-green);
+  box-shadow: 0 0 0 3px rgba(18, 119, 92, 0.12);
+}
+
+.mc-eid-jamaat__time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 5.5rem;
+  padding: 0.5rem;
+  border-radius: 0.6rem;
+  background: var(--mc-soft);
+  color: var(--mc-green-dark);
+  text-align: center;
+}
+
+.mc-eid-jamaat__time strong {
+  font-size: 1.1rem;
+  white-space: nowrap;
+}
+
+.mc-eid-jamaat__time span {
+  font-size: 0.78rem;
+  color: #5c6b67;
+}
+
+.mc-eid-jamaat__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mc-eid-card {
+  border-top: 3px solid var(--mc-gold);
+}
+
+.mc-eid-map {
+  min-height: 420px;
+  position: sticky;
+  top: 1rem;
+}
+
+.mc-location-picker {
+  height: 280px;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+@media (max-width: 575.98px) {
+  .mc-eid-jamaat {
+    flex-direction: column;
+  }
+
+  .mc-eid-jamaat__time {
+    flex-direction: row;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .mc-eid-map {
+    min-height: 300px;
+    position: static;
+  }
+}
+
+/* ---------- mosque admin dashboard ---------- */
+.mc-dash {
+  --mc-series-1: #2a78d6;
+  --mc-series-2: #eb6834;
+  --mc-series-3: #1baf7a;
+}
+
+.mc-dash-layout {
+  display: block;
+}
+
+.mc-dash-main {
+  min-width: 0;
+}
+
+.mc-dash-offcanvas {
+  --bs-offcanvas-width: min(300px, 85vw);
+}
+
+.mc-dash-sidebar .nav-link,
+.mc-dash-offcanvas .nav-link {
+  border-radius: 0.5rem;
+  font-size: 0.92rem;
+}
+
+.mc-dash-sidebar .nav-link.active,
+.mc-dash-offcanvas .nav-link.active {
+  background: var(--mc-green);
+  color: #fff;
+}
+
+.mc-dash-sidebar .nav-link:not(.active):hover,
+.mc-dash-offcanvas .nav-link:not(.active):hover {
+  background: var(--mc-soft);
+}
+
+@media (min-width: 992px) {
+  .mc-dash-layout {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .mc-dash-sidebar {
+    position: sticky;
+    top: 88px;
+  }
+}
+
+.mc-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.mc-dash-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 0.75rem;
+}
+
+.mc-dash-card {
+  border: 1px solid var(--mc-line, #e5e1da);
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(53, 39, 29, 0.05);
+}
+
+.mc-dash-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.mc-dash-card__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: #fdf2f0;
+  color: #8a2b14;
+  font-size: 0.9rem;
+}
+
+.mc-dash-list > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--mc-line, #eee);
+}
+
+.mc-dash-list > li:last-child {
+  border-bottom: 0;
+}
+
+.mc-dash-subhead {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mc-muted, #6c757d);
+  margin-bottom: 0.4rem;
+}
+
+.mc-dash-next {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--mc-soft);
+  font-size: 0.92rem;
+}
+
+.mc-dash-prayers tr.is-next > * {
+  background: var(--mc-soft);
+  color: var(--mc-green-dark);
+  font-weight: 700;
+}
+
+.mc-dash-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0;
+  color: var(--mc-muted, #6c757d);
+}
+
+.mc-dash-checklist li.is-done svg {
+  color: #1d7f4e;
+}
+
+.mc-dash-progress {
+  background: var(--mc-green);
+}
+
+.mc-dash-hero {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-dash-spark {
+  flex: 1 1 180px;
+  max-width: 260px;
+}
+
+.mc-dash-photo {
+  aspect-ratio: 16 / 7;
+  max-width: 520px;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: var(--mc-soft);
+}
+
+.mc-dash-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mc-dash-photo__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 1rem;
+  color: var(--mc-muted, #6c757d);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* charts */
+.mc-chart {
+  position: relative;
+  width: 100%;
+}
+
+.mc-chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.mc-chart svg:focus-visible {
+  outline: 2px solid var(--mc-green);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.mc-chart-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.mc-chart-dot {
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.mc-chart-grid {
+  stroke: #ece8e1;
+  stroke-width: 1;
+}
+
+.mc-chart-baseline {
+  stroke: #cfc8bd;
+  stroke-width: 1;
+}
+
+.mc-chart-crosshair {
+  stroke: #8c857b;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.mc-chart-tick,
+.mc-chart-label {
+  fill: var(--mc-muted, #6c757d);
+  font-size: 11px;
+}
+
+.mc-chart-label {
+  fill: var(--mc-ink);
+  font-weight: 600;
+}
+
+.mc-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.mc-chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mc-chart-legend__key,
+.mc-chart-tooltip__key {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.mc-chart-tooltip {
+  position: absolute;
+  min-width: 140px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-line, #e5e1da);
+  border-radius: 0.5rem;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  font-size: 0.82rem;
+  pointer-events: none;
+}
+
+/* ---------- mosque teams and community corrections ---------- */
+.mc-team-invite {
+  background: var(--mc-soft);
+}
+
+.mc-trusted-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #fff6e0;
+  color: #7a5310;
+  border: 1px solid var(--mc-gold);
+  font-weight: 600;
+}
+
+.mc-suggestion {
+  background: #fff;
+}
+
+.mc-suggestion__diff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.mc-suggestion__before,
+.mc-suggestion__after {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.mc-suggestion__before {
+  background: #fdf2f0;
+  color: #6b2a1a;
+}
+
+.mc-suggestion__after {
+  background: #e9f5ef;
+  color: var(--mc-green-dark);
+  font-weight: 600;
+}
+
+.mc-suggestion__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.mc-suggestion__arrow {
+  align-self: center;
+  color: var(--mc-muted, #6c757d);
+}
+
+.mc-suggestion__note {
+  margin: 0.5rem 0 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--mc-gold);
+  font-size: 0.9rem;
+  color: #555;
+}
+
+@media (max-width: 575.98px) {
+  .mc-suggestion__diff {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mc-suggestion__arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+}
+
+.mc-about-list {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+}
+
+.mc-about-list dt {
+  font-weight: 600;
+  color: var(--mc-muted, #6c757d);
+}
+
+.mc-about-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.mc-suggest-link {
+  font-size: 0.85rem;
+}
+
+.mc-community-confirmed {
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- Maintenance notice ---------- */
+.mc-maintenance-banner {
+  background: #fff8e1;
+  color: #664d03;
+  border-color: #ffe69c !important;
+}
+
+/* ---------- Super-admin console ---------- */
+.mc-doc-viewer {
+  width: 100%;
+  height: 60vh;
+  min-height: 420px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  background: #f8f9fa;
+}
+
+.mc-doc-viewer-image {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  margin: 0 auto;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  object-fit: contain;
+}
+
+/* A dialog opened from another dialog sits above it and dims it. */
+.modal ~ .modal-backdrop {
+  z-index: 1060;
+}
+
+.modal ~ .modal-backdrop ~ .modal {
+  z-index: 1065;
+}
+
+/* Community hub: lost & found cards and the contact form honeypot */
+.mc-lost-found-card__photo { height: 160px; object-fit: cover; }
+.mc-lost-found-card__photo--empty { display: flex; align-items: center; justify-content: center; background: var(--bs-light, #f4f5f4); color: #9aa39d; border-radius: inherit; }
+.mc-lost-found-detail__photo { max-height: 420px; object-fit: cover; }
+.mc-line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mc-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+/* ==========================================================================
+   Dark theme
+   Applied by <html data-bs-theme="dark"> (see utils/theme.js and the inline
+   script in index.html). Bootstrap 5.3 flips its own components; this block
+   re-points the site's tokens and the surfaces that were painted with fixed
+   light colours.
+   ========================================================================== */
+:root[data-bs-theme="dark"] {
+  --mc-ink: #ece6dd;
+  --mc-muted: #a9a094;
+  --mc-ivory: #16130f;
+  --mc-paper: #1f1b16;
+  --mc-line: #3b342b;
+  --mc-soft: #2a221b;
+  --mc-surface: #211d18;
+  --mc-surface-raised: #2a251f;
+  /* Lighter than the light theme's rust so links and outlines stay readable on
+     dark surfaces; filled buttons keep white text at about 4:1. */
+  --mc-rust: #d0622f;
+  --mc-rust-dark: #e58a5c;
+  --mc-gold: #e0944f;
+  --mc-glass: rgba(33, 29, 24, 0.86);
+  --mc-glass-strong: rgba(33, 29, 24, 0.94);
+  --mc-glass-line: rgba(255, 238, 215, 0.13);
+  --mc-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.35);
+  --mc-shadow-lift: 0 16px 32px rgba(0, 0, 0, 0.45);
+  --mc-ring: 0 0 0 3px rgba(224, 138, 92, 0.35);
+
+  --bs-body-bg: var(--mc-ivory);
+  --bs-body-color: var(--mc-ink);
+  --bs-secondary-color: var(--mc-muted);
+  --bs-tertiary-bg: var(--mc-surface-raised);
+  --bs-border-color: var(--mc-line);
+  --bs-link-color: var(--mc-rust-dark);
+  --bs-link-hover-color: #f3a47c;
+}
+
+/* The page texture is a light photograph; multiplying it into a dark base turns
+   it into a faint texture instead of a bright wash. */
+:root[data-bs-theme="dark"] body {
+  background-blend-mode: multiply;
+  background-color: var(--mc-ivory);
+}
+
+/* Navigation */
+:root[data-bs-theme="dark"] .mc-navbar,
+:root[data-bs-theme="dark"] .mc-navbar.is-scrolled {
+  background: rgba(22, 19, 15, 0.94);
+  border-bottom-color: var(--mc-glass-line);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .nav-link,
+:root[data-bs-theme="dark"] .navbar-dark .navbar-nav .nav-link {
+  color: #d8d1c7;
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .nav-link:hover,
+:root[data-bs-theme="dark"] .mc-navbar .nav-link.active,
+:root[data-bs-theme="dark"] .navbar-dark .navbar-nav .nav-link:hover,
+:root[data-bs-theme="dark"] .navbar-dark .navbar-nav .nav-link.active {
+  color: var(--mc-rust-dark);
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .navbar-toggler {
+  border-color: var(--mc-line);
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .navbar-toggler-icon {
+  filter: invert(90%);
+}
+
+:root[data-bs-theme="dark"] .mc-navbar .navbar-collapse {
+  background: rgba(22, 19, 15, 0.98);
+}
+
+/* Segmented language and theme controls */
+:root[data-bs-theme="dark"] .mc-lang-toggle {
+  background: var(--mc-surface);
+}
+
+:root[data-bs-theme="dark"] .mc-lang-toggle__option:hover:not(.is-active) {
+  background: var(--mc-surface-raised);
+}
+
+.mc-theme-toggle .mc-lang-toggle__option {
+  align-items: center;
+  display: inline-flex;
+  padding: 0.45rem 0.6rem;
+}
+
+/* Cards, panels and other surfaces painted with fixed light colours */
+:root[data-bs-theme="dark"] :is(
+  .mc-card, .mc-auth-card, .mc-nearby-card, .mc-notif-menu, .mc-notification-item,
+  .mc-notifications-page__panel, .mc-hero__search-input, .mc-hero__nearby, .mc-location-card,
+  .mc-support-tile, .mc-custom-support, .mc-support-page__card, .mc-community-filter,
+  .mc-community-card, .mc-community-empty, .mc-event-card, .mc-event-state,
+  .mc-event-discovery-controls, .mc-event-details__content, .mc-event-details__info,
+  .mc-event-details__source, .mc-event-details__state, .mc-announcement-details__content,
+  .mc-announcement-details__info, .mc-announcement-details__source,
+  .mc-announcement-details__not-found, .mc-support-action__card, .mc-support-action__empty,
+  .mc-admin-campaign-form, .mc-admin-campaign, .mc-donation-review, .mc-dash-card,
+  .mc-suggestion, .mc-doc-viewer, .mc-auth-home-map__feedback, .mc-impact .container
+) {
+  background: var(--mc-glass-strong);
+  border-color: var(--mc-glass-line);
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-notification-item:hover, .mc-notification-item.is-unread, .mc-prayer-item.mc-next, .btn-outline-mc:hover, .btn-outline-mc:focus) {
+  background: var(--mc-surface-raised);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-feature-icon, .mc-custom-support__icon, .mc-location-card__icon, .mc-notification-item__icon, .mc-modal__close, .mc-badge) {
+  background: var(--mc-soft);
+  border-color: var(--mc-line);
+}
+
+:root[data-bs-theme="dark"] .mc-auth-nearby-experience {
+  background: var(--mc-ivory);
+}
+
+/* Hero: the same left-to-right fade, in dark, with the photo dimmed */
+:root[data-bs-theme="dark"] .mc-hero::after {
+  background:
+    linear-gradient(90deg, rgba(22, 19, 15, 0.99) 0%, rgba(22, 19, 15, 0.9) 38%, rgba(22, 19, 15, 0.25) 72%),
+    linear-gradient(rgba(22, 19, 15, 0.45), rgba(22, 19, 15, 0.45)),
+    url("/uiRef.jpeg") center calc(30% + var(--mc-parallax-y, 0px)) / cover;
+}
+
+/* Bootstrap utilities with fixed light values */
+:root[data-bs-theme="dark"] .bg-light {
+  background-color: var(--mc-surface-raised) !important;
+}
+
+:root[data-bs-theme="dark"] .bg-white {
+  background-color: var(--mc-surface) !important;
+}
+
+:root[data-bs-theme="dark"] :is(.text-dark, .text-body) {
+  color: var(--mc-ink) !important;
+}
+
+:root[data-bs-theme="dark"] :is(.btn-light, .table-light, .alert-light) {
+  --bs-btn-bg: var(--mc-surface-raised);
+  --bs-btn-color: var(--mc-ink);
+  --bs-btn-border-color: var(--mc-line);
+  --bs-btn-hover-bg: var(--mc-soft);
+  --bs-btn-hover-color: var(--mc-ink);
+  --bs-table-bg: var(--mc-surface-raised);
+  --bs-table-color: var(--mc-ink);
+  --bs-alert-bg: var(--mc-surface-raised);
+  --bs-alert-color: var(--mc-ink);
+  --bs-alert-border-color: var(--mc-line);
+}
+
+:root[data-bs-theme="dark"] .border-light {
+  border-color: var(--mc-line) !important;
+}
+
+/* The map is a third-party widget with its own light tiles; soften them. */
+:root[data-bs-theme="dark"] .mc-map .gm-style {
+  filter: brightness(0.82) contrast(1.05);
+}
+
+/* Page wrappers that laid a pale veil over the texture */
+:root[data-bs-theme="dark"] :is(.mc-notifications-page, .mc-support-section, .mc-support-page, .mc-community-page, .mc-support-action) {
+  background: rgba(22, 19, 15, 0.72);
+}
+
+:root[data-bs-theme="dark"] .mc-auth-nearby-experience + .mc-support-section {
+  background: linear-gradient(180deg, #1c1813 0%, rgba(22, 19, 15, 0.78) 4rem, rgba(22, 19, 15, 0.72) 100%);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-community-filter__category, .mc-auth-home-map__label, .mc-auth-home-map__browse, .mc-campaign-progress__track) {
+  background: var(--mc-surface-raised);
+  border-color: var(--mc-line);
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] .mc-map {
+  background: var(--mc-surface);
+}
+
+/* Text that was a fixed dark grey or green on a light surface */
+:root[data-bs-theme="dark"] :is(
+  .mc-hero__copy, .mc-notification-item.is-read, .mc-campaign-card__meta, .mc-campaign-card__facts,
+  .mc-campaign-progress__figures, .mc-campaign-details__summary, .mc-eid-jamaat__time span,
+  .mc-suggestion__note, .mc-map-placeholder
+) {
+  color: var(--mc-muted);
+}
+
+:root[data-bs-theme="dark"] :is(
+  .mc-campaign-card h2 a, .mc-campaign-progress__figures strong, .mc-campaign-details__body h2,
+  .mc-campaign-details__sidebar h2, .mc-campaign-details__sidebar dd, .mc-campaign-support-success,
+  .mc-admin-campaign__heading h5, .text-slate-600, .text-slate-700, .text-slate-800
+) {
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] .mc-map .gm-style {
+  filter: brightness(0.66) contrast(1.12) saturate(0.85);
+}
+
+/* Headings that fall back to a fixed deep green when this token is undefined */
+:root[data-bs-theme="dark"] {
+  --mc-green-900: var(--mc-ink);
+  --mc-surface-soft: var(--mc-surface-raised);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-campaign-details__goal strong, .mc-campaign-support-success svg) {
+  color: #4cc79c;
+}
+
+/* ==========================================================================
+   Navbar layout: links and a "More" menu on wide screens, a full-height menu on
+   small ones. Colours come from the site tokens, so it follows the dark theme.
+   ========================================================================== */
+.mc-navbar__bar {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+}
+
+.mc-nav-links {
+  align-items: center;
+  gap: 0.15rem;
+  list-style: none;
+  margin: 0 auto 0 1rem;
+  padding: 0;
+}
+
+.mc-nav-link {
+  border-radius: var(--mc-radius-pill);
+  color: var(--mc-ink);
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.5rem 0.7rem;
+  text-decoration: none;
+  transition: background-color var(--mc-dur-fast) ease, color var(--mc-dur-fast) ease;
+  white-space: nowrap;
+}
+
+.mc-nav-link:hover {
+  color: var(--mc-rust);
+}
+
+.mc-nav-link.is-active {
+  background: var(--mc-soft);
+  color: var(--mc-rust);
+  font-weight: 600;
+}
+
+.mc-nav-more {
+  margin-left: 0.15rem;
+  position: relative;
+}
+
+.mc-nav-more__trigger {
+  align-items: center;
+  background: var(--mc-soft);
+  border: 0;
+  border-radius: var(--mc-radius-pill);
+  color: var(--mc-rust);
+  display: inline-flex;
+  font-size: 0.95rem;
+  font-weight: 500;
+  gap: 0.35rem;
+  padding: 0.5rem 0.95rem;
+}
+
+.mc-nav-more__menu {
+  border-radius: var(--mc-radius-md);
+  margin-top: 0.45rem;
+  min-width: 11rem;
+  padding: 0.4rem;
+}
+
+.mc-nav-more__menu .dropdown-item {
+  border-radius: var(--mc-radius-sm);
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.mc-nav-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+.mc-nav-divider {
+  background: var(--mc-line);
+  height: 24px;
+  width: 1px;
+}
+
+.mc-nav-bell .mc-notification-trigger {
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  color: var(--mc-ink);
+  display: grid;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  width: 38px;
+}
+
+.mc-avatar {
+  background: var(--mc-soft);
+  border-radius: 50%;
+  color: var(--mc-rust);
+  display: grid;
+  flex-shrink: 0;
+  height: 34px;
+  place-items: center;
+  width: 34px;
+}
+
+.mc-account__trigger {
+  align-items: center;
+  background: var(--mc-glass-strong);
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-pill);
+  color: var(--mc-ink);
+  display: inline-flex;
+  gap: 0.4rem;
+  padding: 0.2rem 0.7rem 0.2rem 0.25rem;
+}
+
+.mc-account__appearance {
+  align-items: center;
+  color: var(--mc-muted);
+  display: flex;
+  font-size: 0.8rem;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.35rem 1rem;
+}
+
+/* The two segmented controls: a tinted track; the language pill is filled, the
+   theme pill is white with a coloured icon. */
+.mc-lang-toggle {
+  background: var(--mc-soft);
+  border-color: transparent;
+}
+
+.mc-theme-toggle .mc-lang-toggle__option.is-active {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(53, 39, 29, 0.16);
+  color: var(--mc-rust);
+}
+
+:root[data-bs-theme=dark] .mc-theme-toggle .mc-lang-toggle__option.is-active {
+  background: var(--mc-surface-raised);
+  color: var(--mc-rust-dark);
+}
+
+.mc-nav-toggle {
+  background: var(--mc-soft);
+  border: 0;
+  border-radius: 50%;
+  color: var(--mc-ink);
+  display: grid;
+  height: 40px;
+  place-items: center;
+  width: 40px;
+}
+
+/* Small screens */
+.mc-mobile-menu {
+  background: var(--mc-ivory);
+  border-top: 1px solid var(--mc-line);
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  max-height: calc(100dvh - 62px);
+  min-height: calc(100dvh - 62px);
+  overflow-y: auto;
+  padding: 0.75rem 1.25rem 1.5rem;
+  position: absolute;
+  right: 0;
+  top: 100%;
+}
+
+.mc-mobile-menu__links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mc-mobile-menu__links .mc-nav-link {
+  border-radius: 14px;
+  font-size: 1.05rem;
+  padding: 0.95rem 1.1rem;
+}
+
+.mc-mobile-menu__settings {
+  border-top: 1px solid var(--mc-line);
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+}
+
+.mc-mobile-menu__row {
+  align-items: center;
+  color: var(--mc-muted);
+  display: flex;
+  font-size: 0.95rem;
+  justify-content: space-between;
+  padding: 0.4rem 0.2rem;
+}
+
+.mc-mobile-menu__account {
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
+
+.mc-mobile-menu__auth {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.mc-account-card {
+  align-items: center;
+  background: var(--mc-glass-strong);
+  border: 1px solid var(--mc-line);
+  border-radius: 18px;
+  color: var(--mc-ink);
+  display: flex;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+}
+
+.mc-account-card .mc-avatar {
+  height: 44px;
+  width: 44px;
+}
+
+.mc-account-card__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.mc-account-card__text small {
+  color: var(--mc-muted);
+}
+
+.mc-account-card__text strong {
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.mc-mobile-menu__logout {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--mc-muted);
+  display: flex;
+  font-size: 0.85rem;
+  gap: 0.4rem;
+  justify-content: center;
+  margin: 0.8rem auto 0;
+  padding: 0.3rem 0.6rem;
+}
+
+@media (min-width: 992px) and (max-width: 1399.98px) {
+  .mc-navbar__bar .mc-brand-title { display: none; }
+  .mc-nav-link { font-size: 0.88rem; padding: 0.45rem 0.55rem; }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .mc-navbar__bar { gap: 0.5rem; }
+  .mc-nav-actions { gap: 0.4rem; }
+  .mc-nav-links { margin-left: 0.25rem; }
+  .mc-nav-link, .mc-nav-more__trigger { font-size: 0.82rem; padding: 0.4rem 0.45rem; }
 }

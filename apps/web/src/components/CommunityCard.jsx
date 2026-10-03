@@ -6,8 +6,7 @@ import {
   Droplets,
   MapPin,
   Megaphone,
-  UsersRound,
-} from "lucide-react";
+  UsersRound, PackageSearch } from "lucide-react";
 import { BLOOD_SOURCE, getCommunityCategoryLabelKey } from "../data/community";
 import { useLocale } from "../hooks/useLocale";
 import { formatApiDate } from "../utils/intl";
@@ -19,6 +18,7 @@ const CATEGORY_ICONS = {
   event: CalendarDays,
   blood: Droplets,
   volunteer: UsersRound,
+  lost_found: PackageSearch,
 };
 
 const URGENCY_LABEL_KEYS = {

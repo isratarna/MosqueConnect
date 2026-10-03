@@ -1,21 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  BadgeCheck,
   Building2,
+  Info,
   CalendarDays,
   Clock3,
   Heart,
   LoaderCircle,
   Map as MapIcon,
+  Moon,
   MapPin,
   Megaphone,
   Navigation,
+  PencilLine,
   Phone,
   Star,
   Sun,
-  TriangleAlert,
-} from "lucide-react";
+  TriangleAlert, MessageSquareText, PackageOpen } from "lucide-react";
 import { urgencyClass } from "../data/mosques";
 import { getAnnouncementDetailsPath } from "../data/announcements";
 import FacilityBadge from "../components/FacilityBadge";
@@ -30,6 +33,22 @@ import { formatApiDate, formatNumber } from "../utils/intl";
 import { useLocale } from "../hooks/useLocale";
 import { useFollow } from "../context/FollowContext";
 import MosqueClaimForm from "../components/MosqueClaimForm";
+import EidJamaatCard from "../components/eid/EidJamaatCard";
+import { trackMosqueEvent, trackMosqueView } from "../utils/trackMosque";
+import SuggestCorrectionModal from "../components/suggestions/SuggestCorrectionModal";
+import MosqueLostFoundCard from "../components/community/MosqueLostFoundCard";
+import ComplaintForm from "../components/community/ComplaintForm";
+import GoodsPledgeForm from "../components/community/GoodsPledgeForm";
+import { communityConfirmedLabel } from "../utils/suggestionFormat";
+
+/** Small "Suggest a correction" link shown on each card with editable details. */
+function SuggestLink({ onClick, label = "Suggest a correction" }) {
+  return (
+    <button type="button" className="btn btn-link btn-sm p-0 text-mc text-decoration-none mc-suggest-link" onClick={onClick}>
+      <PencilLine size={14} className="me-1" aria-hidden="true" />{label}
+    </button>
+  );
+}
 
 export default function MosqueProfile() {
   const { t, locale } = useLocale();
@@ -38,6 +57,10 @@ export default function MosqueProfile() {
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
   const [retryKey, setRetryKey] = useState(0);
+  const [suggestField, setSuggestField] = useState(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [goodsOpen, setGoodsOpen] = useState(false);
+  const applied = useRef(false);
   const { isFollowing: following, toggleFollow } = useFollow(id);
 
   useEffect(() => {
@@ -51,6 +74,7 @@ export default function MosqueProfile() {
         if (!active) return;
         setMosque(result);
         setStatus("success");
+        trackMosqueView(result.id);
       })
       .catch((requestError) => {
         if (!active) return;
@@ -97,8 +121,11 @@ export default function MosqueProfile() {
   const facilities = Array.isArray(mosque.facilities) ? mosque.facilities : [];
   const jumuahSessions = Array.isArray(mosque.jumuah_sessions) ? mosque.jumuah_sessions : [];
   const prayerSchedule = Array.isArray(mosque.prayer_schedule) ? mosque.prayer_schedule : [];
+  const eidJamaats = Array.isArray(mosque.eid_jamaats) ? mosque.eid_jamaats : [];
   const hasDailyPrayer = Object.values(prayer).some(Boolean) || prayerSchedule.length > 0;
   const directions = directionsUrl(mosque);
+  const confirmedLabel = communityConfirmedLabel(mosque.times_confirmed_by_community_at);
+  const place = [mosque.area, mosque.district].filter(Boolean).join(", ");
 
   return (
     <div className="container py-4 mc-motion-stagger">
@@ -127,14 +154,18 @@ export default function MosqueProfile() {
         )}
         {mosque.verified && <VerifiedBadge />}
         {mosque.phone && (
-          <span className="text-muted small">
+          <a
+            href={`tel:${mosque.phone.replace(/\s/g, "")}`}
+            className="btn btn-outline-secondary btn-sm"
+            onClick={() => trackMosqueEvent(mosque.id, "call")}
+          >
             <Phone size={14} className="me-1" aria-hidden="true" />
-            {mosque.phone}
-          </span>
+            Call {mosque.phone}
+          </a>
         )}
         <div className="ms-auto d-flex gap-2">
           {directions && (
-            <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-mc btn-sm">
+            <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-mc btn-sm" onClick={() => trackMosqueEvent(mosque.id, "directions")}>
               <Navigation size={16} aria-hidden="true" />
               {t("mosque.getDirectionsButton")}
             </a>
@@ -155,20 +186,46 @@ export default function MosqueProfile() {
 
       <div className="row g-4">
         <div className="col-lg-8">
+          {eidJamaats.length > 0 && (
+            <div className="card mc-card mc-eid-card mb-4" id="eid-jamaat">
+              <div className="card-body">
+                <h5 className="fw-bold mb-3">
+                  <Moon size={18} className="text-mc me-2" aria-hidden="true" />
+                  {eidJamaats[0].eid_label} {eidJamaats[0].year} jamaat{eidJamaats.length > 1 ? "s" : ""}
+                </h5>
+                <div className="d-grid gap-3">
+                  {eidJamaats.map((jamaat) => <EidJamaatCard key={jamaat.id} jamaat={jamaat} />)}
+                </div>
+                <Link to="/eid" className="small text-mc text-decoration-none d-inline-block mt-3">Find other Eid jamaats near you</Link>
+              </div>
+            </div>
+          )}
+
           <div className="card mc-card mb-4" id="prayer-schedule">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.prayerTimes")}</h5>
+              <div className="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
+                <h5 className="fw-bold mb-0"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.prayerTimes")}</h5>
+                <SuggestLink onClick={() => setSuggestField("prayer_time")} label={t("mosque.suggestTime")} />
+              </div>
               {hasDailyPrayer ? (
                 <PrayerTimeline prayers={prayer} schedule={prayerSchedule} />
               ) : (
                 <p className="text-muted mb-0">{t("mosque.prayerNotPublished")}</p>
+              )}
+              {confirmedLabel && (
+                <p className="small text-success mt-2 mb-0 mc-community-confirmed">
+                  <BadgeCheck size={15} className="me-1" aria-hidden="true" />{confirmedLabel}
+                </p>
               )}
             </div>
           </div>
 
           <div className="card mc-card mb-4">
             <div className="card-body">
-              <h5 className="fw-bold mb-3"><Sun size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.jummahPrayer")}</h5>
+              <div className="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
+                <h5 className="fw-bold mb-0"><Sun size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.jummahPrayer")}</h5>
+                <SuggestLink onClick={() => setSuggestField("jumuah")} />
+              </div>
               {jumuahSessions.length ? (
                 <div className="row row-cols-1 row-cols-md-2 g-2">
                   {jumuahSessions.map((session) => (
@@ -236,6 +293,31 @@ export default function MosqueProfile() {
         </div>
 
         <div className="col-lg-4">
+          <div className="card mc-card mb-4" id="about">
+            <div className="card-body">
+              <h6 className="fw-bold mb-3"><Info size={18} className="text-mc me-2" aria-hidden="true" />About</h6>
+              <dl className="mc-about-list small mb-3">
+                <dt>Address</dt>
+                <dd>{mosque.address}{place && <span className="d-block text-muted">{place}</span>}</dd>
+                <dt>Phone</dt>
+                <dd>{mosque.phone || <span className="text-muted">Not listed</span>}</dd>
+              </dl>
+              <div className="d-flex flex-wrap gap-3">
+                <SuggestLink onClick={() => setSuggestField("address")} label="Fix the address" />
+                <SuggestLink onClick={() => setSuggestField("phone")} label="Fix the phone number" />
+                <SuggestLink onClick={() => setSuggestField("other")} label="Something else" />
+              </div>
+              <hr />
+              <button type="button" className="btn btn-sm btn-outline-mc w-100" onClick={() => setFeedbackOpen(true)}>
+                <MessageSquareText size={15} aria-hidden="true" /> Send feedback to this mosque
+              </button>
+              <p className="form-text">Private: only the mosque's admins read it. You can send it anonymously.</p>
+              <button type="button" className="btn btn-sm btn-outline-mc w-100" onClick={() => setGoodsOpen(true)}>
+                <PackageOpen size={15} aria-hidden="true" /> Donate goods to this mosque
+              </button>
+            </div>
+          </div>
+          <MosqueLostFoundCard mosque={mosque} />
           <div className="card mc-card mb-4">
             <div className="card-body">
               <h6 className="fw-bold mb-3"><Building2 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.facilities")}</h6>
@@ -244,6 +326,7 @@ export default function MosqueProfile() {
               ) : (
                 <p className="text-muted mb-0 small">{t("mosque.facilitiesNotPublished")}</p>
               )}
+              <div className="mt-2"><SuggestLink onClick={() => setSuggestField("facilities")} /></div>
             </div>
           </div>
           <div className="card mc-card">
@@ -256,10 +339,29 @@ export default function MosqueProfile() {
                 selectedMosqueId={mosque.id}
                 className="mc-map mc-map--sm"
               />
+              <div className="mt-2"><SuggestLink onClick={() => setSuggestField("location")} label="Pin in the wrong place?" /></div>
             </div>
           </div>
         </div>
       </div>
+      {goodsOpen && <GoodsPledgeForm mosque={mosque} onClose={() => setGoodsOpen(false)} />}
+      {feedbackOpen && <ComplaintForm mosque={mosque} onClose={() => setFeedbackOpen(false)} />}
+      {suggestField && (
+        <SuggestCorrectionModal
+          key={suggestField}
+          mosque={mosque}
+          initialField={suggestField}
+          onSubmitted={(suggestion) => { applied.current = suggestion?.status === "accepted"; }}
+          onClose={() => {
+            setSuggestField(null);
+            // A trusted contributor's fix is live straight away, so show it.
+            if (applied.current) {
+              applied.current = false;
+              setRetryKey((value) => value + 1);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

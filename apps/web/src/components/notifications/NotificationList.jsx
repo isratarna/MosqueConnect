@@ -8,6 +8,9 @@ import {
   Info,
   LoaderCircle,
   Megaphone,
+  Moon,
+  PencilLine,
+  UsersRound,
 } from "lucide-react";
 import { useLocale } from "../../hooks/useLocale";
 import {
@@ -21,6 +24,9 @@ const TYPE_ICONS = {
   announcement: Megaphone,
   prayer_schedule: Clock3,
   campaign: CircleDollarSign,
+  eid: Moon,
+  team: UsersRound,
+  suggestion: PencilLine,
   system: Info,
 };
 

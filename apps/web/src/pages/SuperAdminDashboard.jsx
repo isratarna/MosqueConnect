@@ -6,6 +6,8 @@ import {
   FileCheck2,
   Flag,
   LayoutDashboard,
+  Megaphone,
+  PencilLine,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -14,7 +16,9 @@ import {
 } from "lucide-react";
 import {
   AuditPanel,
+  BroadcastPanel,
   ClaimsPanel,
+  CorrectionsPanel,
   ModerationPanel,
   MosquesPanel,
   OverviewPanel,
@@ -31,8 +35,10 @@ const SECTIONS = [
   { id: "claims", labelKey: "superAdmin.sections.claims", icon: FileCheck2 },
   { id: "users", labelKey: "superAdmin.sections.users", icon: Users },
   { id: "mosques", labelKey: "superAdmin.sections.mosques", icon: Building2 },
+  { id: "corrections", labelKey: "superAdmin.sections.corrections", icon: PencilLine },
   { id: "moderation", labelKey: "superAdmin.sections.moderation", icon: SlidersHorizontal },
   { id: "reports", labelKey: "superAdmin.sections.reports", icon: Flag },
+  { id: "broadcasts", labelKey: "superAdmin.sections.broadcasts", icon: Megaphone },
   { id: "statistics", labelKey: "superAdmin.sections.statistics", icon: Activity },
   { id: "audit", labelKey: "superAdmin.sections.audit", icon: ScrollText },
   { id: "settings", labelKey: "superAdmin.sections.settings", icon: Settings },
@@ -61,8 +67,10 @@ export default function SuperAdminDashboard() {
       case "claims": return <ClaimsPanel />;
       case "users": return <UsersPanel currentUser={user} />;
       case "mosques": return <MosquesPanel />;
+      case "corrections": return <CorrectionsPanel />;
       case "moderation": return <ModerationPanel />;
       case "reports": return <ReportsPanel />;
+      case "broadcasts": return <BroadcastPanel />;
       case "statistics": return <StatisticsPanel />;
       case "audit": return <AuditPanel />;
       case "settings": return <SettingsPanel />;

@@ -8,14 +8,14 @@
 
 // Labels are translation keys, resolved with t() where a facility is shown.
 export const FACILITY_META = {
-  women_area:  { labelKey: "facility.women_area" },
-  child_care:  { labelKey: "facility.child_care" },
-  wudu:        { labelKey: "facility.wudu" },
-  parking:     { labelKey: "facility.parking" },
-  ac:          { labelKey: "facility.ac" },
-  wheelchair:  { labelKey: "facility.wheelchair" },
-  quran_class: { labelKey: "facility.quran_class" },
-  library:     { labelKey: "facility.library" },
+  women_area:  { label: "Women's Prayer Area", labelKey: "facility.women_area" },
+  child_care:  { label: "Child Care", labelKey: "facility.child_care" },
+  wudu:        { label: "Wudu Facility", labelKey: "facility.wudu" },
+  parking:     { label: "Parking", labelKey: "facility.parking" },
+  ac:          { label: "Air Conditioned", labelKey: "facility.ac" },
+  wheelchair:  { label: "Wheelchair Access", labelKey: "facility.wheelchair" },
+  quran_class: { label: "Quran Classes", labelKey: "facility.quran_class" },
+  library:     { label: "Library", labelKey: "facility.library" },
 };
 
 const MOSQUE_IMAGES = [
@@ -264,15 +264,6 @@ export function saveMosqueToLocal(updatedMosque) {
     console.error("Failed to save mosque changes", e);
   }
 }
-
-// Numbers are stored raw and formatted for the active language where shown
-// (Bangla digits, "২১ লাখ" for compact amounts), so they animate and localise.
-export const IMPACT_STATS = [
-  { key: "mosques",   value: 120,     suffix: "+", labelKey: "home.impact.mosques" },
-  { key: "members",   value: 8400,                labelKey: "home.impact.members" },
-  { key: "donations", value: 2100000, prefix: "৳", compact: true, labelKey: "home.impact.donations" },
-  { key: "volunteers", value: 560,                labelKey: "home.impact.volunteers" },
-];
 
 /* ---------- helpers ---------- */
 

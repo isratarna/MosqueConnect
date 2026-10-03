@@ -6,6 +6,11 @@ export const NOTIFICATION_TYPES = {
   announcement: { labelKey: "notification.types.announcement" },
   prayer_schedule: { labelKey: "notification.types.prayer_schedule" },
   campaign: { labelKey: "notification.types.campaign" },
+  eid: { labelKey: "notification.types.eid" },
+  team: { labelKey: "notification.types.team" },
+  suggestion: { labelKey: "notification.types.suggestion" },
+  complaint: { labelKey: "notification.types.complaint" },
+  goods_donation: { labelKey: "notification.types.goods_donation" },
   system: { labelKey: "notification.types.system" },
 };
 
@@ -30,6 +35,14 @@ export function normalizeNotification(notification) {
   };
 }
 
+/** A broadcast link that is a page on this site or an https URL; anything else is dropped. */
+export function safeNotificationLink(link) {
+  if (typeof link !== "string") return null;
+  const trimmed = link.trim();
+  if (/^\/(?!\/)/.test(trimmed) || /^https:\/\//i.test(trimmed)) return trimmed;
+  return null;
+}
+
 export function getNotificationPath(notification) {
   if (!notification) return null;
 
@@ -45,6 +58,18 @@ export function getNotificationPath(notification) {
       return referenceId ? `/campaigns/${encodeURIComponent(referenceId)}` : null;
     case "prayer_schedule":
       return mosqueId ? `/mosque/${encodeURIComponent(mosqueId)}#prayer-schedule` : null;
+    case "eid":
+      return mosqueId ? `/mosque/${encodeURIComponent(mosqueId)}#eid-jamaat` : null;
+    case "team":
+      return "/profile?tab=invites";
+    case "suggestion":
+      return "/profile?tab=suggestions";
+    case "complaint":
+      return "/profile?tab=feedback";
+    case "goods_donation":
+      return safeNotificationLink(notification.link) || "/profile?tab=donations";
+    case "system":
+      return safeNotificationLink(notification.link);
     default:
       return null;
   }

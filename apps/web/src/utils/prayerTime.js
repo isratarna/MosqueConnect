@@ -44,3 +44,9 @@ export function dhuhrJamaatLabel(prayer, locale = DEFAULT_LOCALE, label = "Dhuhr
   if (!time) return null;
   return `${label} ${formatClockTime(time, locale)}`;
 }
+
+// The API marks each prayer with where its time came from: "mosque" when the
+// mosque published it, "calculated" when it was estimated from the location.
+export function isEstimatedPrayer(sources, label) {
+  return sources?.[label] === "calculated";
+}

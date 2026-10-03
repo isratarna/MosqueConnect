@@ -3,13 +3,18 @@
     "home": "Home",
     "browse": "Browse Mosques",
     "support": "Support",
-    "campaigns": "Campaigns",
+    "campaigns": "Campaign",
     "community": "Community",
     "bloodDonation": "Blood Donation",
-    "volunteers": "Volunteers",
+    "volunteers": "Volunteer",
     "login": "Login",
     "register": "Register",
-    "admin": "Admin"
+    "admin": "Admin",
+    "more": "More",
+    "help": "Help",
+    "language": "Language",
+    "appearance": "Appearance",
+    "signedInAs": "Signed in as"
   },
   "common": {
     "logoAlt": "MosqueConnect logo",
@@ -38,9 +43,7 @@
     "no": "No"
   },
   "profile": {
-    "admin": "Admin",
     "adminLabel": "Admin",
-    "pending": "Pending",
     "superAdmin": "Super Admin",
     "systemAdministrator": "System Administrator",
     "communityMember": "Community Member",
@@ -55,7 +58,11 @@
       "activity": "Event Registrations",
       "donations": "Donations",
       "claims": "Mosque Applications",
-      "settings": "Settings"
+      "settings": "Settings",
+      "invites": "Team Invitations",
+      "suggestions": "My Corrections",
+      "feedback": "My Feedback",
+      "lostfound": "My Lost & Found"
     },
     "findMosque": "Find a mosque",
     "sections": "Profile sections",
@@ -64,7 +71,11 @@
     "empty": {
       "activity": "No event registrations yet.",
       "claims": "No mosque applications yet.",
-      "donations": "No donations yet."
+      "donations": "No donations yet.",
+      "invites": "You have no team invitations.",
+      "suggestions": "You haven't suggested any corrections yet.",
+      "feedback": "You haven't sent feedback to a mosque yet.",
+      "lostfound": "You haven't posted a lost or found item yet."
     },
     "eventRegistration": "Event registration #{{id}}",
     "campaignFallback": "Campaign",
@@ -78,7 +89,9 @@
     "phoneHelp": "Your phone number is used to verify your identity when you log in.",
     "saving": "Saving...",
     "saveChanges": "Save Changes",
-    "saved": "Your profile has been saved."
+    "saved": "Your profile has been saved.",
+    "accept": "Accept",
+    "decline": "Decline"
   },
   "notification": {
     "title": "Notifications",
@@ -108,7 +121,12 @@
       "prayer_schedule": "Prayer schedule",
       "campaign": "Campaign",
       "system": "System",
-      "default": "Notification"
+      "default": "Notification",
+      "eid": "Eid",
+      "team": "Mosque team",
+      "suggestion": "Your correction",
+      "complaint": "Your feedback",
+      "goods_donation": "Goods donation"
     },
     "unreadLoadError": "Unread notifications could not be loaded."
   },
@@ -131,7 +149,9 @@
       "completed": "completed",
       "next": "next",
       "upcoming": "upcoming"
-    }
+    },
+    "estimatedShort": "estimated",
+    "jamaatAriaEstimated": "{{name}} jamaat at {{time}}, estimated. {{status}}."
   },
   "footer": {
     "tagline": "Connecting Muslims with the mosques around them — accurate Jamat times, announcements, events, and a hub for community life.",
@@ -304,10 +324,10 @@
     "impact": {
       "title": "Stronger together, for a better community",
       "copy": "Your connection helps build stronger, more vibrant communities.",
-      "mosques": "Mosques Connected",
-      "members": "Community Members",
-      "donations": "Donations Facilitated",
-      "volunteers": "Active Volunteers"
+      "mosques": "Mosques listed",
+      "members": "Community members",
+      "donations": "Donations confirmed",
+      "volunteers": "Volunteer sign-ups"
     },
     "about": {
       "kicker": "About MosqueConnect",
@@ -321,7 +341,8 @@
       "emailPlaceholder": "Your email",
       "messagePlaceholder": "Your message",
       "send": "Send message",
-      "thanks": "Thanks! We will get back to you. (demo)"
+      "rateLimited": "You've sent a few messages already. Please try again in a few minutes.",
+      "sending": "Sending…"
     }
   },
   "browse": {
@@ -383,7 +404,8 @@
     "noAnnouncements": "No announcements right now.",
     "facilities": "Facilities",
     "facilitiesNotPublished": "Facility details have not been published yet.",
-    "location": "Location"
+    "location": "Location",
+    "suggestTime": "Wrong time? Suggest a correction"
   },
   "verification": {
     "unverified": "Unverified",
@@ -635,7 +657,8 @@
     "reason": "Reason for requesting access",
     "document": "Supporting document (PDF, JPG or PNG, up to 10 MB)",
     "submitting": "Submitting...",
-    "submit": "Submit application"
+    "submit": "Submit application",
+    "privacy": "Your document is checked by an automated text-recognition service (Google Document AI) to help our team review it faster. Only the document, the mosque name and your name are sent, never your phone number. A person always makes the final decision."
   },
   "auth": {
     "errors": {
@@ -857,13 +880,15 @@
       "event": "Events",
       "blood": "Blood requests",
       "volunteer": "Volunteer",
-      "default": "Community update"
+      "default": "Community update",
+      "lost_found": "Lost & Found"
     },
     "filters": {
       "announcement": "Announcement",
       "event": "Event",
       "blood": "Blood Request",
-      "volunteer": "Volunteer"
+      "volunteer": "Volunteer",
+      "lost_found": "Lost & Found"
     },
     "kicker": "Community hub",
     "title": "Stay connected to your mosque community",
@@ -911,7 +936,9 @@
     "bloodSource": "Community blood request",
     "viewRequests": "View requests",
     "readDetails": "Read details",
-    "viewMosque": "View mosque"
+    "viewMosque": "View mosque",
+    "sections": "Community sections",
+    "backToAll": "Back to all updates"
   },
   "announcement": {
     "loading": "Loading announcement…",
@@ -976,24 +1003,6 @@
   "volunteer": {
     "title": "Volunteer Opportunities",
     "subtitle": "Give back to your community and earn rewards.",
-    "create": "Create Opportunity",
-    "cancelCreation": "Cancel Creation",
-    "postTitle": "Post a Volunteer Opportunity",
-    "publishedTitle": "Opportunity Published!",
-    "publishedCopy": "Community members can now apply to participate.",
-    "oppTitle": "Opportunity Title",
-    "titlePlaceholder": "e.g. Traffic Control for Eid",
-    "needed": "Volunteers Needed",
-    "description": "Detailed Description",
-    "descriptionPlaceholder": "Describe the roles and responsibilities...",
-    "date": "Date",
-    "startTime": "Start time",
-    "location": "Specific Location",
-    "locationPlaceholder": "e.g. Main Gate",
-    "requirements": "Instructions / Requirements (Optional)",
-    "requirementsPlaceholder": "e.g. Must be over 18, wear modest clothing...",
-    "publishing": "Publishing...",
-    "publish": "Publish Opportunity",
     "loadFailed": "Failed to load opportunities",
     "emptyTitle": "No Active Opportunities",
     "emptyCopy": "There are no volunteer requests available at the moment. Check back later!",
@@ -1004,76 +1013,11 @@
     "adminView": "Admin View: {{count, number}} Applications",
     "thanks": "Jazakallah Khair for participating!",
     "signUp": "Sign up to help your community.",
-    "viewApplicants": "View Applicants",
-    "edit": "Edit",
-    "close": "Close",
-    "closing": "Closing...",
     "cancelSignup": "Cancel signup",
     "spotsFilled": "Spots Filled",
-    "volunteerNow": "Volunteer Now",
-    "editTitle": "Edit Opportunity",
-    "editField": "Title",
-    "editSuccess": "Opportunity updated successfully!",
-    "editStartTime": "Start Time",
-    "editRequirements": "Instructions / Requirements",
-    "saving": "Saving...",
-    "saveChanges": "Save Changes",
-    "applicantsTitle": "Applicants for {{title}}",
-    "noApplicants": "No applicants yet.",
-    "applicantMeta": "Phone: {{phone}} • Applied: {{date}}"
+    "volunteerNow": "Volunteer Now"
   },
   "admin": {
-    "dashboard": {
-      "tabs": {
-        "overview": "Dashboard Overview",
-        "profile": "Manage Mosque Profile",
-        "prayer": "Manage Prayer & Jamat",
-        "jummah": "Manage Jummah",
-        "announce": "Manage Announcements",
-        "events": "Manage Events",
-        "facilities": "Manage Facilities",
-        "donations": "Donation Campaigns",
-        "volunteers": "Volunteer Work"
-      },
-      "metrics": {
-        "followers_count": "Followers",
-        "active_announcements_count": "Active announcements",
-        "upcoming_events_count": "Upcoming events",
-        "active_campaigns_count": "Active campaigns",
-        "pending_content_reports_count": "Pending reports"
-      },
-      "managedMosque": "Managed mosque",
-      "noMosque": "No mosque is assigned to this account. <applications>View applications</applications>.",
-      "saved": "Changes saved successfully.",
-      "loading": "Loading dashboard...",
-      "selectSection": "Select section",
-      "sectionsLabel": "Dashboard sections",
-      "recent": "Recent content",
-      "noRecent": "No recent content.",
-      "viewPublic": "View public profile",
-      "contentTypes": {
-        "announcement": "Announcement",
-        "event": "Event",
-        "campaign": "Campaign"
-      },
-      "profileFields": {
-        "name": "Mosque name",
-        "address": "Street address",
-        "phone": "Phone number",
-        "latitude": "Latitude",
-        "longitude": "Longitude",
-        "description": "Description"
-      },
-      "saving": "Saving...",
-      "saveProfile": "Save Mosque Profile",
-      "saveFacilities": "Save Facilities",
-      "prayerIntro": "Update the prayer schedule and first Jumuah session displayed on your mosque profile.",
-      "openPrayer": "Open prayer schedule",
-      "announceIntro": "Publish mosque updates, including requests for goods and community support.",
-      "openAnnouncements": "Open announcements",
-      "volunteerIntro": "Create opportunities and manage your mosque's volunteering activities.",
-      "openVolunteers": "Open volunteer opportunities"
-    },
     "events": {
       "title": "Manage Events",
       "editEvent": "Edit event",
@@ -1126,8 +1070,6 @@
       "deleted": "Campaign deleted.",
       "saveFailed": "Campaign could not be saved.",
       "statusFailed": "Campaign status could not be updated.",
-      "deleteFailed": "Campaign could not be deleted.",
-      "confirmDelete": "Delete “{{title}}” and all of its support records?",
       "noMosque": "Your verified mosque could not be identified. Sign out and back in to refresh your account.",
       "form": {
         "createTitle": "Create campaign",
@@ -1156,63 +1098,9 @@
         "ref": "Ref: {{ref}}",
         "confirm": "Confirm",
         "reject": "Reject"
-      }
-    },
-    "announcements": {
-      "back": "Back to Dashboard",
-      "title": "Manage Announcements",
-      "subtitle": "Publish news, warnings, and updates to your community.",
-      "cancelCreation": "Cancel Creation",
-      "newAnnouncement": "New Announcement",
-      "noMosque": "No mosque is assigned to your account.",
-      "updated": "Announcement updated successfully!",
-      "created": "Announcement created successfully!",
-      "statusUpdated": "Announcement status updated!",
-      "deleted": "Announcement deleted successfully.",
-      "editTitle": "Edit Announcement",
-      "createTitle": "Create New Announcement",
-      "closeForm": "Close form",
-      "titleLabel": "Title",
-      "titlePlaceholder": "e.g. Mosque Renovation Progress",
-      "message": "Message Content",
-      "messagePlaceholder": "Provide details about the announcement...",
-      "priority": "Priority Level",
-      "priorityLow": "Low (General Info)",
-      "priorityMedium": "Medium (Warning / Alert)",
-      "priorityHigh": "High (Urgent)",
-      "status": "Status",
-      "statusPublished": "Published (Visible to all)",
-      "statusDraft": "Draft (Hidden)",
-      "saving": "Saving...",
-      "saveChanges": "Save Changes",
-      "create": "Create Announcement",
-      "deleteTitle": "Confirm Deletion",
-      "deleteBody": "Are you sure you want to permanently delete this announcement? This action cannot be undone.",
-      "deleteYes": "Yes, Delete",
-      "emptyTitle": "No Announcements",
-      "emptyCopy": "You haven't posted any announcements yet.",
-      "createFirst": "Create Your First",
-      "posted": "Posted: {{date}}",
-      "priorityMeta": "Priority: {{level}}",
-      "unpublish": "Unpublish",
-      "publish": "Publish",
-      "edit": "Edit",
-      "delete": "Delete"
-    },
-    "prayerSchedule": {
-      "title": "Manage Prayer Schedule",
-      "subtitle": "Update Adhan and Iqamah (Jamat) times for the community.",
-      "back": "Back to Dashboard",
-      "saved": "Prayer schedule updated successfully!",
-      "loadError": "Unable to load the prayer schedule.",
-      "saveError": "An error occurred while saving the schedule.",
-      "noMosque": "No mosque is assigned to your account.",
-      "fillMissing": "Please fill in the missing prayer times to complete the schedule.",
-      "prayer": "Prayer",
-      "adhan": "Adhan Time",
-      "iqamah": "Iqamah (Jamat) Time",
-      "saving": "Saving Schedule...",
-      "saveChanges": "Save Changes"
+      },
+      "deleteHeading": "Delete this campaign?",
+      "confirmDeleteLong": "Delete “{{title}}” and all of its support records? This cannot be undone."
     },
     "claim": {
       "checking": "Checking application status...",
@@ -1254,7 +1142,9 @@
       "reports": "Reports",
       "statistics": "Statistics",
       "audit": "Audit Log",
-      "settings": "Settings"
+      "settings": "Settings",
+      "corrections": "Corrections",
+      "broadcasts": "Broadcasts"
     },
     "title": "System Administration",
     "signedInAs": "Signed in as {{name}} · Full platform oversight",
@@ -1305,15 +1195,10 @@
       "actions": "Actions",
       "previousClaims_one": "{{count, number}} previous claim",
       "previousClaims_other": "{{count, number}} previous claims",
-      "download": "Download proof",
-      "aiScore": "AI score: {{score}}",
-      "note": "Note: {{note}}",
       "moreInfo": "More info",
       "reject": "Reject",
       "approve": "Approve",
-      "promptApprove": "Optional approval note:",
-      "promptReject": "Rejection reason (required):",
-      "promptInfo": "Describe the additional information required:"
+      "review": "Review"
     },
     "users": {
       "title": "User management",
@@ -1331,44 +1216,37 @@
       "you": "You",
       "managed_one": "{{count, number}} managed mosque",
       "managed_other": "{{count, number}} managed mosques",
-      "followed": "{{count, number}} followed",
-      "reactivate": "Reactivate",
-      "suspend": "Suspend",
-      "promptSuspend": "Suspension reason (required):"
+      "followed": "{{count, number}} followed"
     },
     "mosques": {
       "title": "Mosque management",
-      "description": "Inspect ownership and control platform-wide verification.",
+      "description": "Inspect ownership, manage each mosque's team and control platform-wide verification.",
       "search": "Mosque or address",
       "allStatuses": "All statuses",
       "mosque": "Mosque",
-      "owner": "Owner",
+      "owner": "Owner & team",
       "status": "Status",
       "activity": "Platform activity",
       "control": "Verification control",
-      "unassigned": "Unassigned",
-      "stats": "{{followers, number}} followers · {{events, number}} events · {{campaigns, number}} campaigns",
-      "promptReject": "Rejection reason (required):"
+      "tools": "Tools"
     },
     "moderation": {
       "title": "Content moderation",
-      "description": "Approve or hide announcements, events, and campaigns across the platform.",
+      "description": "Approve or hide announcements, events, campaigns, and reviews across the platform.",
       "searchTitle": "Search title",
       "allStatuses": "All statuses",
       "types": {
         "announcement": "Announcements",
         "event": "Events",
-        "campaign": "Campaigns"
+        "campaign": "Campaigns",
+        "review": "Reviews"
       },
       "content": "Content",
       "mosque": "Mosque",
       "publication": "Publication",
       "reports": "Reports",
       "moderation": "Moderation",
-      "actions": "Actions",
-      "hide": "Hide",
-      "approve": "Approve",
-      "prompt": "Moderation reason (required):"
+      "actions": "Actions"
     },
     "reports": {
       "title": "Complaints and reports",
@@ -1379,7 +1257,8 @@
         "announcement": "Announcement",
         "event": "Event",
         "campaign": "Campaign",
-        "mosque": "Mosque"
+        "mosque": "Mosque",
+        "review": "Review"
       },
       "categories": {
         "inaccurate": "Inaccurate",
@@ -1395,8 +1274,7 @@
       "status": "Status",
       "submitted": "Submitted",
       "resolution": "Resolution",
-      "deletedUser": "Deleted user",
-      "prompt": "Resolution note (required):"
+      "deletedUser": "Deleted user"
     },
     "statistics": {
       "title": "Platform statistics",
@@ -1415,7 +1293,6 @@
     "audit": {
       "title": "Administrative audit log",
       "description": "Immutable history of claims, user controls, moderation, reports, and settings.",
-      "search": "Search action or target",
       "time": "Time",
       "administrator": "Administrator",
       "action": "Action",
@@ -1425,13 +1302,9 @@
     "settings": {
       "title": "System settings",
       "description": "Control platform-level availability and administrator notices.",
-      "maintenance": "Maintenance notice",
-      "maintenanceHelp": "Shown by future maintenance-notice integrations; leave empty when no notice is required.",
       "claims_enabled": "Accept mosque claims",
       "reports_enabled": "Accept user reports",
-      "auto_publish_verified_mosques": "Publish verified mosques automatically",
-      "saving": "Saving…",
-      "save": "Save system settings"
+      "auto_publish_verified_mosques": "Publish verified mosques automatically"
     },
     "actionTemplate": "Mosque Admin {{model}} {{event}}",
     "auditModels": {
@@ -1452,5 +1325,11 @@
   },
   "meta": {
     "title": "MosqueConnect — Find mosques around you"
+  },
+  "theme": {
+    "label": "Colour theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   }
 }

@@ -32,7 +32,7 @@ export default function MosqueClaimForm({ mosqueId }) {
         {error && <div className="alert alert-danger" role="alert">{error}</div>}
         <div className="mb-3"><label htmlFor="claim-role" className="form-label">{t("claim.role")}</label><input id="claim-role" name="role_at_mosque" className="form-control" required maxLength={255} /></div>
         <div className="mb-3"><label htmlFor="claim-reason" className="form-label">{t("claim.reason")}</label><textarea id="claim-reason" name="verification_reason" className="form-control" required maxLength={5000} /></div>
-        <div className="mb-3"><label htmlFor="claim-document" className="form-label">{t("claim.document")}</label><input id="claim-document" name="document" type="file" className="form-control" accept=".pdf,.jpg,.jpeg,.png" required /></div>
+        <div className="mb-3"><label htmlFor="claim-document" className="form-label">{t("claim.document")}</label><input id="claim-document" name="document" type="file" className="form-control" accept=".pdf,.jpg,.jpeg,.png" required aria-describedby="claim-document-privacy" /><div id="claim-document-privacy" className="form-text">{t("claim.privacy")}</div></div>
         <button className="btn btn-mc" disabled={busy}>{busy ? t("claim.submitting") : t("claim.submit")}</button>
       </form>}
     </div>
