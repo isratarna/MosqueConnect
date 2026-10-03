@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\BloodRequest;
 use App\Models\Campaign;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -11,6 +12,11 @@ Schedule::call(function (): void {
         ->whereDate('ends_on', '<', today())
         ->update(['status' => Campaign::STATUS_EXPIRED, 'updated_at' => now()]);
 })->hourly()->name('expire-ended-campaigns')->withoutOverlapping();
+
+Schedule::call(fn (): int => BloodRequest::expirePastDue())
+    ->hourly()
+    ->name('expire-past-blood-requests')
+    ->withoutOverlapping();
 
 Schedule::command('lost-found:close-stale')->daily()->name('close-stale-lost-found')->withoutOverlapping();
 Schedule::command('prayer-schedules:notify-starting-periods')->dailyAt('18:00')->name('notify-upcoming-prayer-schedules')->withoutOverlapping();
