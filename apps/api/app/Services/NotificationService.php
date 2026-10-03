@@ -6,6 +6,7 @@ use App\Models\EidJamaat;
 use App\Models\Event;
 use App\Models\Mosque;
 use App\Models\Notification;
+use App\Models\PrayerSchedulePeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -39,8 +40,12 @@ class NotificationService
      * The announcement module is not implemented yet, so its persisted ID and
      * title form the narrow integration contract for that future feature.
      */
-    public function notifyAnnouncementPublished(Mosque $mosque, int $announcementId, string $title): int
+    public function notifyAnnouncementPublished(Mosque $mosque, int $announcementId, string $title, ?string $category = null): int
     {
+        if ($category === 'janazah') {
+            $title = "Janazah: {$title}";
+        }
+
         return $this->notifyMosqueFollowers($mosque, [
             'type' => Notification::TYPE_ANNOUNCEMENT,
             'title' => Str::limit("New Announcement: {$title}", 255, ''),
@@ -73,6 +78,20 @@ class NotificationService
             'message' => Str::limit($message, 10000, ''),
             'reference_type' => Notification::REFERENCE_PRAYER_SCHEDULE,
             'reference_id' => $scheduleChangeId,
+        ]);
+    }
+
+    public function notifySchedulePeriodStarting(PrayerSchedulePeriod $period): int
+    {
+        $period->loadMissing('mosque');
+        $title = $period->is_ramadan ? 'New Ramadan timetable from tomorrow' : 'New prayer timetable from tomorrow';
+
+        return $this->notifyMosqueFollowers($period->mosque, [
+            'type' => Notification::TYPE_PRAYER_SCHEDULE,
+            'title' => $title,
+            'message' => "{$period->mosque->name} starts its {$period->name} prayer timetable tomorrow.",
+            'reference_type' => Notification::REFERENCE_PRAYER_SCHEDULE,
+            'reference_id' => $period->id,
         ]);
     }
 

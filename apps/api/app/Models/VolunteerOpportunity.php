@@ -87,6 +87,36 @@ class VolunteerOpportunity extends Model
             ->whereDate('opportunity_date', '>=', today());
     }
 
+    /**
+     * Order the public list by soonest opportunity first, since that is what a
+     * volunteer looking for something to join wants to see.
+     */
+    public function scopePublicOrder(Builder $query): Builder
+    {
+        return $query->orderBy('opportunity_date')->orderBy('start_time')->orderBy('id');
+    }
+
+    /**
+     * Apply the supported public opportunity list filters to a query.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when($filters['mosque_id'] ?? null, fn (Builder $query, int $mosqueId): Builder => $query->where('mosque_id', $mosqueId))
+            ->when($filters['since'] ?? null, fn (Builder $query, string $since): Builder => $query->whereDate('opportunity_date', '>=', $since))
+            ->when($filters['district'] ?? null, fn (Builder $query, string $district): Builder => $query->whereHas('mosque', fn (Builder $query): Builder => $query->where('district', $district)))
+            ->when($filters['area'] ?? null, fn (Builder $query, string $area): Builder => $query->whereHas('mosque', fn (Builder $query): Builder => $query->where('area', $area)))
+            ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('location', 'like', "%{$search}%");
+                });
+            });
+    }
+
     public function canTransitionTo(string $status): bool
     {
         return $status === $this->status

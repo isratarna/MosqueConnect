@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\MosquePhotoManagementController;
 use App\Http\Controllers\Admin\MosqueSuggestionManagementController;
 use App\Http\Controllers\Admin\MosqueSystemManagementController;
 use App\Http\Controllers\Admin\MosqueTeamController;
+use App\Http\Controllers\Admin\PrayerSchedulePeriodController;
 use App\Http\Controllers\Admin\ReportManagementController;
 use App\Http\Controllers\Admin\SuggestionReviewController;
 use App\Http\Controllers\Admin\SuperAdminDashboardController;
@@ -35,6 +36,7 @@ use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\EidJamaatController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventRegistrationController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GoodsDonationController;
 use App\Http\Controllers\LostFoundController;
 use App\Http\Controllers\MosqueClaimController;
@@ -90,6 +92,7 @@ Route::post('/mosques/{mosque}/track', [MosqueTrackingController::class, 'store'
 Route::get('/volunteer-opportunities', [VolunteerOpportunityController::class, 'index']);
 Route::get('/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'show']);
 Route::get('/mosques/{mosque}/prayer-schedule', [MosqueController::class, 'prayerSchedule']);
+Route::get('/mosques/{mosque}/ramadan', [MosqueController::class, 'ramadan']);
 Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
 Route::get('/announcements', [AnnouncementController::class, 'feed']);
 Route::get('/blood-requests', [BloodRequestController::class, 'index']);
@@ -139,6 +142,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::put('/mosques/{mosque}/reviews/me', [MosqueReviewController::class, 'upsert']);
     Route::delete('/mosques/{mosque}/reviews/me', [MosqueReviewController::class, 'destroy']);
     Route::get('/me/followed-mosques', [MosqueFollowController::class, 'followed']);
+    Route::get('/me/feed', [FeedController::class, 'index']);
 
     // Invitations to join a mosque's team
     Route::get('/me/mosque-invites', [MosqueInviteController::class, 'index']);
@@ -194,6 +198,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::delete('/mosques/{mosque}/photo', [MosquePhotoController::class, 'destroy']);
             Route::get('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'prayerSchedule']);
             Route::put('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'updatePrayerSchedule']);
+            Route::get('/mosques/{mosque}/schedule-periods', [PrayerSchedulePeriodController::class, 'index']);
+            Route::post('/mosques/{mosque}/schedule-periods', [PrayerSchedulePeriodController::class, 'store']);
+            Route::get('/mosques/{mosque}/schedule-periods/{period}', [PrayerSchedulePeriodController::class, 'show']);
+            Route::put('/mosques/{mosque}/schedule-periods/{period}', [PrayerSchedulePeriodController::class, 'update']);
+            Route::delete('/mosques/{mosque}/schedule-periods/{period}', [PrayerSchedulePeriodController::class, 'destroy']);
+            Route::put('/mosques/{mosque}/schedule-periods/{period}/prayer-times', [PrayerSchedulePeriodController::class, 'updatePrayerTimes']);
+            Route::put('/mosques/{mosque}/schedule-periods/{period}/ramadan-timings', [PrayerSchedulePeriodController::class, 'updateRamadanTimings']);
 
             Route::get('/mosques/{mosque}/members', [MosqueTeamController::class, 'index']);
             Route::post('/mosques/{mosque}/members', [MosqueTeamController::class, 'store']);

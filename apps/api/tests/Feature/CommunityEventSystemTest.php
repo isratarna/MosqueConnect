@@ -20,13 +20,13 @@ class CommunityEventSystemTest extends TestCase
         $later = Event::factory()->published()->create([
             'mosque_id' => $mosque->id,
             'created_by' => $creator->id,
-            'event_date' => '2026-09-02',
+            'event_date' => today()->addDays(2)->toDateString(),
             'start_time' => '18:00',
         ]);
         $earlier = Event::factory()->published()->create([
             'mosque_id' => $mosque->id,
             'created_by' => $creator->id,
-            'event_date' => '2026-09-01',
+            'event_date' => today()->addDay()->toDateString(),
             'start_time' => '10:00',
         ]);
         Event::factory()->create([
@@ -52,7 +52,7 @@ class CommunityEventSystemTest extends TestCase
     {
         $event = Event::factory()->published()->create([
             'category' => Event::CATEGORY_QURAN_PROGRAM,
-            'event_date' => '2026-09-12',
+            'event_date' => $eventDate = today()->addDays(14)->toDateString(),
             'start_time' => '09:30',
             'end_time' => '11:00',
             'capacity' => 75,
@@ -63,7 +63,7 @@ class CommunityEventSystemTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.id', $event->id)
             ->assertJsonPath('data.category', Event::CATEGORY_QURAN_PROGRAM)
-            ->assertJsonPath('data.event_date', '2026-09-12')
+            ->assertJsonPath('data.event_date', $eventDate)
             ->assertJsonPath('data.start_time', '09:30')
             ->assertJsonPath('data.end_time', '11:00')
             ->assertJsonPath('data.capacity', 75)
@@ -604,7 +604,7 @@ class CommunityEventSystemTest extends TestCase
             'title' => 'Community Quran Workshop',
             'description' => 'A guided workshop for community members of all experience levels.',
             'category' => Event::CATEGORY_WORKSHOP,
-            'event_date' => '2026-09-15',
+            'event_date' => today()->addDays(21)->toDateString(),
             'start_time' => '10:00',
             'end_time' => '12:00',
             'location' => 'Main prayer hall',
