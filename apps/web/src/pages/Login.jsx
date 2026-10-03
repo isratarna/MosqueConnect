@@ -86,7 +86,8 @@ export default function Login({ registering = false }) {
     if (location.state?.from) {
       navigate(returnPath(location), { replace: true });
     } else if (registering) {
-      navigate("/profile", { replace: true, state: { tab: "settings" } });
+      // [Urmee · F6 Part 3] Same: the Profile tab now comes from the URL.
+      navigate("/profile?tab=settings", { replace: true });
     } else if (res.user?.role === "super_admin") {
       navigate("/super-admin/dashboard");
     } else if (res.user?.role === "mosque_admin" && res.user?.status === "approved") {

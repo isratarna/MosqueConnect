@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   Calendar,
@@ -9,11 +9,15 @@ import {
   Heart,
   MapPin,
   Phone,
-  Plus
+  Plus,
+  Share2
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../utils/api";
 import { ListRowsSkeleton, SkeletonRegion } from "../components/skeletons";
+import ConfirmDialog from "../components/ConfirmDialog";
+import RespondDialog from "../components/blood/RespondDialog";
+import { BLOOD_GROUPS, PAGE_SIZE, filterBloodRequests, shareOnWhatsAppUrl, telHref } from "../utils/bloodRequest";
 
 export default function BloodDonation() {
   const { user } = useAuth();
@@ -22,6 +26,26 @@ export default function BloodDonation() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [requests, setRequests] = useState([]);
+
+  // [Urmee · F6 Part 1] Filters live in the URL (?group=O%2B&urgent=1&area=dhaka&by=2026-10-20), so a filtered list can be shared.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => ({
+    group: searchParams.get("group") || "",
+    urgent: searchParams.get("urgent") === "1",
+    area: searchParams.get("area") || "",
+    by: searchParams.get("by") || "",
+  }), [searchParams]);
+  const setFilter = (key, value) => setSearchParams((current) => {
+    const next = new URLSearchParams(current);
+    if (value) next.set(key, value === true ? "1" : value); else next.delete(key);
+    return next;
+  }, { replace: true });
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [respondTo, setRespondTo] = useState(null);
+  const [closing, setClosing] = useState(null);
+  const shown = useMemo(() => filterBloodRequests(requests, filters), [requests, filters]);
+  // Any filter change starts again from the first page.
+  useEffect(() => setVisible(PAGE_SIZE), [filters]);
   
   const [actionError, setActionError] = useState("");
   // Form State
@@ -65,23 +89,17 @@ export default function BloodDonation() {
     return () => controller.abort();
   }, [fetchData]);
 
-  const handleRespond = async (id) => {
+  // [Urmee · F6 Part 1] Responding opens a dialog with an optional message instead of sending an empty body.
+  const handleRespond = (request) => {
     if (!user) { navigate("/login", { state: { from: "/blood-donation" } }); return; }
-    setActionError("");
-    setRequests((items) => items.map((item) => item.id === id ? { ...item, isResponding: true } : item));
-    try {
-      await apiRequest(`/api/blood-requests/${id}/responses`, { method: "POST", body: {} });
-      setRequests((items) => items.map((item) => item.id === id ? { ...item, hasResponded: true } : item));
-    } catch (err) { setActionError(err.message); }
-    finally { setRequests((items) => items.map((item) => item.id === id ? { ...item, isResponding: false } : item)); }
+    setRespondTo(request);
   };
 
+  // Marking a request fulfilled now asks for confirmation first.
+  // [Urmee · F6 Part 1] The confirmation dialog calls this, so a mis-click can't close a request.
   const handleClose = async (id) => {
-    setActionError("");
-    try {
-      await apiRequest(`/api/blood-requests/${id}/status`, { method: "PATCH", body: { status: "completed" } });
-      setRequests((items) => items.filter((item) => item.id !== id));
-    } catch (err) { setActionError(err.message); }
+    await apiRequest(`/api/blood-requests/${id}/status`, { method: "PATCH", body: { status: "completed" } });
+    setRequests((items) => items.filter((item) => item.id !== id));
   };
 
   const handleCreateRequest = async (e) => {
@@ -123,6 +141,32 @@ export default function BloodDonation() {
       </div>
 
       {actionError && <div className="alert alert-danger" role="alert">{actionError}</div>}
+
+      <section className="mc-blood-filters mb-4" aria-label="Filter blood requests">
+        <div className="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Blood group">
+          {BLOOD_GROUPS.map((group) => (
+            <button key={group} type="button" className={`btn btn-sm ${filters.group === group ? "btn-danger" : "btn-outline-danger"}`} aria-pressed={filters.group === group} onClick={() => setFilter("group", filters.group === group ? "" : group)}>{group}</button>
+          ))}
+        </div>
+        <div className="row g-2 align-items-end">
+          <div className="col-sm-5">
+            <label className="form-label small mb-1" htmlFor="blood-area">Hospital or area</label>
+            <input id="blood-area" type="search" className="form-control form-control-sm" placeholder="e.g. Dhanmondi" value={filters.area} onChange={(event) => setFilter("area", event.target.value)} />
+          </div>
+          <div className="col-sm-4">
+            <label className="form-label small mb-1" htmlFor="blood-by">Needed by</label>
+            <input id="blood-by" type="date" className="form-control form-control-sm" value={filters.by} onChange={(event) => setFilter("by", event.target.value)} />
+          </div>
+          <div className="col-sm-3 d-flex align-items-center justify-content-between gap-2">
+            <div className="form-check form-switch mb-0">
+              <input id="blood-urgent" className="form-check-input" type="checkbox" checked={filters.urgent} onChange={(event) => setFilter("urgent", event.target.checked)} />
+              <label className="form-check-label small" htmlFor="blood-urgent">Urgent only</label>
+            </div>
+            {(filters.group || filters.urgent || filters.area || filters.by) && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => setSearchParams({}, { replace: true })}>Clear</button>}
+          </div>
+        </div>
+      </section>
+
       {showForm && (
         <div className="card border-0 shadow-sm mb-5 border-top border-4 border-mc">
           <div className="card-body p-4">
@@ -196,15 +240,15 @@ export default function BloodDonation() {
           <p>{error}</p>
           <button className="btn btn-warning mt-2" onClick={() => fetchData()}>Try Again</button>
         </div>
-      ) : requests.length === 0 ? (
+      ) : shown.length === 0 ? (
         <div className="text-center py-5 text-muted border rounded shadow-sm bg-white">
           <Heart size={48} className="mb-3 opacity-25 mx-auto" />
-          <h5 className="fw-bold">No Active Requests</h5>
-          <p className="mb-0">Alhamdulillah, there are no active blood emergencies right now.</p>
+          <h5 className="fw-bold">{requests.length === 0 ? "No Active Requests" : "No requests match these filters"}</h5>
+          <p className="mb-0">{requests.length === 0 ? "Alhamdulillah, there are no active blood emergencies right now." : "Try a different blood group or clear the filters."}</p>
         </div>
       ) : (
         <div className="d-flex flex-column gap-3">
-          {requests.map(req => {
+          {shown.slice(0, visible).map(req => {
             const hasResponded = req.hasResponded;
             const isFulfilled = req.status !== "active";
             const isOwn = req.created_by === user?.id;
@@ -225,8 +269,8 @@ export default function BloodDonation() {
                     <div className="col ps-sm-4">
                       <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
                         <div className="d-flex flex-wrap align-items-center gap-2">
-                          <h5 className="fw-bold mb-0 text-dark d-sm-none">{req.group} &bull; {req.units} Bag{req.units > 1 ? "s" : ""}</h5>
-                          <h5 className="fw-bold mb-0 text-dark d-none d-sm-block">Blood Required</h5>
+                          <h5 className="fw-bold mb-0 d-sm-none"><Link to={`/blood-donation/${req.id}`} className="text-dark text-decoration-none">{req.group} &bull; {req.units} Bag{req.units > 1 ? "s" : ""}</Link></h5>
+                          <h5 className="fw-bold mb-0 d-none d-sm-block"><Link to={`/blood-donation/${req.id}`} className="text-dark text-decoration-none">Blood Required</Link></h5>
                           {req.urgent && req.status === "active" && <span className="badge bg-danger">Urgent</span>}
                           {isFulfilled && <span className="badge bg-success">Fulfilled</span>}
                         </div>
@@ -240,7 +284,7 @@ export default function BloodDonation() {
                           <MapPin size={15} /> <span>{req.hospital}</span>
                         </div>
                         <div className="d-flex align-items-center gap-2">
-                          <Phone size={15} /> <span>{req.phone}</span>
+                          <Phone size={15} /> <a href={telHref(req.phone)}>{req.phone}</a>
                         </div>
                       </div>
                       
@@ -250,7 +294,7 @@ export default function BloodDonation() {
                         <button 
                           className={`btn btn-sm d-flex align-items-center gap-2 fw-medium ${hasResponded ? "btn-success" : isFulfilled ? "btn-light border text-muted" : "btn-mc"}`}
                           disabled={isDisabled || req.isResponding}
-                          onClick={() => handleRespond(req.id)}
+                          onClick={() => handleRespond(req)}
                         >
                           {req.isResponding ? (
                             <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -261,7 +305,9 @@ export default function BloodDonation() {
                           )}
                           {hasResponded ? "You Responded" : isOwn ? "Your request" : isFulfilled ? "Completed" : "I Can Donate"}
                         </button>
-                        {isOwn && <button className="btn btn-sm btn-outline-mc" onClick={() => handleClose(req.id)}>Mark fulfilled</button>}
+                        {isOwn && <button className="btn btn-sm btn-outline-mc" onClick={() => setClosing(req)}>Mark fulfilled</button>}
+                        <Link to={`/blood-donation/${req.id}`} className="btn btn-sm btn-outline-secondary">{isOwn ? "See offers" : "Details"}</Link>
+                        <a href={shareOnWhatsAppUrl(req, `${window.location.origin}/blood-donation/${req.id}`)} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-success d-flex align-items-center gap-1"><Share2 size={14} aria-hidden="true" /> Share</a>
                       </div>
                     </div>
 
@@ -270,8 +316,15 @@ export default function BloodDonation() {
               </div>
             );
           })}
+          {shown.length > visible && (
+            <div className="text-center">
+              <button type="button" className="btn btn-outline-mc" onClick={() => setVisible((count) => count + PAGE_SIZE)}>Load more requests</button>
+            </div>
+          )}
         </div>
       )}
+      {respondTo && <RespondDialog request={respondTo} onDone={() => setRequests((items) => items.map((item) => item.id === respondTo.id ? { ...item, hasResponded: true } : item))} onClose={() => setRespondTo(null)} />}
+      {closing && <ConfirmDialog title="Mark this request as fulfilled?" message={`${closing.group} at ${closing.hospital}`} confirmLabel="Mark fulfilled" tone="success" onConfirm={() => handleClose(closing.id)} onClose={() => setClosing(null)} />}
     </div>
   );
 }

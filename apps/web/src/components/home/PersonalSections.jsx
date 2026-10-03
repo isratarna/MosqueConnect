@@ -153,7 +153,7 @@ export function UrgentBloodRequests() {
       <div className="row g-3">
         {data.map((request) => (
           <div className="col-md-6" key={request.id}>
-            <Link to="/blood-donation" className="card mc-card border-danger border-opacity-25 p-3 text-decoration-none">
+            <Link to={`/blood-donation/${request.id}`} className="card mc-card border-danger border-opacity-25 p-3 text-decoration-none">
               <div className="d-flex justify-content-between align-items-start">
                 <div>
                   <h3 className="text-danger mb-1 h4">{request.blood_group}</h3>

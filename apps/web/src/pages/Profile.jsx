@@ -13,8 +13,9 @@ import { TrustedBadge } from "../components/suggestions/SuggestionReviewList";
 import { COMPLAINT_CATEGORIES, COMPLAINT_STATUS, GOODS_STATUS, LOST_FOUND_STATUS, labelOf } from "../utils/communityHubApi";
 import { ListRowsSkeleton, MosqueCardSkeleton, SkeletonRegion } from "../components/skeletons";
 import MySuggestedMosques from "../components/profile/MySuggestedMosques";
+import { MyBloodRequestsTab, MyBloodResponsesTab, VolunteeringTab } from "../components/profile/ProfileTabs";
 
-const tabs = { followed: "Followed Mosques", invites: "Team Invitations", activity: "Event Registrations", donations: "Donations", suggestions: "My Corrections", feedback: "My Feedback", lostfound: "My Lost & Found", claims: "Mosque Applications", settings: "Settings" };
+const tabs = { followed: "Followed Mosques", invites: "Team Invitations", activity: "Event Registrations", donations: "Donations", suggestions: "My Corrections", feedback: "My Feedback", lostfound: "My Lost & Found", claims: "Mosque Applications", volunteering: "Volunteering", "blood-requests": "My Blood Requests", "blood-responses": "Blood Responses", settings: "Settings" };
 const endpoints = { invites: "/api/me/mosque-invites", activity: "/api/me/event-registrations", donations: "/api/me/donations", suggestions: "/api/me/suggestions", feedback: "/api/me/complaints", lostfound: "/api/lost-found/me", claims: "/api/me/mosque-claims" };
 const emptyText = { invites: "You have no team invitations.", activity: "No event registrations yet.", donations: "No donations yet.", suggestions: "You haven't suggested any corrections yet.", feedback: "You haven't sent feedback to a mosque yet.", lostfound: "You haven't posted a lost or found item yet.", claims: "No mosque applications yet." };
 const SUGGESTION_STATUS = { pending: ["Waiting for review", "bg-warning text-dark"], accepted: ["Accepted", "bg-success"], rejected: ["Not accepted", "bg-secondary"] };
@@ -22,11 +23,17 @@ const SUGGESTION_STATUS = { pending: ["Waiting for review", "bg-warning text-dar
 export default function Profile() {
   const { user, updateUser, refreshUser } = useAuth();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const follows = useFollowedMosques();
   const requestedTab = searchParams.get("tab") || location.state?.tab;
   const [activeTab, setActiveTab] = useState(tabs[requestedTab] ? requestedTab : "followed");
   const [busyInvite, setBusyInvite] = useState(null);
+
+  // [Urmee · F6 Part 3] The active tab lives in the URL (/profile?tab=blood-requests), so other pages can link straight to it.
+  const selectTab = (key) => {
+    setActiveTab(key);
+    setSearchParams({ tab: key }, { replace: true });
+  };
 
   // Notification links (?tab=invites) can change the tab while the page is open.
   useEffect(() => {
@@ -97,8 +104,8 @@ export default function Profile() {
         </aside>
         <div className="col-lg-9">
           <div className="card border-0 shadow-sm">
-            <nav className="nav nav-tabs px-3 pt-3" aria-label="Profile sections">
-              {Object.entries(tabs).map(([key, label]) => <button type="button" key={key} className={`nav-link ${activeTab === key ? "active" : ""}`} aria-current={activeTab === key ? "page" : undefined} onClick={() => setActiveTab(key)}>{label}{key === "invites" && user.pending_mosque_invites_count > 0 && <span className="badge bg-danger ms-1">{user.pending_mosque_invites_count}</span>}</button>)}
+            <nav className="nav nav-tabs px-3 pt-3 mc-profile-tabs" aria-label="Profile sections">
+              {Object.entries(tabs).map(([key, label]) => <button type="button" key={key} className={`nav-link ${activeTab === key ? "active" : ""}`} aria-current={activeTab === key ? "page" : undefined} onClick={() => selectTab(key)}>{label}{key === "invites" && user.pending_mosque_invites_count > 0 && <span className="badge bg-danger ms-1">{user.pending_mosque_invites_count}</span>}</button>)}
             </nav>
             <div className="card-body p-4">
               <h2 className="h5 mb-4">{tabs[activeTab]}</h2>
@@ -165,6 +172,10 @@ export default function Profile() {
                 {activeTab === "donations" && <GoodsPledges />}
                 {activeTab === "donations" && <p className="small text-muted">Pledges are confirmed by mosque administrators. <Link to="/campaigns">View campaigns</Link>.</p>}
               </>}
+              {/* [Urmee · F6 Part 3] Each new tab is its own component with its own data and empty state. */}
+              {activeTab === "volunteering" && <VolunteeringTab />}
+              {activeTab === "blood-requests" && <MyBloodRequestsTab />}
+              {activeTab === "blood-responses" && <MyBloodResponsesTab />}
               {activeTab === "settings" && <form onSubmit={saveProfile}>
                 <div className="mb-3"><label className="form-label" htmlFor="profile-name">Full name</label><input id="profile-name" className="form-control" name="name" defaultValue={user.name} required maxLength={255} /></div>
                 <div className="mb-3"><label className="form-label" htmlFor="profile-email">Email (optional)</label><input id="profile-email" className="form-control" type="email" name="email" defaultValue={user.email || ""} maxLength={255} /></div>

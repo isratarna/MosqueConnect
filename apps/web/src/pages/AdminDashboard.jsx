@@ -122,7 +122,8 @@ export default function AdminDashboard() {
     return (
       <div className="container py-5" style={{ minHeight: "60vh" }}>
         <h1 className="h3">Mosque Dashboard</h1>
-        <p>No mosque is assigned to this account. <Link to="/profile" state={{ tab: "claims" }}>View applications</Link>{user?.pending_mosque_invites_count > 0 && <> or <Link to="/profile?tab=invites">answer your team invitations</Link></>}.</p>
+        {/* [Urmee · F6 Part 3] Switched from router state to ?tab= as the issue asked. */}
+        <p>No mosque is assigned to this account. <Link to="/profile?tab=claims">View applications</Link>{user?.pending_mosque_invites_count > 0 && <> or <Link to="/profile?tab=invites">answer your team invitations</Link></>}.</p>
       </div>
     );
   }
