@@ -10,6 +10,7 @@ use App\Models\Mosque;
 use App\Models\PrayerTime;
 use App\Support\ClockTime;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -29,7 +30,7 @@ class DashboardQueryService
     public function todayPrayers(Mosque $mosque): array
     {
         $now = CarbonImmutable::now(config('prayer.timezone'));
-        $mosque->loadMissing(['prayerTimes', 'jumuahSessions']);
+        $mosque->loadMissing(['prayerTimes', 'jumuahSessions', 'schedulePeriods.prayerTimes']);
 
         $schedule = $this->prayerSchedule->forDate($mosque, $now);
         $jumuah = $mosque->jumuahSessions
@@ -236,7 +237,7 @@ class DashboardQueryService
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<CampaignDonation>
+     * @return Builder<CampaignDonation>
      */
     private function pendingPledgesQuery(Mosque $mosque)
     {
