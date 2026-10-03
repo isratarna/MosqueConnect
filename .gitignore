@@ -57,3 +57,9 @@ auth.json
 
 # Local Docker overrides
 docker-compose.override.yml
+
+# React build output (served by Laravel) and deploy keys
+/apps/api/public/app
+deploy_key
+deploy_key.pub
+cse3100_deploy*
