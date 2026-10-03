@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'notes',
     'status',
     'closed_at',
+    'closed_reason',
 ])]
 class BloodRequest extends Model
 {
@@ -55,6 +56,18 @@ class BloodRequest extends Model
         self::URGENCY_MEDIUM,
         self::URGENCY_HIGH,
         self::URGENCY_CRITICAL,
+    ];
+
+    /**
+     * Sort weight per urgency, so the most life-threatening requests can be
+     * listed first regardless of how soon they are needed.
+     */
+    public const URGENCY_PRIORITY = [
+        self::URGENCY_CRITICAL => 5,
+        self::URGENCY_HIGH => 4,
+        self::URGENCY_MEDIUM => 3,
+        self::URGENCY_NORMAL => 2,
+        self::URGENCY_LOW => 1,
     ];
 
     public const STATUS_ACTIVE = 'active';
@@ -113,15 +126,72 @@ class BloodRequest extends Model
      */
     public function isOpen(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === self::STATUS_ACTIVE && ! $this->isPastDue();
+    }
+
+    /**
+     * Whether the date the blood is needed on has already passed.
+     */
+    public function isPastDue(): bool
+    {
+        return $this->required_date !== null && $this->required_date->isBefore(today());
     }
 
     /**
      * Limit a query to only open (active) blood requests.
+     *
+     * Past-due requests are excluded here as a safety net, so an emergency
+     * drops off the public list the day it is over even if the hourly expiry
+     * task has not run yet.
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', self::STATUS_ACTIVE);
+        return $query
+            ->where('status', self::STATUS_ACTIVE)
+            ->whereDate('required_date', '>=', today());
+    }
+
+    /**
+     * Apply the supported public list filters to a query.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when($filters['blood_group'] ?? null, fn (Builder $query, string $bloodGroup): Builder => $query->where('blood_group', $bloodGroup))
+            ->when($filters['urgency'] ?? null, fn (Builder $query, string $urgency): Builder => $query->where('urgency', $urgency))
+            ->when($filters['area'] ?? null, fn (Builder $query, string $area): Builder => $query->where('hospital_or_location', 'like', "%{$area}%"))
+            ->when($filters['needed_before'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('required_date', '<=', $date));
+    }
+
+    /**
+     * Order the most urgent requests first. Ties fall back to the caller's
+     * own ordering, which is the soonest required date.
+     */
+    public function scopeUrgencyFirst(Builder $query): Builder
+    {
+        $cases = collect(self::URGENCY_PRIORITY)
+            ->map(fn (int $rank, string $urgency): string => "WHEN '{$urgency}' THEN {$rank}")
+            ->implode(' ');
+
+        return $query->orderByRaw("CASE urgency {$cases} ELSE 0 END DESC");
+    }
+
+    /**
+     * Close out every request whose required date has passed. Called hourly by
+     * the scheduler.
+     */
+    public static function expirePastDue(): int
+    {
+        return static::query()
+            ->where('status', self::STATUS_ACTIVE)
+            ->whereDate('required_date', '<', today())
+            ->update([
+                'status' => self::STATUS_EXPIRED,
+                'closed_at' => now(),
+                'updated_at' => now(),
+            ]);
     }
 
     /**

@@ -113,6 +113,18 @@ class AppServiceProvider extends ServiceProvider
             return $limit->response(fn () => response()->json(['message' => $message], 429));
         });
 
+        // Blood requests are time-critical and public, so one person may only
+        // post a few a day.
+        RateLimiter::for('blood-requests', function (Request $request) {
+            $limit = (int) config('blood.daily_request_limit', 5);
+
+            return Limit::perDay($limit)
+                ->by('blood-request|'.($request->user()?->id ?? $request->ip()))
+                ->response(fn () => response()->json([
+                    'message' => "You can post up to {$limit} blood requests a day. Please try again tomorrow.",
+                ], 429));
+        });
+
         // Usage tracking is public, so each IP may count at most 30 events per mosque per hour.
         RateLimiter::for('mosque-track', function (Request $request) {
             $mosque = $request->route('mosque');
