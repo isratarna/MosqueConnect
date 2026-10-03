@@ -17,6 +17,8 @@ class UpdateBloodRequestStatusRequest extends FormRequest
     {
         return [
             'status' => ['required', 'string', Rule::in(BloodRequest::STATUSES)],
+            // Optional note kept alongside the request when it is closed out.
+            'reason' => ['sometimes', 'nullable', 'string', 'max:500'],
         ];
     }
 }
