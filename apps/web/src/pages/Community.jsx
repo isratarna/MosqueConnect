@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FilterX, Search } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import CommunityCard, { CommunityCategoryIcon } from "../components/CommunityCard";
 import EventList from "../components/events/EventList";
 import LostFoundSection from "../components/community/LostFoundSection";
 import EventRegistrationFeedback from "../components/events/EventRegistrationFeedback";
 import useEventRegistration from "../hooks/useEventRegistration";
+import { useAuth } from "../context/AuthContext";
 import { isCommunityCategory } from "../data/community";
+import { fetchFollowedMosques } from "../utils/mosqueDiscovery";
 import { apiRequest } from "../utils/api";
 import { fetchEventCollection } from "../utils/eventApi";
 import { filterEvents, getEventMosqueName } from "../utils/eventFilters";
@@ -19,6 +21,7 @@ const CATEGORY_FILTERS = [
   { key: "lost_found", label: "Lost & Found" },
 ];
 const INITIAL_VISIBLE_ITEMS = 5;
+const sameText = (value, needle) => String(value || "").toLowerCase().includes(needle.toLowerCase());
 
 // The API stores urgency as low/medium/high (plus critical for blood requests);
 // the feed card and the "urgent only" filter speak urgent/important/normal.
@@ -32,19 +35,24 @@ export default function Community() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedCategory = searchParams.get("category");
   const activeCategory = isCommunityCategory(requestedCategory) ? requestedCategory : "all";
-  const [search, setSearch] = useState(() => searchParams.get("search") || "");
-  const [mosque, setMosque] = useState("");
-  const [area, setArea] = useState("");
-  const [dateGroup, setDateGroup] = useState("");
-  const [urgentOnly, setUrgentOnly] = useState(false);
+  const { user } = useAuth();
+  // Every filter lives in the URL, so a refresh or a shared link reproduces the same view.
+  const search = searchParams.get("search") || "";
+  const mosque = searchParams.get("mosque") || "";
+  const area = searchParams.get("area") || "";
+  const dateGroup = searchParams.get("date") || "";
+  const urgentOnly = searchParams.get("urgent") === "1";
+  const followingOnly = Boolean(user) && searchParams.get("following") === "1";
+  const eventCategory = searchParams.get("event_category") || "";
+  const upcomingEventsOnly = searchParams.get("all_events") !== "1";
+  const [areaOptions, setAreaOptions] = useState([]);
+  const [followedIds, setFollowedIds] = useState(null);
   const [visibleItems, setVisibleItems] = useState(INITIAL_VISIBLE_ITEMS);
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState("");
   const [eventsMeta, setEventsMeta] = useState(null);
   const [eventRequestKey, setEventRequestKey] = useState(0);
-  const [eventCategory, setEventCategory] = useState("");
-  const [upcomingEventsOnly, setUpcomingEventsOnly] = useState(true);
   const registration = useEventRegistration();
   const [communityUpdates, setCommunityUpdates] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
@@ -57,11 +65,13 @@ export default function Community() {
       apiRequest("/api/announcements", { signal: controller.signal }),
       apiRequest("/api/blood-requests", { signal: controller.signal }),
       apiRequest("/api/volunteer-opportunities", { signal: controller.signal }),
-    ]).then(([announcements, blood, volunteers]) => {
+      apiRequest("/api/campaigns?per_page=20", { signal: controller.signal }),
+    ]).then(([announcements, blood, volunteers, campaigns]) => {
       const updates = [
         ...announcements.data.map((item) => ({ ...item, category: "announcement", summary: item.body, area: item.mosque?.address, mosqueId: item.mosque_id, mosqueName: item.mosque?.name, mosqueVerified: item.mosque?.verified, urgency: feedUrgency(item.urgency), publishedAt: item.published_at })),
-        ...blood.data.map((item) => ({ ...item, id: "blood-" + item.id, category: "blood", title: item.blood_group + " blood requested", summary: item.notes || "Contact the requester to help.", area: item.hospital_or_location, mosqueName: "Community blood request", urgency: feedUrgency(item.urgency), publishedAt: item.created_at, actionPath: "/blood-donation" })),
-        ...volunteers.data.map((item) => ({ ...item, id: "volunteer-" + item.id, category: "volunteer", summary: item.description, area: item.location, mosqueId: item.mosque_id, mosqueName: item.mosque?.name, publishedAt: item.created_at, actionPath: "/volunteers" })),
+        ...blood.data.map((item) => ({ ...item, id: "blood-" + item.id, category: "blood", title: item.blood_group + " blood requested", summary: item.notes || "Contact the requester to help.", area: item.hospital_or_location, mosqueName: "Community blood request", urgency: feedUrgency(item.urgency), publishedAt: item.created_at, actionPath: "/blood-donation", actionLabel: "View requests" })),
+        ...volunteers.data.map((item) => ({ ...item, id: "volunteer-" + item.id, category: "volunteer", summary: item.description, area: item.location, mosqueId: item.mosque_id, mosqueName: item.mosque?.name, publishedAt: item.created_at, actionPath: `/volunteers?opportunity=${item.id}`, actionLabel: "View opportunity" })),
+        ...campaigns.data.map((item) => ({ ...item, id: "campaign-" + item.id, category: "campaign", summary: item.summary, area: item.mosque?.address, mosqueId: item.mosque_id, mosqueName: item.mosque?.name, mosqueVerified: item.mosque?.verified, publishedAt: item.created_at, actionPath: `/campaigns/${item.id}`, actionLabel: "View campaign" })),
       ].map((item) => {
         const days = (Date.now() - new Date(item.publishedAt).getTime()) / 86400000;
         return { ...item, publishedLabel: item.publishedAt?.slice(0, 10) || "", dateGroup: days < 1 ? "today" : days < 7 ? "this-week" : "older" };
@@ -106,13 +116,6 @@ export default function Community() {
     ].filter(Boolean))].sort(),
     [events, communityUpdates],
   );
-  const areas = useMemo(
-    () => [...new Set([
-      ...communityUpdates.map((item) => item.area),
-      ...events.map((event) => event.location),
-    ].filter(Boolean))].sort(),
-    [events, communityUpdates],
-  );
   const eventCategories = useMemo(
     () => [...new Set(events.map((event) => event.category).filter(Boolean))].sort(),
     [events],
@@ -124,32 +127,47 @@ export default function Community() {
     || dateGroup
     || urgentOnly
     || eventCategory
+    || followingOnly
     || !upcomingEventsOnly
     || activeCategory !== "all");
 
-  const setCategory = (category) => {
+  // An empty value (or false) removes the key, keeping shared URLs short.
+  const setParam = useCallback((key, value) => {
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      if (category === "all") next.delete("category");
-      else next.set("category", category);
+      if (value) next.set(key, value === true ? "1" : value);
+      else next.delete(key);
       return next;
-    });
-  };
+    }, { replace: true });
+  }, [setSearchParams]);
+  const setSearch = (value) => setParam("search", value);
+  const setMosque = (value) => setParam("mosque", value);
+  const setArea = (value) => setParam("area", value);
+  const setDateGroup = (value) => setParam("date", value);
+  const setUrgentOnly = (value) => setParam("urgent", value);
+  const setFollowingOnly = (value) => setParam("following", value);
+  const setEventCategory = (value) => setParam("event_category", value);
+  const setUpcomingEventsOnly = (value) => setParam("all_events", !value);
+  const setCategory = (category) => setParam("category", category === "all" ? "" : category);
 
-  const clearFilters = () => {
-    setSearch("");
-    setMosque("");
-    setArea("");
-    setDateGroup("");
-    setUrgentOnly(false);
-    setEventCategory("");
-    setUpcomingEventsOnly(true);
-    setCategory("all");
-  };
+  const clearFilters = () => setSearchParams({}, { replace: true });
+
+  useEffect(() => {
+    apiRequest("/api/mosques/filters")
+      .then(({ data }) => setAreaOptions([...new Set((data || []).flatMap((group) => group.areas || []))].sort()))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!followingOnly) return;
+    fetchFollowedMosques()
+      .then((followed) => setFollowedIds(new Set(followed.map((item) => String(item.id)))))
+      .catch(() => setFollowedIds(new Set()));
+  }, [followingOnly]);
 
   useEffect(() => {
     setVisibleItems(INITIAL_VISIBLE_ITEMS);
-  }, [search, mosque, area, dateGroup, urgentOnly, activeCategory]);
+  }, [search, mosque, area, dateGroup, urgentOnly, followingOnly, activeCategory]);
 
   const filteredUpdates = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -163,22 +181,23 @@ export default function Community() {
         .includes(normalizedSearch);
       const matchesCategory = activeCategory === "all" || item.category === activeCategory;
       const matchesMosque = !mosque || item.mosqueName === mosque;
-      const matchesArea = !area || item.area === area;
+      const matchesArea = !area || sameText(item.area, area);
+      const matchesFollowing = !followingOnly || followedIds?.has(String(item.mosqueId));
       const matchesDate = !dateGroup || item.dateGroup === dateGroup;
       const matchesUrgency = !urgentOnly || item.urgency === "urgent" || item.urgency === "important";
 
-      return matchesSearch && matchesCategory && matchesMosque && matchesArea && matchesDate && matchesUrgency;
+      return matchesSearch && matchesCategory && matchesMosque && matchesArea && matchesFollowing && matchesDate && matchesUrgency;
     });
-  }, [activeCategory, area, dateGroup, mosque, search, urgentOnly, communityUpdates]);
+  }, [activeCategory, area, dateGroup, followedIds, followingOnly, mosque, search, urgentOnly, communityUpdates]);
 
-  const filteredEvents = useMemo(() => filterEvents(events, {
+  const filteredEvents = useMemo(() => filterEvents(followingOnly ? events.filter((event) => followedIds?.has(String(event.mosque_id ?? event.mosque?.id))) : events, {
     search,
     mosque,
     location: area,
     category: eventCategory,
     dateGroup,
     upcomingOnly: upcomingEventsOnly,
-  }), [area, dateGroup, eventCategory, events, mosque, search, upcomingEventsOnly]);
+  }), [area, dateGroup, eventCategory, events, followedIds, followingOnly, mosque, search, upcomingEventsOnly]);
 
   const feedItems = filteredUpdates.slice(0, visibleItems);
   const showLostFound = activeCategory === "lost_found";
@@ -239,9 +258,9 @@ export default function Community() {
               </select>
             </div>
             <div className="col-sm-6 col-lg">
-              <select className="form-select" value={area} onChange={(event) => setArea(event.target.value)} aria-label="Filter by area or event venue">
-                <option value="">All areas / venues</option>
-                {areas.map((option) => <option key={option} value={option}>{option}</option>)}
+              <select className="form-select" value={area} onChange={(event) => setArea(event.target.value)} aria-label="Filter by area">
+                <option value="">All areas</option>
+                {areaOptions.map((option) => <option key={option} value={option}>{option}</option>)}
               </select>
             </div>
             <div className="col-sm-6 col-lg">
@@ -258,6 +277,14 @@ export default function Community() {
                 <label className="form-check-label" htmlFor="urgent-community-only">Urgent only</label>
               </div>
             </div>
+            {user && (
+              <div className="col-sm-6 col-lg-auto d-flex align-items-center">
+                <div className="form-check form-switch mc-community-filter__urgent">
+                  <input id="following-only" className="form-check-input" type="checkbox" checked={followingOnly} onChange={(event) => setFollowingOnly(event.target.checked)} />
+                  <label className="form-check-label" htmlFor="following-only">From mosques I follow</label>
+                </div>
+              </div>
+            )}
             {hasFilters && (
               <div className="col-sm-6 col-lg-auto">
                 <button type="button" className="btn btn-outline-mc w-100" onClick={clearFilters}>
@@ -336,7 +363,9 @@ export default function Community() {
               )}
             </>
           ) : (
-            <EmptyState onClear={clearFilters} />
+            followingOnly && followedIds?.size === 0
+              ? <div className="mc-community-empty mc-card text-center"><h3>Follow mosques to see their updates here</h3><p>You are not following any mosque yet.</p><Link to="/browse" className="btn btn-mc">Browse mosques</Link></div>
+              : <EmptyState onClear={clearFilters} />
           )}
         </section>}
       </div>
