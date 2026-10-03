@@ -29,6 +29,7 @@ use App\Services\ClaimReview\DocumentAiClaimReviewer;
 use App\Services\ClaimReview\GoogleDocumentAiClient;
 use App\Services\Journey\GeoapifyRoutingClient;
 use App\Services\Journey\RoutesClient;
+use App\Services\Otp\DemoSmsOtpSender;
 use App\Services\Otp\LogSmsOtpSender;
 use App\Services\Otp\MissingSmsOtpSender;
 use App\Services\Otp\SmsOtpSender;
@@ -47,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(SmsOtpSender::class, fn () => match (config('otp.sms.driver')) {
             'log' => new LogSmsOtpSender,
+            'demo' => new DemoSmsOtpSender,
             default => new MissingSmsOtpSender,
         });
 

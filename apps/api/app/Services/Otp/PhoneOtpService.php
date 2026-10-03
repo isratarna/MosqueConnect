@@ -60,6 +60,10 @@ class PhoneOtpService
 
     private function generateOtp(): string
     {
+        if (config('otp.sms.driver') === 'demo') {
+            return (string) config('otp.sms.demo_code');
+        }
+
         $length = (int) config('otp.length', 6);
         $max = (10 ** $length) - 1;
 
