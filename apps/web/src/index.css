@@ -6854,3 +6854,7 @@ main {
 .mc-picker__option.is-active { background: rgba(182, 69, 18, 0.1); }
 .mc-picker__option.is-disabled { cursor: not-allowed; opacity: 0.6; }
 @media (max-width: 767.98px) { .mc-profile-page { padding-bottom: 5rem; } }
+
+/* [Urmee · F6 Part 3] Profile tabs: one horizontally scrollable row on small screens instead of wrapping */
+.mc-profile-tabs { flex-wrap: nowrap; overflow-x: auto; }
+.mc-profile-tabs .nav-link { white-space: nowrap; }

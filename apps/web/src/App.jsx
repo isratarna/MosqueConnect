@@ -29,6 +29,7 @@ const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
 const Eid = lazy(() => import("./pages/Eid"));
 const Search = lazy(() => import("./pages/Search"));
+const BloodRequestDetail = lazy(() => import("./pages/BloodRequestDetail"));
 const SuggestMosque = lazy(() => import("./pages/SuggestMosque"));
 const Qibla = lazy(() => import("./pages/Qibla"));
 const About = lazy(() => import("./pages/InfoPages").then((m) => ({ default: m.About })));
@@ -87,6 +88,8 @@ export default function App() {
           <Route path="/support/continue" element={<SupportContinue />} />
           <Route path="/community" element={<Community />} />
           <Route path="/blood-donation" element={<BloodDonation />} />
+          {/* [Urmee · F6 Part 1] Detail page for one blood request (the Community feed and Home cards link here). */}
+          <Route path="/blood-donation/:id" element={<BloodRequestDetail />} />
           <Route path="/volunteers" element={<VolunteerOpportunities />} />
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/campaigns/:id" element={<CampaignDetails />} />
