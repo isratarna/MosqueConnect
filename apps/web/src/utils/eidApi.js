@@ -12,6 +12,9 @@ export function eidLabel(eid) {
   return EID_OPTIONS.find((option) => option.value === eid)?.label || "Eid";
 }
 
+// [Urmee · i18n dashboard] The same names in the active language (eid.fitr / eid.adha); the API's own label is the fallback.
+export const eidNameT = (t, eid, fallback) => (EID_OPTIONS.some((option) => option.value === eid) ? t(`eid.${eid}`) : fallback || t("eid.generic"));
+
 let seasonRequest = null;
 
 /** The configured Eid season, or null. Shared by the banner, the Eid page and the profile. */

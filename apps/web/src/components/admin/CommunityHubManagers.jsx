@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, MessageSquareText, PackageOpen, Search, Send, X } from "lucide-react";
 import {
-  COMPLAINT_CATEGORIES, COMPLAINT_STATUS, GOODS_STATUS, LOST_FOUND_CATEGORIES, LOST_FOUND_STATUS,
-  fetchMosqueComplaints, fetchMosqueGoodsDonations, fetchMosqueLostFound, labelOf, respondToComplaint,
+  COMPLAINT_STATUS, GOODS_STATUS, LOST_FOUND_STATUS,
+  fetchMosqueComplaints, fetchMosqueGoodsDonations, fetchMosqueLostFound, hubLabelT, respondToComplaint,
   updateGoodsDonation, updateLostFoundStatus,
 } from "../../utils/communityHubApi";
 import { formatShortDate } from "../../utils/dashboardFormat";
 import { BlockStack, SkeletonRegion } from "../skeletons";
+import { useLocale } from "../../hooks/useLocale";
 
 /** Loads one admin list and reloads it when the filter or `revision` changes. */
 function useAdminList(load, mosqueId, status) {
@@ -32,16 +33,18 @@ function useAdminList(load, mosqueId, status) {
 }
 
 function ListState({ loading, error, empty, onRetry, children }) {
-  if (loading) return <SkeletonRegion label="Loading…"><BlockStack heights={[72, 72]} /></SkeletonRegion>;
-  if (error) return <div className="alert alert-danger" role="alert">{error} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={onRetry}>Retry</button></div>;
+  const { t } = useLocale(); // [Urmee · i18n community] text from the locale files
+  if (loading) return <SkeletonRegion label={t("hubAdmin.loading")}><BlockStack heights={[72, 72]} /></SkeletonRegion>;
+  if (error) return <div className="alert alert-danger" role="alert">{error} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={onRetry}>{t("common.retry")}</button></div>;
   if (empty) return <div className="text-center text-muted py-4"><Search size={26} aria-hidden="true" /><p className="mb-0 mt-2">{empty}</p></div>;
   return children;
 }
 
 function StatusFilter({ id, value, onChange, options }) {
+  const { t } = useLocale();
   return (
     <div className="mb-3" style={{ maxWidth: 260 }}>
-      <label className="visually-hidden" htmlFor={id}>Filter by status</label>
+      <label className="visually-hidden" htmlFor={id}>{t("hubAdmin.filterStatus")}</label>
       <select id={id} className="form-select form-select-sm" value={value} onChange={(e) => onChange(e.target.value)}>
         {options.map(([optionValue, label]) => <option key={optionValue} value={optionValue}>{label}</option>)}
       </select>
@@ -52,15 +55,16 @@ function StatusFilter({ id, value, onChange, options }) {
 // ---- Feedback inbox ----------------------------------------------------------
 
 export function ComplaintsInbox({ mosqueId }) {
+  const { t } = useLocale();
   const [status, setStatus] = useState("active");
   const list = useAdminList(fetchMosqueComplaints, mosqueId, status);
 
   return (
     <>
-      <h2 className="h5 fw-bold mb-1"><MessageSquareText size={19} className="text-mc me-2" aria-hidden="true" />Feedback inbox</h2>
-      <p className="text-muted small">Private feedback from visitors. Only your mosque's owners and managers and the super admin can read it. Names are hidden when the sender chose to stay anonymous. Your reply is sent to the sender.</p>
-      <StatusFilter id="complaint-status" value={status} onChange={setStatus} options={[["active", "Needs action"], ["", "All"], ...Object.entries(COMPLAINT_STATUS).map(([key, [label]]) => [key, label])]} />
-      <ListState {...list} onRetry={list.reload} empty={!list.items.length && "No feedback here."}>
+      <h2 className="h5 fw-bold mb-1"><MessageSquareText size={19} className="text-mc me-2" aria-hidden="true" />{t("hubAdmin.feedbackTitle")}</h2>
+      <p className="text-muted small">{t("hubAdmin.feedbackIntro")}</p>
+      <StatusFilter id="complaint-status" value={status} onChange={setStatus} options={[["active", t("hubAdmin.needsAction")], ["", t("hubAdmin.all")], ...Object.keys(COMPLAINT_STATUS).map((key) => [key, hubLabelT(t, "complaintStatus", key)])]} />
+      <ListState {...list} onRetry={list.reload} empty={!list.items.length && t("hubAdmin.noFeedback")}>
         {list.items.map((complaint) => <ComplaintItem key={complaint.id} mosqueId={mosqueId} complaint={complaint} onSaved={list.replace} />)}
       </ListState>
     </>
@@ -68,12 +72,13 @@ export function ComplaintsInbox({ mosqueId }) {
 }
 
 function ComplaintItem({ mosqueId, complaint, onSaved }) {
+  const { t, locale } = useLocale();
   const [status, setStatus] = useState(complaint.status === "open" ? "in_progress" : complaint.status);
   const [reply, setReply] = useState(complaint.admin_response || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
-  const [statusLabel, statusClass] = COMPLAINT_STATUS[complaint.status] || [complaint.status, "bg-secondary"];
+  const statusClass = (COMPLAINT_STATUS[complaint.status] || [])[1] || "bg-secondary";
 
   async function save(event) {
     event.preventDefault();
@@ -92,23 +97,23 @@ function ComplaintItem({ mosqueId, complaint, onSaved }) {
     <article className="border rounded p-3 mb-3">
       <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
         <strong className="me-auto">{complaint.subject}</strong>
-        <span className="badge bg-light text-dark border">{labelOf(COMPLAINT_CATEGORIES, complaint.category)}</span>
-        <span className={`badge ${statusClass}`}>{statusLabel}</span>
+        <span className="badge bg-light text-dark border">{hubLabelT(t, "complaintCategory", complaint.category)}</span>
+        <span className={`badge ${statusClass}`}>{hubLabelT(t, "complaintStatus", complaint.status)}</span>
       </div>
-      <p className="small text-muted mb-2">{complaint.is_anonymous ? "Anonymous" : complaint.author?.name || "A visitor"} · {formatShortDate(complaint.created_at)}</p>
+      <p className="small text-muted mb-2">{complaint.is_anonymous ? t("hubAdmin.anonymous") : complaint.author?.name || t("hubAdmin.visitor")} · {formatShortDate(complaint.created_at, locale)}</p>
       <p className="mb-3" style={{ whiteSpace: "pre-line" }}>{complaint.body}</p>
       <form onSubmit={save}>
-        <label className="form-label small fw-semibold" htmlFor={`reply-${complaint.id}`}>Your reply</label>
-        <textarea id={`reply-${complaint.id}`} className="form-control form-control-sm mb-2" rows={2} maxLength={5000} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Thank the sender and say what you will do" />
+        <label className="form-label small fw-semibold" htmlFor={`reply-${complaint.id}`}>{t("hubAdmin.yourReply")}</label>
+        <textarea id={`reply-${complaint.id}`} className="form-control form-control-sm mb-2" rows={2} maxLength={5000} value={reply} onChange={(e) => setReply(e.target.value)} placeholder={t("hubAdmin.replyPlaceholder")} />
         <div className="d-flex flex-wrap gap-2 align-items-center">
-          <label className="visually-hidden" htmlFor={`status-${complaint.id}`}>Status</label>
+          <label className="visually-hidden" htmlFor={`status-${complaint.id}`}>{t("hubAdmin.status")}</label>
           <select id={`status-${complaint.id}`} className="form-select form-select-sm w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
-            {Object.entries(COMPLAINT_STATUS).map(([key, [label]]) => <option key={key} value={key}>{label}</option>)}
+            {Object.keys(COMPLAINT_STATUS).map((key) => <option key={key} value={key}>{hubLabelT(t, "complaintStatus", key)}</option>)}
           </select>
-          <button type="submit" className="btn btn-sm btn-mc" disabled={busy}><Send size={14} aria-hidden="true" /> {busy ? "Saving…" : "Save"}</button>
-          {saved && <span className="small text-success" role="status">Saved{complaint.responded_at ? " · the sender was notified" : ""}</span>}
+          <button type="submit" className="btn btn-sm btn-mc" disabled={busy}><Send size={14} aria-hidden="true" /> {busy ? t("hubAdmin.saving") : t("hubAdmin.save")}</button>
+          {saved && <span className="small text-success" role="status">{complaint.responded_at ? t("hubAdmin.savedNotified") : t("hubAdmin.savedOnly")}</span>}
         </div>
-        {complaint.responded_at && <p className="form-text mb-0">Last replied {formatShortDate(complaint.responded_at)}</p>}
+        {complaint.responded_at && <p className="form-text mb-0">{t("hubAdmin.lastReplied", { date: formatShortDate(complaint.responded_at, locale) })}</p>}
         {error && <div className="alert alert-danger py-2 small mt-2 mb-0" role="alert">{error}</div>}
       </form>
     </article>
@@ -118,6 +123,7 @@ function ComplaintItem({ mosqueId, complaint, onSaved }) {
 // ---- Lost & found at the mosque ----------------------------------------------
 
 export function LostFoundManager({ mosqueId }) {
+  const { t } = useLocale();
   const [status, setStatus] = useState("open");
   const list = useAdminList(fetchMosqueLostFound, mosqueId, status);
   const [busy, setBusy] = useState(null);
@@ -135,24 +141,24 @@ export function LostFoundManager({ mosqueId }) {
 
   return (
     <>
-      <h2 className="h5 fw-bold mb-1"><PackageOpen size={19} className="text-mc me-2" aria-hidden="true" />Lost &amp; found at your mosque</h2>
-      <p className="text-muted small">Items visitors reported at your mosque. Mark one returned when its owner collects it. Open items close on their own after 30 days.</p>
-      <StatusFilter id="lost-found-status" value={status} onChange={setStatus} options={[["", "All"], ...Object.entries(LOST_FOUND_STATUS).map(([key, [label]]) => [key, label])]} />
+      <h2 className="h5 fw-bold mb-1"><PackageOpen size={19} className="text-mc me-2" aria-hidden="true" />{t("hubAdmin.lostFoundTitle")}</h2>
+      <p className="text-muted small">{t("hubAdmin.lostFoundIntro")}</p>
+      <StatusFilter id="lost-found-status" value={status} onChange={setStatus} options={[["", t("hubAdmin.all")], ...Object.keys(LOST_FOUND_STATUS).map((key) => [key, hubLabelT(t, "lostFoundStatus", key)])]} />
       {error && <div className="alert alert-danger py-2 small" role="alert">{error}</div>}
-      <ListState {...list} onRetry={list.reload} empty={!list.items.length && "No items reported at your mosque."}>
+      <ListState {...list} onRetry={list.reload} empty={!list.items.length && t("hubAdmin.noItems")}>
         <ul className="list-unstyled mc-dash-list">
           {list.items.map((item) => (
             <li key={item.id}>
               <div className="min-w-0">
                 <div className="fw-semibold text-truncate">
-                  <span className={`badge ${item.type === "lost" ? "bg-danger" : "bg-success"} text-uppercase me-1`}>{item.type}</span>
+                  <span className={`badge ${item.type === "lost" ? "bg-danger" : "bg-success"} me-1`}>{hubLabelT(t, "type", item.type)}</span>
                   <Link to={`/community/lost-found/${item.id}`}>{item.title}</Link>
                 </div>
-                <div className="small text-muted text-truncate">{labelOf(LOST_FOUND_CATEGORIES, item.category)} · {item.occurred_on}{item.poster ? ` · ${item.poster.name}` : ""} · {LOST_FOUND_STATUS[item.status]?.[0]}</div>
+                <div className="small text-muted text-truncate">{hubLabelT(t, "lostFoundCategory", item.category)} · {item.occurred_on}{item.poster ? ` · ${item.poster.name}` : ""} · {hubLabelT(t, "lostFoundStatus", item.status)}</div>
               </div>
               {item.status === "open"
-                ? <button type="button" className="btn btn-sm btn-outline-success flex-shrink-0" disabled={busy !== null} onClick={() => mark(item, "returned")}><Check size={14} aria-hidden="true" /> Returned</button>
-                : <button type="button" className="btn btn-sm btn-outline-secondary flex-shrink-0" disabled={busy !== null} onClick={() => mark(item, "open")}>Reopen</button>}
+                ? <button type="button" className="btn btn-sm btn-outline-success flex-shrink-0" disabled={busy !== null} onClick={() => mark(item, "returned")}><Check size={14} aria-hidden="true" /> {t("hubAdmin.returned")}</button>
+                : <button type="button" className="btn btn-sm btn-outline-secondary flex-shrink-0" disabled={busy !== null} onClick={() => mark(item, "open")}>{t("hubAdmin.reopen")}</button>}
             </li>
           ))}
         </ul>
@@ -163,10 +169,8 @@ export function LostFoundManager({ mosqueId }) {
 
 // ---- Goods donation pledges ----------------------------------------------------
 
-const CONDITION_LABELS = { new: "New", gently_used: "Gently used", used: "Used" };
-const DELIVERY_LABELS = { drop_off: "Donor will deliver", pickup: "Needs pickup", discuss: "Wants to discuss" };
-
 export function GoodsDonationManager({ mosqueId }) {
+  const { t } = useLocale();
   const [status, setStatus] = useState("pending");
   const list = useAdminList(fetchMosqueGoodsDonations, mosqueId, status);
   const [busy, setBusy] = useState(null);
@@ -184,27 +188,27 @@ export function GoodsDonationManager({ mosqueId }) {
 
   return (
     <>
-      <h2 className="h5 fw-bold mb-1"><PackageOpen size={19} className="text-mc me-2" aria-hidden="true" />Goods donations</h2>
-      <p className="text-muted small">Pledges of items such as food, clothes or prayer mats. The donor is told each time you accept, receive or decline a pledge.</p>
-      <StatusFilter id="goods-status" value={status} onChange={setStatus} options={[["", "All"], ...Object.entries(GOODS_STATUS).map(([key, [label]]) => [key, label])]} />
+      <h2 className="h5 fw-bold mb-1"><PackageOpen size={19} className="text-mc me-2" aria-hidden="true" />{t("hubAdmin.goodsTitle")}</h2>
+      <p className="text-muted small">{t("hubAdmin.goodsIntro")}</p>
+      <StatusFilter id="goods-status" value={status} onChange={setStatus} options={[["", t("hubAdmin.all")], ...Object.keys(GOODS_STATUS).map((key) => [key, hubLabelT(t, "goodsStatus", key)])]} />
       {error && <div className="alert alert-danger py-2 small" role="alert">{error}</div>}
-      <ListState {...list} onRetry={list.reload} empty={!list.items.length && "No pledges here."}>
+      <ListState {...list} onRetry={list.reload} empty={!list.items.length && t("hubAdmin.noPledges")}>
         {list.items.map((donation) => (
           <article key={donation.id} className="border rounded p-3 mb-2">
             <div className="d-flex flex-wrap align-items-center gap-2">
               <strong className="me-auto">{donation.quantity} × {donation.item_name}</strong>
-              <span className={`badge ${GOODS_STATUS[donation.status]?.[1] || "bg-secondary"}`}>{GOODS_STATUS[donation.status]?.[0] || donation.status}</span>
+              <span className={`badge ${GOODS_STATUS[donation.status]?.[1] || "bg-secondary"}`}>{hubLabelT(t, "goodsStatus", donation.status)}</span>
             </div>
             <p className="small text-muted mb-2">
-              {donation.donor?.name || "A donor"} · {donation.contact} · {CONDITION_LABELS[donation.condition]} · {DELIVERY_LABELS[donation.delivery_method]}
-              {donation.preferred_date && ` · preferred ${donation.preferred_date}`}
+              {donation.donor?.name || t("hubAdmin.donor")} · {donation.contact} · {hubLabelT(t, "goodsCondition", donation.condition)} · {hubLabelT(t, "deliveryShort", donation.delivery_method)}
+              {donation.preferred_date && ` · ${t("hubAdmin.preferred", { date: donation.preferred_date })}`}
             </p>
             {donation.notes && <p className="small mb-2">“{donation.notes}”</p>}
             {(donation.status === "pending" || donation.status === "accepted") && (
               <div className="d-flex flex-wrap gap-1">
-                {donation.status === "pending" && <button type="button" className="btn btn-sm btn-success" disabled={busy !== null} onClick={() => update(donation, "accepted")}><Check size={14} aria-hidden="true" /> Accept</button>}
-                <button type="button" className="btn btn-sm btn-outline-success" disabled={busy !== null} onClick={() => update(donation, "received")}>Mark received</button>
-                <button type="button" className="btn btn-sm btn-outline-danger" disabled={busy !== null} onClick={() => update(donation, "declined")}><X size={14} aria-hidden="true" /> Decline</button>
+                {donation.status === "pending" && <button type="button" className="btn btn-sm btn-success" disabled={busy !== null} onClick={() => update(donation, "accepted")}><Check size={14} aria-hidden="true" /> {t("hubAdmin.accept")}</button>}
+                <button type="button" className="btn btn-sm btn-outline-success" disabled={busy !== null} onClick={() => update(donation, "received")}>{t("hubAdmin.markReceived")}</button>
+                <button type="button" className="btn btn-sm btn-outline-danger" disabled={busy !== null} onClick={() => update(donation, "declined")}><X size={14} aria-hidden="true" /> {t("hubAdmin.decline")}</button>
               </div>
             )}
           </article>

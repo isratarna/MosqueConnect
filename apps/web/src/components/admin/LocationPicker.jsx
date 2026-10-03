@@ -5,6 +5,7 @@ import { useGoogleMapsLoader } from "../GoogleMapsProvider";
 import { requestGeolocation } from "../../hooks/useGeolocation";
 import { coordinatesOf } from "../../utils/mosqueDiscovery";
 import { DEFAULT_CENTER } from "../../config";
+import { useLocale } from "../../hooks/useLocale";
 
 const MAP_OPTIONS = {
   mapTypeControl: false,
@@ -41,7 +42,8 @@ function placeDetails(components, address) {
  * The search box is the keyboard path; the map is the mouse/touch extra. With maps off
  * (or no key) it falls back to plain latitude/longitude inputs.
  */
-export default function LocationPicker({ value, onChange, center, idPrefix = "location", hint = "Search for an address, click the map or drag the pin to the jamaat location." }) {
+export default function LocationPicker({ value, onChange, center, idPrefix = "location", hint }) {
+  const { t } = useLocale(); // [Urmee · i18n dashboard] the default hint and every label come from the locale files
   const { disabled, isLoaded, loadError } = useGoogleMapsLoader();
   const point = coordinatesOf(value);
   const mapCenter = point || coordinatesOf(center) || DEFAULT_CENTER;
@@ -83,7 +85,7 @@ export default function LocationPicker({ value, onChange, center, idPrefix = "lo
     const here = await requestGeolocation({ force: true });
     setLocating(false);
     if (here?.status === "success") moveTo(here.lat, here.lng);
-    else setLocateError(here?.message || "We could not find your location.");
+    else setLocateError(here?.message || t("locationPicker.locateFailed"));
   };
 
   const selectPlace = useCallback((place) => {
@@ -106,11 +108,11 @@ export default function LocationPicker({ value, onChange, center, idPrefix = "lo
     return (
       <div>
         <p className="small text-muted mb-2">
-          {disabled || loadError ? "The map is turned off, so enter the coordinates below (you can copy them from Google Maps)." : "Loading map…"}
+          {disabled || loadError ? t("locationPicker.mapOff") : t("locationPicker.loadingMap")}
         </p>
         {(disabled || loadError) && (
           <div className="row g-2">
-            {[["lat", "Latitude", -90, 90], ["lng", "Longitude", -180, 180]].map(([field, label, min, max]) => (
+            {[["lat", t("locationPicker.latitude"), -90, 90], ["lng", t("locationPicker.longitude"), -180, 180]].map(([field, label, min, max]) => (
               <div className="col-6" key={field}>
                 <label className="form-label small" htmlFor={`${idPrefix}-${field}`}>{label}</label>
                 <input
@@ -134,7 +136,7 @@ export default function LocationPicker({ value, onChange, center, idPrefix = "lo
 
   return (
     <div>
-      <label className="form-label small" htmlFor={`${idPrefix}-search`}>Search address</label>
+      <label className="form-label small" htmlFor={`${idPrefix}-search`}>{t("locationPicker.search")}</label>
       <PlaceSearch id={`${idPrefix}-search`} onSelect={selectPlace} />
       <div className="mc-location-picker my-2">
         <GoogleMap mapContainerStyle={{ width: "100%", height: "100%" }} center={mapCenter} zoom={15} options={MAP_OPTIONS} onClick={pick}>
@@ -143,14 +145,14 @@ export default function LocationPicker({ value, onChange, center, idPrefix = "lo
       </div>
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <button type="button" className="btn btn-sm btn-outline-mc" onClick={useCurrentLocation} disabled={locating}>
-          <LocateFixed size={14} aria-hidden="true" /> {locating ? "Locating…" : "Use my current location"}
+          <LocateFixed size={14} aria-hidden="true" /> {locating ? t("locationPicker.locating") : t("locationPicker.useCurrent")}
         </button>
         <small className="text-muted" aria-live="polite">
-          {point ? `Lat ${point.lat.toFixed(6)}, Lng ${point.lng.toFixed(6)}` : "No location chosen yet"}
+          {point ? t("locationPicker.coords", { lat: point.lat.toFixed(6), lng: point.lng.toFixed(6) }) : t("locationPicker.none")}
         </small>
       </div>
       {locateError && <p className="small text-danger mt-1 mb-0" role="alert">{locateError}</p>}
-      <p className="form-text mt-1 mb-0">{hint}</p>
+      <p className="form-text mt-1 mb-0">{hint ?? t("locationPicker.hint")}</p>
     </div>
   );
 }
@@ -159,6 +161,7 @@ export default function LocationPicker({ value, onChange, center, idPrefix = "lo
 // [Urmee · F2 Part 1] Uses the NEW Place Autocomplete web component (Places API New), limited to
 // Bangladesh. Not the legacy Autocomplete, which new Cloud projects can't enable.
 function PlaceSearch({ id, onSelect }) {
+  const { t } = useLocale();
   const hostRef = useRef(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
@@ -190,6 +193,6 @@ function PlaceSearch({ id, onSelect }) {
     return () => element.remove();
   }, [id, supported]);
 
-  if (!supported) return <p className="form-text mt-0 mb-0">Address search isn&apos;t available; click the map or drag the pin instead.</p>;
+  if (!supported) return <p className="form-text mt-0 mb-0">{t("locationPicker.searchUnavailable")}</p>;
   return <div ref={hostRef} className="mc-place-autocomplete" />;
 }

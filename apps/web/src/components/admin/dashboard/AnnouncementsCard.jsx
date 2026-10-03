@@ -5,6 +5,7 @@ import { fetchAdminAnnouncements, setAnnouncementPublished } from "../../../util
 import { formatShortDate } from "../../../utils/dashboardFormat";
 import { announcementState, formatDhaka } from "../../../utils/announcementForm";
 import { useLocale } from "../../../hooks/useLocale";
+import { statusLabel } from "../../../utils/labels";
 
 // [Urmee · VIVA] Chip er rong: draft hold, scheduled nil, published sobuj, expired dhushor.
 const CHIP_CLASS = {
@@ -28,6 +29,7 @@ export function AnnouncementStatusChip({ status, publishAt }) {
 
 /** The five latest announcements, with publish/unpublish in place. */
 export default function AnnouncementsCard({ mosqueId, revision, onViewAll }) {
+  const { t, locale } = useLocale();
   const [items, setItems] = useState(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
@@ -59,12 +61,12 @@ export default function AnnouncementsCard({ mosqueId, revision, onViewAll }) {
 
   return (
     <DashboardCard
-      title="Announcements"
+      title={t("dashboard.announcements.title")}
       icon={Megaphone}
       loading={items === null && !error}
       error={error}
       onRetry={() => setRetry((n) => n + 1)}
-      action={<button type="button" className="btn btn-link btn-sm text-mc p-0" onClick={onViewAll}>View all</button>}
+      action={<button type="button" className="btn btn-link btn-sm text-mc p-0" onClick={onViewAll}>{t("dashboard.announcements.viewAll")}</button>}
     >
       {actionError && <div className="alert alert-danger py-2 small" role="alert">{actionError}</div>}
       {items?.length ? (
@@ -75,9 +77,9 @@ export default function AnnouncementsCard({ mosqueId, revision, onViewAll }) {
                 <div className="fw-semibold text-truncate">{item.title}</div>
                 <div className="small text-muted d-flex flex-wrap gap-2 align-items-center">
                   <AnnouncementStatusChip status={announcementState(item)} publishAt={item.publish_at} />
-                  {item.urgency === "high" && <span className="badge bg-danger">Urgent</span>}
-                  {item.moderation_status && item.moderation_status !== "approved" && <span className="badge bg-secondary">Moderation: {item.moderation_status}</span>}
-                  <span>{formatShortDate(item.published_at || item.created_at)}</span>
+                  {item.urgency === "high" && <span className="badge bg-danger">{t("dashboard.announcements.urgent")}</span>}
+                  {item.moderation_status && item.moderation_status !== "approved" && <span className="badge bg-secondary">{t("dashboard.announcements.moderation", { status: statusLabel(t, item.moderation_status) })}</span>}
+                  <span>{formatShortDate(item.published_at || item.created_at, locale)}</span>
                 </div>
               </div>
               <button
@@ -85,15 +87,15 @@ export default function AnnouncementsCard({ mosqueId, revision, onViewAll }) {
                 className={`btn btn-sm ${item.status === "published" ? "btn-outline-warning" : "btn-outline-success"}`}
                 disabled={busyId === item.id}
                 onClick={() => toggle(item)}
-                aria-label={`${item.status === "published" ? "Unpublish" : "Publish"} ${item.title}`}
+                aria-label={t(item.status === "published" ? "dashboard.announcements.ariaUnpublish" : "dashboard.announcements.ariaPublish", { title: item.title })}
               >
-                {busyId === item.id ? "…" : item.status === "published" ? "Unpublish" : "Publish"}
+                {busyId === item.id ? "…" : item.status === "published" ? t("announcementEditor.unpublish") : t("announcementEditor.publish")}
               </button>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-muted small mb-0">No announcements yet. Use Quick post to write your first one.</p>
+        <p className="text-muted small mb-0">{t("dashboard.announcements.empty")}</p>
       )}
     </DashboardCard>
   );

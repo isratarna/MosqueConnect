@@ -2,6 +2,8 @@
  * Journey planner ar "next jamat you can catch" er pure formatter ar constant
  * (node --test e chalano jay, kono API import nei).
  */
+import { timeOptions } from "./intl.js";
+
 export const JOURNEY_TIMEZONE = "Asia/Dhaka";
 
 // Map marker ar timeline-e prottek namaz-er alada rong.
@@ -20,15 +22,16 @@ export const FACILITY_OPTIONS = [
 ];
 
 // Map/autocomplete na thakleo demo kora jay emon kichu shohor.
+// [Urmee · i18n journey] `key` names the city's translation (journey.cities.<key>); `label` stays the English default.
 export const PRESET_PLACES = [
-  { label: "Dhaka (Gulistan)", lat: 23.723, lng: 90.412 },
-  { label: "Chattogram (GEC)", lat: 22.3593, lng: 91.8214 },
-  { label: "Comilla (Kandirpar)", lat: 23.4607, lng: 91.1809 },
-  { label: "Feni", lat: 23.0159, lng: 91.3976 },
-  { label: "Sylhet", lat: 24.8949, lng: 91.8687 },
-  { label: "Mymensingh", lat: 24.7471, lng: 90.4203 },
-  { label: "Rajshahi", lat: 24.3745, lng: 88.6042 },
-  { label: "Cox's Bazar", lat: 21.4272, lng: 92.0058 },
+  { key: "dhaka", label: "Dhaka (Gulistan)", lat: 23.723, lng: 90.412 },
+  { key: "chattogram", label: "Chattogram (GEC)", lat: 22.3593, lng: 91.8214 },
+  { key: "comilla", label: "Comilla (Kandirpar)", lat: 23.4607, lng: 91.1809 },
+  { key: "feni", label: "Feni", lat: 23.0159, lng: 91.3976 },
+  { key: "sylhet", label: "Sylhet", lat: 24.8949, lng: 91.8687 },
+  { key: "mymensingh", label: "Mymensingh", lat: 24.7471, lng: 90.4203 },
+  { key: "rajshahi", label: "Rajshahi", lat: 24.3745, lng: 88.6042 },
+  { key: "coxsbazar", label: "Cox's Bazar", lat: 21.4272, lng: 92.0058 },
 ];
 
 // "14 min" ba "1h 20m".
@@ -37,6 +40,24 @@ export function formatMinutes(minutes) {
   if (value < 60) return `${value} min`;
   return `${Math.floor(value / 60)}h ${value % 60}m`;
 }
+
+// [Urmee · i18n journey] Translated counterparts of formatMinutes / formatTime for the screens (the originals stay as they are for tests).
+// "14m" / "1h 20m" in the active language (reuses prayer.remaining* from the locale files).
+export function formatMinutesT(t, minutes) {
+  const value = Math.max(0, Math.round(Number(minutes) || 0));
+  return value < 60 ? t("prayer.remainingMinutes", { minutes: value }) : t("prayer.remainingHoursMinutes", { hours: Math.floor(value / 60), minutes: value % 60 });
+}
+
+// Clock time in Dhaka time, in the active language ("৪:৫০ ভোর" in Bangla).
+export function formatTimeT(iso, locale = "en-BD") {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat(locale, { ...timeOptions(locale), timeZone: JOURNEY_TIMEZONE }).format(date);
+}
+
+// Prayer name in the active language; unknown labels (Jumuah sessions...) keep what the API sent.
+export const prayerNameT = (t, label, code) => t(`prayer.${String(code || label || "").toLowerCase()}`, { defaultValue: label });
 
 export function formatTime(iso) {
   if (!iso) return "—";

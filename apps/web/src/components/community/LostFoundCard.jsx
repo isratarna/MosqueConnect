@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { CalendarDays, ImageOff, MapPin } from "lucide-react";
-import { labelOf, LOST_FOUND_CATEGORIES, LOST_FOUND_STATUS } from "../../utils/communityHubApi";
+import { hubLabelT, LOST_FOUND_STATUS } from "../../utils/communityHubApi";
+import { useLocale } from "../../hooks/useLocale";
 
 export default function LostFoundCard({ item, compact = false }) {
-  const [statusLabel, statusClass] = LOST_FOUND_STATUS[item.status] || [item.status, "bg-secondary"];
+  const { t } = useLocale(); // [Urmee · i18n community]
+  const statusClass = (LOST_FOUND_STATUS[item.status] || [])[1] || "bg-secondary";
 
   return (
     <article className="card mc-card h-100 mc-lost-found-card">
@@ -15,9 +17,9 @@ export default function LostFoundCard({ item, compact = false }) {
         )}
         <div className="card-body">
           <div className="d-flex flex-wrap gap-1 mb-2">
-            <span className={`badge ${item.type === "lost" ? "bg-danger" : "bg-success"} text-uppercase`}>{item.type}</span>
-            <span className="badge bg-light text-dark border">{labelOf(LOST_FOUND_CATEGORIES, item.category)}</span>
-            {item.status !== "open" && <span className={`badge ${statusClass}`}>{statusLabel}</span>}
+            <span className={`badge ${item.type === "lost" ? "bg-danger" : "bg-success"}`}>{hubLabelT(t, "type", item.type)}</span>
+            <span className="badge bg-light text-dark border">{hubLabelT(t, "lostFoundCategory", item.category)}</span>
+            {item.status !== "open" && <span className={`badge ${statusClass}`}>{hubLabelT(t, "lostFoundStatus", item.status)}</span>}
           </div>
           <h3 className="h6 fw-bold mb-1">{item.title}</h3>
           {!compact && <p className="small text-muted mb-2 mc-line-clamp-2">{item.description}</p>}

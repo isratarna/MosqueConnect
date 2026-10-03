@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Trans } from "react-i18next";
 import { Star } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { apiRequest } from "../../utils/api";
@@ -7,9 +8,12 @@ import ConfirmDialog from "../ConfirmDialog";
 import ReportButton from "../ReportButton";
 import { ListRowsSkeleton, SkeletonRegion } from "../skeletons";
 import { Stars, StarInput } from "./Stars";
+import { useLocale } from "../../hooks/useLocale";
+import { formatNumber } from "../../utils/intl";
 
 const PAGE_SIZE = 5;
-const formatDate = (value) => (value ? new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "");
+// [Urmee · i18n profile] The date follows the active language.
+const formatDate = (value, locale) => (value ? new Date(value).toLocaleDateString(locale === "en-BD" ? "en-GB" : locale, { day: "numeric", month: "short", year: "numeric" }) : "");
 
 /**
  * Ratings and reviews. Everyone sees the list ("Load more" pages through it); a logged-in user can
@@ -17,6 +21,7 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString("en-GB
  * `onChanged` lets the page refresh the average rating after a save or delete.
  */
 export default function ReviewsSection({ mosque, onChanged }) {
+  const { t, locale } = useLocale();
   const { user } = useAuth();
   const location = useLocation();
   const [reviews, setReviews] = useState([]);
@@ -65,14 +70,14 @@ export default function ReviewsSection({ mosque, onChanged }) {
   const save = async (event) => {
     event.preventDefault();
     if (!rating) {
-      setError("Choose a star rating first.");
+      setError(t("reviews.chooseStars"));
       return;
     }
     setSaving(true);
     setError("");
     try {
       await apiRequest(`/api/mosques/${mosque.id}/reviews/me`, { method: "PUT", body: { rating, comment: comment.trim() || null } });
-      setNotice("Your review has been saved.");
+      setNotice(t("reviews.saved"));
       setEditing(false);
       await load(1, { replace: true });
       onChanged?.();
@@ -85,7 +90,7 @@ export default function ReviewsSection({ mosque, onChanged }) {
 
   const remove = async () => {
     await apiRequest(`/api/mosques/${mosque.id}/reviews/me`, { method: "DELETE" });
-    setNotice("Your review has been removed.");
+    setNotice(t("reviews.removed"));
     setRating(0);
     setComment("");
     await load(1, { replace: true });
@@ -98,12 +103,12 @@ export default function ReviewsSection({ mosque, onChanged }) {
     <div className="card mc-card mb-4" id="reviews">
       <div className="card-body">
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <h2 className="h5 fw-bold mb-0"><Star size={18} className="text-mc me-2" aria-hidden="true" />Reviews</h2>
+          <h2 className="h5 fw-bold mb-0"><Star size={18} className="text-mc me-2" aria-hidden="true" />{t("reviews.title")}</h2>
           {mosque.rating !== null && (
             <span className="d-inline-flex align-items-center gap-2">
               <Stars value={mosque.rating} />
-              <strong>{mosque.rating.toFixed(1)}</strong>
-              <span className="text-muted small">({mosque.reviews_count} review{mosque.reviews_count === 1 ? "" : "s"})</span>
+              <strong>{formatNumber(mosque.rating, locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
+              <span className="text-muted small">{t("reviews.count", { count: mosque.reviews_count })}</span>
             </span>
           )}
         </div>
@@ -111,39 +116,39 @@ export default function ReviewsSection({ mosque, onChanged }) {
         {notice && <div className="alert alert-success py-2 small" role="status">{notice}</div>}
         {error && <div className="alert alert-danger py-2 small" role="alert">{error}</div>}
 
-        {!user && <p className="small text-muted"><Link to="/login" state={{ from: location.pathname }}>Log in</Link> to rate this mosque.</p>}
+        {!user && <p className="small text-muted"><Link to="/login" state={{ from: location.pathname }}>{t("reviews.logIn")}</Link>{t("reviews.toRate")}</p>}
 
         {showForm && (
           <form onSubmit={save} className="mb-4">
-            <StarInput id={`rate-${mosque.id}`} value={rating} onChange={setRating} legend={mine ? "Edit your rating" : "Rate this mosque"} />
-            <label className="form-label small mt-2" htmlFor={`review-comment-${mosque.id}`}>Comment (optional)</label>
+            <StarInput id={`rate-${mosque.id}`} value={rating} onChange={setRating} legend={mine ? t("reviews.editRating") : t("reviews.rateThis")} />
+            <label className="form-label small mt-2" htmlFor={`review-comment-${mosque.id}`}>{t("reviews.comment")}</label>
             <textarea id={`review-comment-${mosque.id}`} className="form-control" rows="3" maxLength={1000} value={comment} onChange={(event) => setComment(event.target.value)} />
             <div className="d-flex gap-2 mt-2">
-              <button type="submit" className="btn btn-mc btn-sm" disabled={saving}>{saving ? "Saving…" : mine ? "Update review" : "Submit review"}</button>
-              {editing && <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setEditing(false)}>Cancel</button>}
+              <button type="submit" className="btn btn-mc btn-sm" disabled={saving}>{saving ? t("reviews.saving") : mine ? t("reviews.update") : t("reviews.submit")}</button>
+              {editing && <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setEditing(false)}>{t("common.cancel")}</button>}
             </div>
           </form>
         )}
 
         {mine && !editing && (
           <div className="alert alert-light border small d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <span>You rated this mosque <strong>{mine.rating}/5</strong>.</span>
+            <span><Trans i18nKey="reviews.youRated" values={{ rating: formatNumber(mine.rating, locale) }} components={{ b: <strong /> }} /></span>
             <span className="d-flex gap-2">
-              <button type="button" className="btn btn-sm btn-outline-mc" onClick={startEdit}>Edit</button>
-              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setConfirmDelete(true)}>Delete</button>
+              <button type="button" className="btn btn-sm btn-outline-mc" onClick={startEdit}>{t("reviews.edit")}</button>
+              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setConfirmDelete(true)}>{t("reviews.delete")}</button>
             </span>
           </div>
         )}
 
-        <SkeletonRegion label="Loading reviews…" loading={loading && reviews.length === 0}><ListRowsSkeleton rows={2} /></SkeletonRegion>
-        {!loading && reviews.length === 0 && !error && <p className="text-muted mb-0">No reviews yet. Be the first to share how it was.</p>}
+        <SkeletonRegion label={t("reviews.loading")} loading={loading && reviews.length === 0}><ListRowsSkeleton rows={2} /></SkeletonRegion>
+        {!loading && reviews.length === 0 && !error && <p className="text-muted mb-0">{t("reviews.empty")}</p>}
 
         <ul className="list-unstyled mb-0">
           {reviews.map((review) => (
             <li key={review.id} className="border-top pt-3 mt-3">
               <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <span className="d-inline-flex align-items-center gap-2"><Stars value={review.rating} size={14} /><strong className="small">{review.user?.name || "A community member"}</strong></span>
-                <small className="text-muted">{formatDate(review.created_at)}</small>
+                <span className="d-inline-flex align-items-center gap-2"><Stars value={review.rating} size={14} /><strong className="small">{review.user?.name || t("reviews.member")}</strong></span>
+                <small className="text-muted">{formatDate(review.created_at, locale)}</small>
               </div>
               {review.comment && <p className="mb-1 mt-1 mc-prewrap">{review.comment}</p>}
               {/* [Urmee · F3 Part 2] Each review has a Report link (reportable_type "review"); you can't report your own. */}
@@ -154,11 +159,11 @@ export default function ReviewsSection({ mosque, onChanged }) {
 
         {page.current < page.last && (
           <div className="text-center mt-3">
-            <button type="button" className="btn btn-outline-mc btn-sm" onClick={() => load(page.current + 1)} disabled={loading}>{loading ? "Loading…" : "Load more reviews"}</button>
+            <button type="button" className="btn btn-outline-mc btn-sm" onClick={() => load(page.current + 1)} disabled={loading}>{loading ? t("reviews.loadingMore") : t("reviews.loadMore")}</button>
           </div>
         )}
       </div>
-      {confirmDelete && <ConfirmDialog title="Delete your review?" message="This removes your rating from the average." confirmLabel="Delete review" tone="danger" onConfirm={remove} onClose={() => setConfirmDelete(false)} />}
+      {confirmDelete && <ConfirmDialog title={t("reviews.deleteTitle")} message={t("reviews.deleteMessage")} confirmLabel={t("reviews.deleteConfirm")} tone="danger" onConfirm={remove} onClose={() => setConfirmDelete(false)} />}
     </div>
   );
 }

@@ -10,18 +10,20 @@ import {
   FACILITY_OPTIONS,
   buildMapsUrl,
   fetchJourney,
-  formatMinutes,
-  formatTime,
   planJourney,
   selectedStops,
 } from "../utils/journeyApi";
 import { BlockStack, SkeletonRegion } from "../components/skeletons";
+import { useLocale } from "../hooks/useLocale";
+import { formatMinutesT, formatTimeT } from "../utils/journeyFormat";
 
 /*
  * /journey ar /journey/:id. Form -> POST /api/journeys/plan -> map + timeline.
  * Plan-er id URL e boshai, tai link ta share kora jay (cache expire holeo dekha jay).
  */
 export default function Journey() {
+  // [Urmee · i18n journey] All visible text comes from t(); times and durations use the active language.
+  const { t, locale } = useLocale();
   const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -52,7 +54,7 @@ export default function Journey() {
         setStatus("success");
       })
       .catch((err) => {
-        setError(err.status === 404 ? "This journey plan was not found." : err.message);
+        setError(err.status === 404 ? t("journey.notFound") : err.message);
         setStatus("error");
       });
   }, [id, plan?.id]);
@@ -65,7 +67,7 @@ export default function Journey() {
     setError(null);
 
     if (!form.destination) {
-      setError("Choose where you are going.");
+      setError(t("journey.chooseDestination"));
       return;
     }
 
@@ -73,14 +75,14 @@ export default function Journey() {
     if (origin?.current) {
       const here = await requestGeolocation({ force: true });
       if (here.status !== "success") {
-        setError(here.message || "We could not find your location. Pick a starting point instead.");
+        setError(here.message || t("journey.locationFailed"));
         return;
       }
-      origin = { lat: here.lat, lng: here.lng, label: "My location" };
+      origin = { lat: here.lat, lng: here.lng, label: t("journey.myLocation") };
     }
 
     if (!origin) {
-      setError("Choose where you are starting from.");
+      setError(t("journey.chooseOrigin"));
       return;
     }
 
@@ -118,7 +120,7 @@ export default function Journey() {
     if (!plan) return;
     const request = plan.request || {};
     runPlan({
-      origin: { lat: here.lat, lng: here.lng, label: "Current position" },
+      origin: { lat: here.lat, lng: here.lng, label: t("journey.currentPosition") },
       destination: plan.destination,
       mode: plan.mode,
       corridor_km: request.corridor_km,
@@ -144,49 +146,49 @@ export default function Journey() {
 
   return (
     <div className="container py-4 mc-journey-page">
-      <h1 className="h4 d-flex align-items-center gap-2"><RouteIcon size={22} aria-hidden="true" /> Plan prayers on your journey</h1>
+      <h1 className="h4 d-flex align-items-center gap-2"><RouteIcon size={22} aria-hidden="true" /> {t("journey.title")}</h1>
       <p className="text-muted small">
-        See which prayers fall during your trip and which mosques along the route you can reach before the jamaat. We show times and options only.
+        {t("journey.intro")}
       </p>
 
       <div className="row g-4">
         <div className="col-lg-4">
           <form className="card" onSubmit={submit}>
             <div className="card-body d-grid gap-3">
-              <PlaceInput id="journey-origin" label="From" value={form.origin} allowCurrent onChange={(origin) => setForm((f) => ({ ...f, origin }))} />
-              <PlaceInput id="journey-destination" label="To" value={form.destination} onChange={(destination) => setForm((f) => ({ ...f, destination }))} />
+              <PlaceInput id="journey-origin" label={t("journey.from")} value={form.origin} allowCurrent onChange={(origin) => setForm((f) => ({ ...f, origin }))} />
+              <PlaceInput id="journey-destination" label={t("journey.to")} value={form.destination} onChange={(destination) => setForm((f) => ({ ...f, destination }))} />
 
               <div className="row g-2">
                 <div className="col-7">
-                  <label className="form-label small fw-semibold" htmlFor="journey-depart">Leaving at</label>
+                  <label className="form-label small fw-semibold" htmlFor="journey-depart">{t("journey.leavingAt")}</label>
                   <input id="journey-depart" type="datetime-local" className="form-control form-control-sm" value={form.departAt} onChange={(e) => setForm((f) => ({ ...f, departAt: e.target.value }))} />
-                  <div className="form-text">Empty = now</div>
+                  <div className="form-text">{t("journey.emptyIsNow")}</div>
                 </div>
                 <div className="col-5">
-                  <label className="form-label small fw-semibold" htmlFor="journey-mode">Mode</label>
+                  <label className="form-label small fw-semibold" htmlFor="journey-mode">{t("journey.mode")}</label>
                   <select id="journey-mode" className="form-select form-select-sm" value={form.mode} onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}>
-                    <option value="drive">Car</option>
-                    <option value="walk">Walk (short trips)</option>
+                    <option value="drive">{t("journey.car")}</option>
+                    <option value="walk">{t("journey.walkShort")}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="form-label small fw-semibold" htmlFor="journey-corridor">Mosques within {form.corridorKm} km of the route</label>
+                <label className="form-label small fw-semibold" htmlFor="journey-corridor">{t("journey.corridor", { km: form.corridorKm })}</label>
                 <input id="journey-corridor" type="range" className="form-range" min="0.5" max="5" step="0.5" value={form.corridorKm} onChange={(e) => setForm((f) => ({ ...f, corridorKm: e.target.value }))} />
               </div>
 
               <div>
-                <label className="form-label small fw-semibold" htmlFor="journey-duration">Time per stop: {form.prayerDuration} min (with wudu)</label>
+                <label className="form-label small fw-semibold" htmlFor="journey-duration">{t("journey.duration", { min: form.prayerDuration })}</label>
                 <input id="journey-duration" type="range" className="form-range" min="10" max="30" step="5" value={form.prayerDuration} onChange={(e) => setForm((f) => ({ ...f, prayerDuration: e.target.value }))} />
               </div>
 
               <fieldset>
-                <legend className="form-label small fw-semibold mb-1">Prefer mosques with</legend>
+                <legend className="form-label small fw-semibold mb-1">{t("journey.preferWith")}</legend>
                 {FACILITY_OPTIONS.map((facility) => (
                   <div className="form-check form-check-inline small" key={facility.key}>
                     <input id={`journey-facility-${facility.key}`} className="form-check-input" type="checkbox" checked={form.facilities.includes(facility.key)} onChange={() => toggleFacility(facility.key)} />
-                    <label className="form-check-label" htmlFor={`journey-facility-${facility.key}`}>{facility.label}</label>
+                    <label className="form-check-label" htmlFor={`journey-facility-${facility.key}`}>{t(`facility.${facility.key}`, { defaultValue: facility.label })}</label>
                   </div>
                 ))}
               </fieldset>
@@ -194,7 +196,7 @@ export default function Journey() {
               {error && <div className="alert alert-danger py-2 small mb-0" role="alert">{error}</div>}
 
               <button type="submit" className="btn btn-mc" disabled={status === "loading"}>
-                {status === "loading" ? <><LoaderCircle className="spin" size={16} aria-hidden="true" /> Planning…</> : "Plan my prayers"}
+                {status === "loading" ? <><LoaderCircle className="spin" size={16} aria-hidden="true" /> {t("journey.planning")}</> : t("journey.plan")}
               </button>
             </div>
           </form>
@@ -202,21 +204,21 @@ export default function Journey() {
 
         <div className="col-lg-8">
           {!plan && status !== "loading" && (
-            <div className="mc-journey-empty card"><div className="card-body text-muted small">Enter a trip to see the prayers on the way.</div></div>
+            <div className="mc-journey-empty card"><div className="card-body text-muted small">{t("journey.emptyPrompt")}</div></div>
           )}
-          <SkeletonRegion label="Loading plan…" loading={status === "loading" && !plan}><BlockStack heights={[56, 56, 56]} /></SkeletonRegion>
+          <SkeletonRegion label={t("journey.loadingPlan")} loading={status === "loading" && !plan}><BlockStack heights={[56, 56, 56]} /></SkeletonRegion>
 
           {plan && (
             <div className="d-grid gap-3">
               <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
                 <div className="small">
-                  <strong>{plan.origin?.label || "Start"} → {plan.destination?.label || "Destination"}</strong>
-                  <span className="text-muted"> · {(plan.route.distance_m / 1000).toFixed(0)} km · {formatMinutes(plan.route.duration_s / 60)} · leave {formatTime(plan.route.depart_at)}, arrive {formatTime(plan.route.arrive_at)}</span>
-                  {plan.expired && <span className="badge text-bg-light ms-2">Saved plan — times were planned earlier</span>}
+                  <strong>{plan.origin?.label || t("journey.start")} → {plan.destination?.label || t("journey.destination")}</strong>
+                  <span className="text-muted"> · {t("journey.summary", { km: (plan.route.distance_m / 1000).toFixed(0), duration: formatMinutesT(t, plan.route.duration_s / 60), depart: formatTimeT(plan.route.depart_at, locale), arrive: formatTimeT(plan.route.arrive_at, locale) })}</span>
+                  {plan.expired && <span className="badge text-bg-light ms-2">{t("journey.savedPlan")}</span>}
                 </div>
                 <div className="d-flex gap-2">
-                  <button type="button" className="btn btn-outline-mc btn-sm" onClick={copyLink}><Copy size={14} aria-hidden="true" /> {copied ? "Copied" : "Share"}</button>
-                  <a className="btn btn-mc btn-sm" href={mapsUrl} target="_blank" rel="noreferrer"><ExternalLink size={14} aria-hidden="true" /> Open in Google Maps</a>
+                  <button type="button" className="btn btn-outline-mc btn-sm" onClick={copyLink}><Copy size={14} aria-hidden="true" /> {copied ? t("journey.copied") : t("journey.share")}</button>
+                  <a className="btn btn-mc btn-sm" href={mapsUrl} target="_blank" rel="noreferrer"><ExternalLink size={14} aria-hidden="true" /> {t("journey.openMaps")}</a>
                 </div>
               </div>
 

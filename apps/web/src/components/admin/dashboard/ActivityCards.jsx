@@ -4,16 +4,19 @@ import DashboardCard from "./DashboardCard";
 import CampaignProgress from "../../campaigns/CampaignProgress";
 import { formatClockTime } from "../../../utils/prayerTime";
 import { formatShortDate, plotPoints, pointsToPath } from "../../../utils/dashboardFormat";
+import { useLocale } from "../../../hooks/useLocale";
+import { formatNumber } from "../../../utils/intl";
 
 export function UpcomingEventsCard({ events, loading, error, onRetry, onManage }) {
+  const { t, locale } = useLocale();
   return (
     <DashboardCard
-      title="Upcoming events"
+      title={t("dashboard.activity.eventsTitle")}
       icon={CalendarDays}
       loading={loading}
       error={error}
       onRetry={onRetry}
-      action={<button type="button" className="btn btn-link btn-sm text-mc p-0" onClick={onManage}>Manage</button>}
+      action={<button type="button" className="btn btn-link btn-sm text-mc p-0" onClick={onManage}>{t("dashboard.activity.manage")}</button>}
     >
       {events?.length ? (
         <ul className="list-unstyled mc-dash-list mb-0">
@@ -21,30 +24,31 @@ export function UpcomingEventsCard({ events, loading, error, onRetry, onManage }
             <li key={event.id}>
               <div className="min-w-0">
                 <div className="fw-semibold text-truncate">{event.title}</div>
-                <div className="small text-muted">{formatShortDate(event.event_date)}{event.start_time ? ` · ${formatClockTime(event.start_time)}` : ""}{event.location ? ` · ${event.location}` : ""}</div>
+                <div className="small text-muted">{formatShortDate(event.event_date, locale)}{event.start_time ? ` · ${formatClockTime(event.start_time, locale)}` : ""}{event.location ? ` · ${event.location}` : ""}</div>
               </div>
-              <span className="small text-nowrap text-muted" title="Registrations / capacity">
-                {event.registrations_count}{event.capacity ? ` / ${event.capacity}` : ""} going
+              <span className="small text-nowrap text-muted" title={t("dashboard.activity.registrations")}>
+                {event.capacity ? t("dashboard.activity.goingOf", { count: event.registrations_count, capacity: event.capacity }) : t("dashboard.activity.going", { count: event.registrations_count })}
               </span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-muted small mb-0">No upcoming published events.</p>
+        <p className="text-muted small mb-0">{t("dashboard.activity.noEvents")}</p>
       )}
     </DashboardCard>
   );
 }
 
 export function ActiveCampaignsCard({ campaigns, loading, error, onRetry, onManage }) {
+  const { t } = useLocale();
   return (
     <DashboardCard
-      title="Active campaigns"
+      title={t("dashboard.activity.campaignsTitle")}
       icon={HandCoins}
       loading={loading}
       error={error}
       onRetry={onRetry}
-      action={<button type="button" className="btn btn-link btn-sm text-mc p-0" onClick={onManage}>Manage</button>}
+      action={<button type="button" className="btn btn-link btn-sm text-mc p-0" onClick={onManage}>{t("dashboard.activity.manage")}</button>}
     >
       {campaigns?.length ? (
         <ul className="list-unstyled mb-0 d-grid gap-3">
@@ -52,15 +56,15 @@ export function ActiveCampaignsCard({ campaigns, loading, error, onRetry, onMana
             <li key={campaign.id}>
               <div className="d-flex justify-content-between gap-2 small mb-1">
                 <strong className="text-truncate">{campaign.title}</strong>
-                <span className="text-muted text-nowrap">{campaign.days_left === 0 ? "Ends today" : `${campaign.days_left} days left`}</span>
+                <span className="text-muted text-nowrap">{campaign.days_left === 0 ? t("dashboard.activity.endsToday") : t("dashboard.activity.daysLeft", { count: campaign.days_left })}</span>
               </div>
               <CampaignProgress campaign={campaign} compact />
-              {campaign.moderation_status !== "approved" && <span className="badge bg-secondary">Awaiting moderation</span>}
+              {campaign.moderation_status !== "approved" && <span className="badge bg-secondary">{t("dashboard.activity.awaitingModeration")}</span>}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-muted small mb-0">No active campaigns.</p>
+        <p className="text-muted small mb-0">{t("dashboard.activity.noCampaigns")}</p>
       )}
     </DashboardCard>
   );
@@ -70,6 +74,7 @@ const SPARK = { width: 220, height: 56, padding: 6 };
 
 /** Follower total and new followers per week as an inline SVG sparkline. */
 export function FollowersCard({ total, growth, loading, error, onRetry }) {
+  const { t, locale } = useLocale();
   const [hover, setHover] = useState(null);
   const counts = (growth || []).map((week) => week.count);
   const points = plotPoints(counts, { ...SPARK, max: Math.max(...counts, 1) });
@@ -77,11 +82,11 @@ export function FollowersCard({ total, growth, loading, error, onRetry }) {
   const active = hover ?? counts.length - 1;
 
   return (
-    <DashboardCard title="Followers" icon={Users} loading={loading} error={error} onRetry={onRetry} skeletonLines={3}>
+    <DashboardCard title={t("dashboard.activity.followers")} icon={Users} loading={loading} error={error} onRetry={onRetry} skeletonLines={3}>
       <div className="d-flex align-items-end justify-content-between gap-3 flex-wrap">
         <div>
-          <div className="mc-dash-hero">{total ?? 0}</div>
-          <div className="small text-muted">+{recent} in the last 4 weeks</div>
+          <div className="mc-dash-hero">{formatNumber(total ?? 0, locale)}</div>
+          <div className="small text-muted">{t("dashboard.activity.followersRecent", { count: recent })}</div>
         </div>
         {growth?.length > 0 && (
           <figure className="mb-0 mc-dash-spark">
@@ -90,7 +95,7 @@ export function FollowersCard({ total, growth, loading, error, onRetry }) {
               width="100%"
               height={SPARK.height}
               role="img"
-              aria-label={`New followers per week for the last ${growth.length} weeks: ${counts.join(", ")}`}
+              aria-label={t("dashboard.activity.sparkAria", { weeks: growth.length, counts: counts.map((count) => formatNumber(count, locale)).join(", ") })}
               onPointerLeave={() => setHover(null)}
             >
               <line x1="0" x2={SPARK.width} y1={SPARK.height - SPARK.padding} y2={SPARK.height - SPARK.padding} className="mc-chart-baseline" />
@@ -110,7 +115,7 @@ export function FollowersCard({ total, growth, loading, error, onRetry }) {
               ))}
             </svg>
             <figcaption className="small text-muted text-end">
-              Week of {formatShortDate(growth[active].week_start)}: <strong className="text-body">+{counts[active]}</strong>
+              {t("dashboard.activity.weekOf", { date: formatShortDate(growth[active].week_start, locale) })} <strong className="text-body">+{formatNumber(counts[active], locale)}</strong>
             </figcaption>
           </figure>
         )}

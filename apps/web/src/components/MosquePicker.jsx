@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { LoaderCircle, Search, X } from "lucide-react";
 import { apiRequest } from "../utils/api";
 import VerifiedBadge from "./VerifiedBadge";
+import { useLocale } from "../hooks/useLocale";
 
 const DEBOUNCE_MS = 300;
 const MIN_LENGTH = 2;
@@ -12,7 +13,9 @@ const MIN_LENGTH = 2;
  * location is denied. Mosques that already have an administrator are listed as "Already managed" and can't be chosen.
  * Keyboard: ↑ ↓ move, Enter picks, Esc closes. Reused by the claim page and the support flow.
  */
-export default function MosquePicker({ value, onChange, label = "Mosque", required = false, disableManaged = true, autoFocus = false }) {
+export default function MosquePicker({ value, onChange, label, required = false, disableManaged = true, autoFocus = false }) {
+  const { t } = useLocale(); // [Urmee · i18n browse] the default label and every message come from the locale files
+  const fieldLabel = label ?? t("picker.defaultLabel");
   const inputId = useId();
   const listId = `${inputId}-list`;
   const wrapperRef = useRef(null);
@@ -82,13 +85,13 @@ export default function MosquePicker({ value, onChange, label = "Mosque", requir
   if (value) {
     return (
       <div>
-        <span className="form-label fw-semibold d-block">{label}{required && <span className="text-danger"> *</span>}</span>
+        <span className="form-label fw-semibold d-block">{fieldLabel}{required && <span className="text-danger"> *</span>}</span>
         <div className="d-flex align-items-center justify-content-between gap-2 border rounded p-2">
           <span>
             <strong>{value.name}</strong>{(value.verified || value.verification_status === "verified") && <VerifiedBadge className="ms-1" />}
             <span className="d-block small text-muted">{[value.area, value.district].filter(Boolean).join(", ") || value.address}</span>
           </span>
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => onChange(null)} aria-label="Choose a different mosque"><X size={14} aria-hidden="true" /> Change</button>
+          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => onChange(null)} aria-label={t("picker.changeAria")}><X size={14} aria-hidden="true" /> {t("picker.change")}</button>
         </div>
       </div>
     );
@@ -96,14 +99,14 @@ export default function MosquePicker({ value, onChange, label = "Mosque", requir
 
   return (
     <div ref={wrapperRef} className="position-relative">
-      <label className="form-label fw-semibold" htmlFor={inputId}>{label}{required && <span className="text-danger"> *</span>}</label>
+      <label className="form-label fw-semibold" htmlFor={inputId}>{fieldLabel}{required && <span className="text-danger"> *</span>}</label>
       <div className="input-group">
         <span className="input-group-text"><Search size={16} aria-hidden="true" /></span>
         <input
           id={inputId}
           type="text"
           className="form-control"
-          placeholder="Search by mosque name or area…"
+          placeholder={t("picker.placeholder")}
           autoComplete="off"
           autoFocus={autoFocus}
           role="combobox"
@@ -119,9 +122,9 @@ export default function MosquePicker({ value, onChange, label = "Mosque", requir
         {state.status === "loading" && <span className="input-group-text"><LoaderCircle size={16} className="spin" aria-hidden="true" /></span>}
       </div>
 
-      <ul id={listId} role="listbox" aria-label="Matching mosques" className="mc-picker__list list-unstyled" hidden={!showList}>
+      <ul id={listId} role="listbox" aria-label={t("picker.listLabel")} className="mc-picker__list list-unstyled" hidden={!showList}>
         {state.status === "error" && <li className="p-2 small text-danger" role="alert">{state.error}</li>}
-        {state.status === "done" && state.results.length === 0 && <li className="p-2 small text-muted" role="status">No mosque found for “{term}”.</li>}
+        {state.status === "done" && state.results.length === 0 && <li className="p-2 small text-muted" role="status">{t("picker.none", { term })}</li>}
         {state.results.map((mosque, index) => {
           const blocked = isBlocked(mosque);
           return (
@@ -138,7 +141,7 @@ export default function MosquePicker({ value, onChange, label = "Mosque", requir
             >
               <strong>{mosque.name}</strong>
               {(mosque.verified || mosque.verification_status === "verified") && <VerifiedBadge className="ms-1" />}
-              {blocked && <span className="badge text-bg-secondary ms-2">Already managed</span>}
+              {blocked && <span className="badge text-bg-secondary ms-2">{t("picker.managed")}</span>}
               <span className="d-block small text-muted">{[mosque.area, mosque.district].filter(Boolean).join(", ") || mosque.address}</span>
             </li>
           );

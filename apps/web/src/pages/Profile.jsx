@@ -11,7 +11,7 @@ import { respondToInvite } from "../utils/teamApi";
 import { describeValue } from "../utils/suggestionFormat";
 import { roleLabel } from "../utils/teamRoles";
 import { TrustedBadge } from "../components/suggestions/SuggestionReviewList";
-import { COMPLAINT_CATEGORIES, COMPLAINT_STATUS, GOODS_STATUS, LOST_FOUND_STATUS, labelOf } from "../utils/communityHubApi";
+import { COMPLAINT_STATUS, GOODS_STATUS, LOST_FOUND_STATUS, hubLabelT } from "../utils/communityHubApi";
 import { ListRowsSkeleton, MosqueCardSkeleton, SkeletonRegion } from "../components/skeletons";
 import MySuggestedMosques from "../components/profile/MySuggestedMosques";
 import { MyBloodRequestsTab, MyBloodResponsesTab, VolunteeringTab } from "../components/profile/ProfileTabs";
@@ -34,7 +34,8 @@ const tabs = {
   settings: "profile.tabs.settings",
 };
 const endpoints = { invites: "/api/me/mosque-invites", activity: "/api/me/event-registrations", donations: "/api/me/donations", suggestions: "/api/me/suggestions", feedback: "/api/me/complaints", lostfound: "/api/lost-found/me", claims: "/api/me/mosque-claims" };
-const SUGGESTION_STATUS = { pending: ["Waiting for review", "bg-warning text-dark"], accepted: ["Accepted", "bg-success"], rejected: ["Not accepted", "bg-secondary"] };
+// [Urmee · i18n suggestions] Only the badge colour lives here now; the label is suggest.status.<status> in the locale files.
+const SUGGESTION_STATUS = { pending: ["", "bg-warning text-dark"], accepted: ["", "bg-success"], rejected: ["", "bg-secondary"] };
 
 export default function Profile() {
   const { t, locale } = useLocale();
@@ -154,38 +155,38 @@ export default function Profile() {
                   {activeTab === "feedback" && <>
                     <div className="d-flex flex-wrap align-items-center gap-2">
                       <Link to={`/mosque/${item.mosque_id}`} className="fw-semibold">{item.mosque?.name || `Mosque #${item.mosque_id}`}</Link>
-                      <span className="badge bg-light text-dark border">{labelOf(COMPLAINT_CATEGORIES, item.category)}</span>
-                      {item.is_anonymous && <span className="badge bg-light text-dark border">Sent anonymously</span>}
-                      <span className={`badge ms-auto ${COMPLAINT_STATUS[item.status]?.[1] || "bg-secondary"}`}>{COMPLAINT_STATUS[item.status]?.[0] || item.status}</span>
+                      <span className="badge bg-light text-dark border">{hubLabelT(t, "complaintCategory", item.category)}</span>
+                      {item.is_anonymous && <span className="badge bg-light text-dark border">{t("profileHub.anonymousBadge")}</span>}
+                      <span className={`badge ms-auto ${COMPLAINT_STATUS[item.status]?.[1] || "bg-secondary"}`}>{hubLabelT(t, "complaintStatus", item.status)}</span>
                     </div>
                     <p className="mb-1 mt-2 fw-semibold">{item.subject}</p>
                     <p className="mb-0 small text-muted" style={{ whiteSpace: "pre-line" }}>{item.body}</p>
                     {item.admin_response
-                      ? <div className="mt-2 p-2 rounded bg-light small"><strong>Mosque's response</strong>{item.responded_at && <span className="text-muted"> · {item.responded_at.slice(0, 10)}</span>}<p className="mb-0" style={{ whiteSpace: "pre-line" }}>{item.admin_response}</p></div>
-                      : <p className="mb-0 mt-2 small text-muted">No response yet. You'll be notified when the mosque replies.</p>}
+                      ? <div className="mt-2 p-2 rounded bg-light small"><strong>{t("profileHub.mosqueResponse")}</strong>{item.responded_at && <span className="text-muted"> · {item.responded_at.slice(0, 10)}</span>}<p className="mb-0" style={{ whiteSpace: "pre-line" }}>{item.admin_response}</p></div>
+                      : <p className="mb-0 mt-2 small text-muted">{t("profileHub.noResponse")}</p>}
                   </>}
                   {activeTab === "lostfound" && <div className="d-flex flex-wrap align-items-center gap-2">
-                    <span className={`badge ${item.type === "lost" ? "bg-danger" : "bg-success"} text-uppercase`}>{item.type}</span>
+                    <span className={`badge ${item.type === "lost" ? "bg-danger" : "bg-success"}`}>{hubLabelT(t, "type", item.type)}</span>
                     <Link to={`/community/lost-found/${item.id}`} className="fw-semibold me-auto">{item.title}</Link>
-                    <span className={`badge ${LOST_FOUND_STATUS[item.status]?.[1] || "bg-secondary"}`}>{LOST_FOUND_STATUS[item.status]?.[0] || item.status}</span>
+                    <span className={`badge ${LOST_FOUND_STATUS[item.status]?.[1] || "bg-secondary"}`}>{hubLabelT(t, "lostFoundStatus", item.status)}</span>
                   </div>}
                   {activeTab === "suggestions" && <>
                     <div className="d-flex flex-wrap align-items-center gap-2">
                       <Link to={`/mosque/${item.mosque_id}`} className="fw-semibold">{item.mosque?.name || `Mosque #${item.mosque_id}`}</Link>
-                      <span className="badge bg-light text-dark border">{item.field_label}</span>
-                      <span className={`badge ms-auto ${SUGGESTION_STATUS[item.status]?.[1] || "bg-secondary"}`}>{item.auto_accepted ? "Accepted automatically" : SUGGESTION_STATUS[item.status]?.[0] || item.status}</span>
+                      <span className="badge bg-light text-dark border">{t(`suggest.fields.${item.field}`, { defaultValue: item.field_label })}</span>
+                      <span className={`badge ms-auto ${SUGGESTION_STATUS[item.status]?.[1] || "bg-secondary"}`}>{item.auto_accepted ? t("suggest.review.acceptedAuto") : t(`suggest.status.${item.status}`, { defaultValue: item.status })}</span>
                     </div>
-                    {item.field !== "other" && <p className="mb-0 mt-2 small">{describeValue(item.field, item.before)} → <strong>{describeValue(item.field, { ...(item.before || {}), ...item.payload, source: undefined })}</strong></p>}
+                    {item.field !== "other" && <p className="mb-0 mt-2 small">{describeValue(item.field, item.before, t, locale)} → <strong>{describeValue(item.field, { ...(item.before || {}), ...item.payload, source: undefined }, t, locale)}</strong></p>}
                     {item.note && <p className="mb-0 mt-1 small text-muted">“{item.note}”</p>}
                     {item.review_note && <p className="mb-0 mt-1 small">Reviewer: {item.review_note}</p>}
                   </>}
                 </div>)}
-                {activeTab === "suggestions" && <p className="small text-muted">Spotted a wrong time or detail? Open the mosque's page and choose <strong>Suggest a correction</strong>. After 3 accepted corrections you get the <strong>Trusted contributor</strong> badge.</p>}
+                {activeTab === "suggestions" && <p className="small text-muted"><Trans i18nKey="profileHub.suggestionsHelp" components={{ b: <strong /> }} /></p>}
                 {activeTab === "claims" && <p><Trans i18nKey="profile.claimsHelp" components={{ profile: <Link to="/mosque-admin/claim" /> }} /></p>}
                 {/* [Urmee · F3 Part 3] Mosque suggestions are listed under Mosque Applications, with their status. */}
                 {activeTab === "claims" && <MySuggestedMosques />}
-                {activeTab === "feedback" && <p className="small text-muted">To send feedback, open a mosque's page and choose <strong>Send feedback to this mosque</strong>.</p>}
-                {activeTab === "lostfound" && <p className="small text-muted"><Link to="/community?category=lost_found">Open Lost &amp; Found</Link> to report an item or mark one returned.</p>}
+                {activeTab === "feedback" && <p className="small text-muted"><Trans i18nKey="profileHub.feedbackHelp" components={{ b: <strong /> }} /></p>}
+                {activeTab === "lostfound" && <p className="small text-muted"><Trans i18nKey="profileHub.lostFoundHelp" components={{ link: <Link to="/community?category=lost_found" /> }} /></p>}
                 {activeTab === "donations" && <GoodsPledges />}
                 {activeTab === "donations" && <p className="small text-muted"><Trans i18nKey="profile.donationsHelp" components={{ campaigns: <Link to="/campaigns" /> }} /></p>}
               </>}
@@ -209,6 +210,7 @@ export default function Profile() {
 
 /** Goods pledges, listed under the Donations tab with the money pledges. */
 function GoodsPledges() {
+  const { t } = useLocale();
   const [pledges, setPledges] = useState([]);
   useEffect(() => {
     const controller = new AbortController();
@@ -220,12 +222,12 @@ function GoodsPledges() {
   if (!pledges.length) return null;
   return (
     <>
-      <h3 className="h6 fw-bold mt-4">Goods pledges</h3>
+      <h3 className="h6 fw-bold mt-4">{t("profileHub.goodsPledges")}</h3>
       {pledges.map((pledge) => (
         <div className="border rounded p-3 mb-3" key={pledge.id}>
           <div className="d-flex flex-wrap gap-2 align-items-center">
             <strong className="me-auto">{pledge.quantity} × {pledge.item_name}</strong>
-            <span className={`badge ${GOODS_STATUS[pledge.status]?.[1] || "bg-secondary"}`}>{GOODS_STATUS[pledge.status]?.[0] || pledge.status}</span>
+            <span className={`badge ${GOODS_STATUS[pledge.status]?.[1] || "bg-secondary"}`}>{hubLabelT(t, "goodsStatus", pledge.status)}</span>
           </div>
           <p className="mb-0 mt-1 small text-muted">{pledge.mosque?.name}</p>
         </div>

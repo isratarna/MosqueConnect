@@ -1,4 +1,6 @@
+import { useId } from "react";
 import { AlertTriangle, RotateCw } from "lucide-react";
+import { useLocale } from "../../../hooks/useLocale";
 
 /** Grey placeholder lines shown while a card loads. */
 export function Skeleton({ lines = 3, className = "" }) {
@@ -16,7 +18,9 @@ export function Skeleton({ lines = 3, className = "" }) {
  * a skeleton, on `error` a message with Retry, otherwise its children.
  */
 export default function DashboardCard({ title, icon: Icon, action, loading, error, onRetry, skeletonLines = 4, className = "", children }) {
-  const headingId = `card-${String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const { t } = useLocale();
+  // [Urmee · i18n dashboard] useId, not the title: a Bangla title has no a-z characters, so every card would get the same id.
+  const headingId = `card-${useId()}`;
   return (
     <section className={`card mc-dash-card ${className}`} aria-labelledby={headingId} aria-busy={loading ? "true" : undefined}>
       <div className="card-body">
@@ -29,16 +33,16 @@ export default function DashboardCard({ title, icon: Icon, action, loading, erro
         </div>
         {loading ? (
           <>
-            <span className="visually-hidden" role="status">Loading {title}…</span>
+            <span className="visually-hidden" role="status">{t("dashboard.card.loading", { title })}</span>
             <Skeleton lines={skeletonLines} />
           </>
         ) : error ? (
           <div className="mc-dash-card__error" role="alert">
             <AlertTriangle size={18} aria-hidden="true" />
-            <span>{typeof error === "string" ? error : `${title} could not be loaded.`}</span>
+            <span>{typeof error === "string" ? error : t("dashboard.card.couldNotLoad", { title })}</span>
             {onRetry && (
               <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onRetry}>
-                <RotateCw size={14} aria-hidden="true" /> Retry
+                <RotateCw size={14} aria-hidden="true" /> {t("common.retry")}
               </button>
             )}
           </div>

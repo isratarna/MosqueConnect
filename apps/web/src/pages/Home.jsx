@@ -153,8 +153,9 @@ export default function Home() {
 
 // "Next jamat you can catch" ar journey planner-e jawar card pashapashi.
 function JourneyCards({ origin }) {
+  const { t } = useLocale(); // [Urmee · i18n leftovers]
   return (
-    <section className="mc-journey-cards" aria-label="Catch a jamaat">
+    <section className="mc-journey-cards" aria-label={t("home.journeyAria")}>
       <div className="container">
         <div className="row g-3">
           <div className="col-lg-7">

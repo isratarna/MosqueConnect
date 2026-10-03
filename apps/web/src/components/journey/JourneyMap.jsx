@@ -4,6 +4,8 @@ import { Map as MapIcon } from "lucide-react";
 import { useGoogleMapsLoader } from "../GoogleMapsProvider";
 import { decodePolyline } from "../../utils/routeGeometry";
 import { PRAYER_COLORS } from "../../utils/journeyApi";
+import { useLocale } from "../../hooks/useLocale";
+import { prayerNameT } from "../../utils/journeyFormat";
 
 const MAP_OPTIONS = { mapTypeControl: false, streetViewControl: false, fullscreenControl: true, clickableIcons: false };
 
@@ -12,6 +14,7 @@ const MAP_OPTIONS = { mapTypeControl: false, streetViewControl: false, fullscree
  * (na pele amader nijer decodePolyline), stop marker namaz onujayi rongin.
  */
 export default function JourneyMap({ plan, stops, livePosition }) {
+  const { t } = useLocale();
   const { disabled, isLoaded, loadError } = useGoogleMapsLoader();
 
   const path = useMemo(() => {
@@ -34,7 +37,7 @@ export default function JourneyMap({ plan, stops, livePosition }) {
       <div className="mc-journey-map mc-map-placeholder d-flex flex-column align-items-center justify-content-center text-center p-3">
         <MapIcon size={28} aria-hidden="true" />
         <p className="small mb-0 mt-2">
-          {disabled ? "The map is turned off on this site. The timeline below still works." : loadError ? "The map could not load." : "Loading map…"}
+          {disabled ? t("journey.map.disabled") : loadError ? t("journey.map.loadError") : t("journey.map.loading")}
         </p>
       </div>
     );
@@ -53,18 +56,18 @@ export default function JourneyMap({ plan, stops, livePosition }) {
     <div className="mc-journey-map">
       <GoogleMap key={plan?.id} mapContainerStyle={{ width: "100%", height: "100%" }} options={MAP_OPTIONS} onLoad={fitRoute} center={path[0]} zoom={8}>
         <PolylineF path={path} options={{ strokeColor: "#12775c", strokeOpacity: 0.85, strokeWeight: 5 }} />
-        {path.length > 0 && <MarkerF position={path[0]} label="A" title={plan.origin?.label || "Start"} />}
-        {path.length > 0 && <MarkerF position={path[path.length - 1]} label="B" title={plan.destination?.label || "Destination"} />}
+        {path.length > 0 && <MarkerF position={path[0]} label="A" title={plan.origin?.label || t("journey.start")} />}
+        {path.length > 0 && <MarkerF position={path[path.length - 1]} label="B" title={plan.destination?.label || t("journey.destination")} />}
         {stops.map((stop) => (
           <MarkerF
             key={stop.key}
             position={{ lat: stop.mosque.lat, lng: stop.mosque.lng }}
             icon={circle(PRAYER_COLORS[stop.prayer] || "#12775c")}
             label={{ text: stop.label.charAt(0), color: "#ffffff", fontSize: "11px", fontWeight: "700" }}
-            title={`${stop.label}: ${stop.mosque.name}`}
+            title={`${prayerNameT(t, stop.label, stop.prayer)}: ${stop.mosque.name}`}
           />
         ))}
-        {livePosition && <MarkerF position={livePosition} icon={circle("#1a73e8", 7)} title="You are here" />}
+        {livePosition && <MarkerF position={livePosition} icon={circle("#1a73e8", 7)} title={t("journey.map.youAreHere")} />}
       </GoogleMap>
     </div>
   );

@@ -57,7 +57,13 @@ export function cleanFilters(filters = {}) {
 }
 
 /** Plain-language audience for a broadcast. */
-export function broadcastAudienceLabel({ audience, audience_value: value } = {}) {
+// [Urmee · i18n super-admin] Pass `t` for the active language; without it the English text is returned (the unit tests check that).
+export function broadcastAudienceLabel({ audience, audience_value: value } = {}, t = null) {
+  if (t) {
+    if (audience === "role") return t("superAdmin.more.audienceRole", { role: t(`superAdmin.more.audienceRoles.${value}`, { defaultValue: value }) });
+    if (audience === "district") return t("superAdmin.more.audienceDistrict", { district: value });
+    return t("superAdmin.more.audienceEveryone");
+  }
   if (audience === "role") {
     const roles = { normal_user: "normal users", mosque_admin: "mosque admins", super_admin: "super admins" };
     return `All ${roles[value] || value}`;
@@ -72,7 +78,7 @@ export function isSafeBroadcastLink(link = "") {
 }
 
 /** Readable list of content that blocks deleting a mosque, e.g. "3 followers, 1 event". */
-export function describeContent(content = {}) {
+export function describeContent(content = {}, t = null) {
   const labels = {
     followers: ["follower", "followers"],
     events: ["event", "events"],
@@ -84,6 +90,6 @@ export function describeContent(content = {}) {
   };
   return Object.entries(content)
     .filter(([, count]) => count > 0)
-    .map(([key, count]) => `${count} ${(labels[key] || [key, key])[count === 1 ? 0 : 1]}`)
+    .map(([key, count]) => (t ? t(`superAdmin.more.content.${key}`, { count, defaultValue: `${count} ${key}` }) : `${count} ${(labels[key] || [key, key])[count === 1 ? 0 : 1]}`))
     .join(", ");
 }
