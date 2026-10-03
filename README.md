@@ -41,7 +41,6 @@ MosqueConnect/
 │       └── tests/           # PHPUnit feature and unit tests
 ├── docker/                  # Development container definitions
 ├── docs/docker.md           # Additional Docker notes
-├── docs/i18n.md             # English/Bangla translation guide
 ├── compose.yaml             # Web, API, and MySQL services
 └── package.json             # npm workspace commands
 ```

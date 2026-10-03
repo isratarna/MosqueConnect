@@ -11,10 +11,5 @@
     "install:all": "npm install --workspaces",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down"
-  },
-  "dependencies": {
-    "i18next": "^26.4.2",
-    "i18next-browser-languagedetector": "^8.2.1",
-    "react-i18next": "^17.0.15"
   }
 }

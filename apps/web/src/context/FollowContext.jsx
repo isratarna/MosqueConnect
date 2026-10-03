@@ -1,12 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useAuth } from "./AuthContext";
 import { fetchFollowedMosques, followMosque, unfollowMosque } from "../utils/mosqueDiscovery";
 
 const FollowContext = createContext(null);
 
 export function FollowProvider({ children }) {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const [followedIds, setFollowedIds] = useState(() => new Set());
   const [followedMosques, setFollowedMosques] = useState([]);
@@ -35,11 +33,11 @@ export function FollowProvider({ children }) {
       setFollowedMosques(data);
     } catch (err) {
       console.error("Failed to load followed mosques:", err);
-      setError(err.message || t("error.followedLoad"));
+      setError(err.message || "Could not load followed mosques.");
     } finally {
       setLoading(false);
     }
-  }, [user, t]);
+  }, [user]);
 
   useEffect(() => {
     refreshFollowedMosques();
@@ -56,7 +54,7 @@ export function FollowProvider({ children }) {
   const toggleFollow = useCallback(
     async (mosque) => {
       if (!user) {
-        showToast(t("follow.loginRequired"), "error");
+        showToast("Please log in to follow mosques.", "error");
         return { ok: false, requiresAuth: true };
       }
 
@@ -64,7 +62,7 @@ export function FollowProvider({ children }) {
       if (!mosqueId) return { ok: false };
 
       const currentlyFollowing = followedIds.has(mosqueId);
-      const mosqueName = mosque?.name ? `"${mosque.name}"` : t("follow.fallbackName");
+      const mosqueName = mosque?.name ? `"${mosque.name}"` : "mosque";
 
       // 1. Optimistic UI Update
       setFollowedIds((prev) => {
@@ -82,11 +80,11 @@ export function FollowProvider({ children }) {
         if (currentlyFollowing) {
           await unfollowMosque(mosqueId);
           setFollowedMosques((items) => items.filter((item) => String(item.id) !== mosqueId));
-          showToast(t("follow.unfollowed", { name: mosqueName }), "success");
+          showToast(`Unfollowed ${mosqueName}.`, "success");
         } else {
           await followMosque(mosqueId);
           await refreshFollowedMosques();
-          showToast(t("follow.following", { name: mosqueName }), "success");
+          showToast(`Following ${mosqueName}!`, "success");
         }
         return { ok: true, following: !currentlyFollowing };
       } catch (err) {
@@ -100,11 +98,11 @@ export function FollowProvider({ children }) {
           }
           return next;
         });
-        showToast(err.message || t("follow.updateFailed"), "error");
+        showToast(err.message || "Failed to update follow status. Reverting...", "error");
         return { ok: false, error: err.message };
       }
     },
-    [user, followedIds, showToast, refreshFollowedMosques, t]
+    [user, followedIds, showToast, refreshFollowedMosques]
   );
 
   return (
@@ -139,7 +137,7 @@ export function FollowProvider({ children }) {
               type="button"
               className="btn-close btn-close-white ms-2"
               onClick={() => setToast(null)}
-              aria-label={t("follow.closeToast")}
+              aria-label="Close toast"
             ></button>
           </div>
         </div>

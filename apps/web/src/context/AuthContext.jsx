@@ -7,8 +7,6 @@
  */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { apiUrl } from "../config";
-import { translate } from "../i18n/translate";
-import { networkFetch } from "../utils/network";
 import {
   AUTH_TOKEN_KEY,
   AUTH_USER_KEY,
@@ -39,7 +37,7 @@ export function AuthProvider({ children }) {
     try {
       const storedToken = getStoredToken();
       if (!storedToken) { clearSession(); return; }
-      const res = await networkFetch(apiUrl("/api/auth/me"), { headers: getAuthHeaders() });
+      const res = await fetch(apiUrl("/api/auth/me"), { headers: getAuthHeaders() });
       if (version !== sessionVersion.current) return;
       if (res.ok) {
         const data = await res.json();
@@ -65,7 +63,7 @@ export function AuthProvider({ children }) {
   // Request OTP for phone number: POST /api/auth/send-otp
   async function sendOtp(phoneNumber) {
     try {
-      const res = await networkFetch(apiUrl("/api/auth/send-otp"), {
+      const res = await fetch(apiUrl("/api/auth/send-otp"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -80,20 +78,20 @@ export function AuthProvider({ children }) {
         const errorMsg =
           data.message ||
           (data.errors && Object.values(data.errors).flat().join(" ")) ||
-          translate("auth.errors.sendOtp");
+          "Failed to send OTP.";
         return { ok: false, error: errorMsg, data };
       }
 
-      return { ok: true, message: data.message || translate("auth.otpSentDefault"), data };
+      return { ok: true, message: data.message || "OTP sent successfully.", data };
     } catch (err) {
-      return { ok: false, error: err.message || translate("auth.errors.networkSend") };
+      return { ok: false, error: err.message || "Network error while sending OTP." };
     }
   }
 
   // Verify OTP and authenticate user: POST /api/auth/verify-otp
   async function verifyOtp(phoneNumber, otp) {
     try {
-      const res = await networkFetch(apiUrl("/api/auth/verify-otp"), {
+      const res = await fetch(apiUrl("/api/auth/verify-otp"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -108,7 +106,7 @@ export function AuthProvider({ children }) {
         const errorMsg =
           data.message ||
           (data.errors && Object.values(data.errors).flat().join(" ")) ||
-          translate("auth.errors.verify");
+          "Invalid OTP verification failed.";
         return { ok: false, error: errorMsg, data };
       }
 
@@ -133,7 +131,7 @@ export function AuthProvider({ children }) {
         data,
       };
     } catch (err) {
-      return { ok: false, error: err.message || translate("auth.errors.networkVerify") };
+      return { ok: false, error: err.message || "Network error while verifying OTP." };
     }
   }
 
@@ -144,7 +142,7 @@ export function AuthProvider({ children }) {
 
     if (currentToken) {
       try {
-        await networkFetch(apiUrl("/api/auth/logout"), {
+        await fetch(apiUrl("/api/auth/logout"), {
           method: "POST",
           headers: {
             ...getAuthHeaders(),

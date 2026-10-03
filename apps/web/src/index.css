@@ -17,10 +17,6 @@ body {
   /* safety net: page must never scroll horizontally */
 }
 
-:lang(bn) {
-  font-family: "Hind Siliguri", "Noto Sans Bengali", "Nirmala UI", sans-serif;
-}
-
 /* ---------- navbar ---------- */
 .mc-navbar {
   background: var(--mc-green-dark);
@@ -696,7 +692,7 @@ body {
   background-position: center;
   background-size: cover;
   color: var(--mc-ink);
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 0.9rem;
 }
 
@@ -706,7 +702,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Playfair Display", "Hind Siliguri", Georgia, serif;
+  font-family: "Playfair Display", Georgia, serif;
 }
 
 main {
@@ -812,7 +808,7 @@ main {
   align-items: center;
   color: var(--mc-ink);
   display: inline-flex;
-  font-family: "Playfair Display", "Hind Siliguri", Georgia, serif;
+  font-family: "Playfair Display", Georgia, serif;
   font-size: 1.08rem;
   gap: 0.45rem;
   letter-spacing: 0;
@@ -1127,7 +1123,7 @@ main {
 }
 
 .mc-notifications-page__header h1 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: clamp(2rem, 4vw, 2.8rem);
   font-weight: 700;
   margin: 0 0 0.45rem;
@@ -1345,7 +1341,7 @@ main {
 }
 
 .mc-location-card h2 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 0.88rem;
   font-weight: 700;
   line-height: 1.25;
@@ -1450,7 +1446,7 @@ main {
   padding: 0.52rem 0.72rem;
 }
 .mc-auth-home-map__label svg { color: var(--mc-rust); }
-.mc-auth-home-map__label h1 { font-family: "Manrope", "Hind Siliguri", sans-serif; font-size: 0.78rem; font-weight: 700; margin: 0; }
+.mc-auth-home-map__label h1 { font-family: "Manrope", sans-serif; font-size: 0.78rem; font-weight: 700; margin: 0; }
 .mc-auth-home-map__browse {
   color: var(--mc-rust);
   gap: 0.2rem;
@@ -1806,7 +1802,7 @@ main {
 }
 
 .mc-support-intro h2 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: clamp(1.8rem, 3vw, 2.45rem);
   font-weight: 700;
   margin-bottom: 0.45rem;
@@ -1843,7 +1839,7 @@ main {
 }
 
 .mc-support-tile h3 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 0.94rem;
   font-weight: 700;
   margin-bottom: 0.45rem;
@@ -1905,7 +1901,7 @@ main {
 }
 
 .mc-custom-support h3 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 0.92rem;
   font-weight: 700;
   margin: 0 0 0.3rem;
@@ -1949,7 +1945,7 @@ main {
 }
 
 .mc-support-page__intro h1 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
   margin-bottom: 0.7rem;
@@ -1994,7 +1990,7 @@ main {
 }
 
 .mc-support-page__card h2 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   margin: 0 0 0.55rem;
@@ -2053,7 +2049,7 @@ main {
 }
 
 .mc-community-page__intro h1 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
   margin-bottom: 0.65rem;
@@ -2180,7 +2176,7 @@ main {
 }
 
 .mc-community-section__heading h2 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: clamp(1.25rem, 2.2vw, 1.65rem);
   font-weight: 700;
   margin: 0;
@@ -2250,7 +2246,7 @@ main {
 }
 
 .mc-community-card h3 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 0.94rem;
   font-weight: 700;
   line-height: 1.45;
@@ -2406,7 +2402,7 @@ main {
 
 .mc-community-empty h3 {
   color: var(--mc-ink);
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 0.92rem;
   font-weight: 700;
   margin: 0 0 0.35rem;
@@ -2458,7 +2454,7 @@ main {
 }
 
 .mc-event-card h3 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.4;
@@ -2681,7 +2677,7 @@ main {
 }
 
 .mc-event-details h1 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: clamp(1.65rem, 3vw, 2.35rem);
   font-weight: 700;
   line-height: 1.25;
@@ -2706,7 +2702,7 @@ main {
 .mc-event-details__registration h2,
 .mc-event-details__info h2,
 .mc-event-details__source h2 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 1rem;
   font-weight: 700;
   margin: 0 0 0.7rem;
@@ -2873,7 +2869,7 @@ main {
 }
 
 .mc-announcement-details h1 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: clamp(1.65rem, 3vw, 2.35rem);
   font-weight: 700;
   line-height: 1.25;
@@ -2921,7 +2917,7 @@ main {
 
 .mc-announcement-details__info h2,
 .mc-announcement-details__source h2 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 1rem;
   font-weight: 700;
   margin: 0 0 1rem;
@@ -3036,7 +3032,7 @@ main {
 }
 
 .mc-modal__header h2 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 0.4rem;
@@ -3239,7 +3235,7 @@ main {
 
 .mc-support-action__intro h1,
 .mc-support-action__empty h1 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: clamp(1.9rem, 4vw, 2.8rem);
   font-weight: 700;
   margin-bottom: 0.6rem;
@@ -3272,7 +3268,7 @@ main {
 }
 
 .mc-support-action__heading h2 {
-  font-family: "Manrope", "Hind Siliguri", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 1.12rem;
   font-weight: 700;
   margin: 0.2rem 0 0;
@@ -3409,7 +3405,7 @@ main {
 
 .mc-impact .mc-stat-value {
   color: var(--mc-rust);
-  font-family: "Playfair Display", "Hind Siliguri", Georgia, serif;
+  font-family: "Playfair Display", Georgia, serif;
   font-size: 1.5rem;
   line-height: 1.2;
   margin: 0;
@@ -5416,74 +5412,6 @@ main {
   }
 }
 
-/* Language switcher: segmented EN / বাং control in the navbar. The active
-   language is a filled brand-colour pill; the other is plain text. */
-.mc-lang-toggle {
-  align-items: center;
-  background: #fff;
-  border: 1px solid var(--mc-line);
-  border-radius: var(--mc-radius-pill);
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-}
-
-.mc-lang-toggle__option {
-  background: transparent;
-  border: 0;
-  border-radius: var(--mc-radius-pill);
-  color: var(--mc-ink);
-  font-size: 0.85rem;
-  font-weight: 600;
-  line-height: 1;
-  padding: 0.45rem 0.85rem;
-  transition: background-color var(--mc-dur-base) var(--mc-ease-out), color var(--mc-dur-base) var(--mc-ease-out);
-}
-
-.mc-lang-toggle__option:hover:not(.is-active) {
-  background: var(--mc-soft);
-  color: var(--mc-rust);
-}
-
-.mc-lang-toggle__option.is-active {
-  background: var(--mc-rust);
-  color: #fff;
-}
-
-.mc-lang-toggle__option:focus-visible {
-  outline: 2px solid var(--mc-rust);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mc-lang-toggle__option {
-    transition: none;
-  }
-}
-
-/* Bangla typography. The script has tall glyphs and stacked marks, so text needs
-   more line height than Latin, and letter-spacing pulls conjunct characters
-   apart. Latin-only display fonts (Manrope, Playfair Display) fall back to Hind
-   Siliguri glyph by glyph through the stacks above. */
-body:lang(bn) {
-  line-height: 1.7;
-}
-
-:lang(bn) :is(h1, h2, h3, h4, h5, h6) {
-  line-height: 1.4;
-}
-
-:lang(bn) * {
-  letter-spacing: normal !important;
-}
-
-/* A Bangla time carries the part of the day ("৬:৩৩ সন্ধ্যা"), which is longer than
-   "6:33 PM", so prayer times use a slightly smaller size to fit their cells. */
-:lang(bn) .mc-prayer-item .h5,
-:lang(bn) .mc-prayer-cell .h5 {
-  font-size: 1rem;
-  line-height: 1.35;
-}
 /* ---------- calculated prayer times ---------- */
 .mc-estimated {
   display: inline-block;
@@ -6011,6 +5939,99 @@ body:lang(bn) {
 .mc-line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .mc-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 
+/* Journey planner (#194): Home card, /journey page, timeline */
+.mc-journey-cards {
+  padding: 1.5rem 0 0.5rem;
+}
+
+.mc-journey-card {
+  border-radius: 0.8rem;
+  border-color: #dfe8e4;
+}
+
+.mc-journey-card--entry {
+  background: var(--mc-soft);
+}
+
+.mc-journey-map {
+  height: 360px;
+  border-radius: 0.8rem;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+.mc-journey-timeline__row {
+  border-left: 4px solid var(--mc-prayer-color, var(--mc-green));
+  padding: 0.25rem 0 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.mc-journey-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.6rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.mc-journey-option.is-selected {
+  border-color: var(--mc-prayer-color, var(--mc-green));
+  box-shadow: 0 0 0 1px var(--mc-prayer-color, var(--mc-green));
+}
+
+.mc-place-autocomplete gmp-place-autocomplete {
+  width: 100%;
+}
+
+/* Appearance controls retain the main navigation layout. */
+/* Language switcher: segmented EN / বাং control in the navbar. The active
+   language is a filled brand-colour pill; the other is plain text. */
+.mc-lang-toggle {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-pill);
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+}
+
+.mc-lang-toggle__option {
+  background: transparent;
+  border: 0;
+  border-radius: var(--mc-radius-pill);
+  color: var(--mc-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.45rem 0.85rem;
+  transition: background-color var(--mc-dur-base) var(--mc-ease-out), color var(--mc-dur-base) var(--mc-ease-out);
+}
+
+.mc-lang-toggle__option:hover:not(.is-active) {
+  background: var(--mc-soft);
+  color: var(--mc-rust);
+}
+
+.mc-lang-toggle__option.is-active {
+  background: var(--mc-rust);
+  color: #fff;
+}
+
+.mc-lang-toggle__option:focus-visible {
+  outline: 2px solid var(--mc-rust);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-lang-toggle__option {
+    transition: none;
+  }
+}
+
 /* ==========================================================================
    Dark theme
    Applied by <html data-bs-theme="dark"> (see utils/theme.js and the inline
@@ -6226,141 +6247,6 @@ body:lang(bn) {
   color: #4cc79c;
 }
 
-/* ==========================================================================
-   Navbar layout: links and a "More" menu on wide screens, a full-height menu on
-   small ones. Colours come from the site tokens, so it follows the dark theme.
-   ========================================================================== */
-.mc-navbar__bar {
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-}
-
-.mc-nav-links {
-  align-items: center;
-  gap: 0.15rem;
-  list-style: none;
-  margin: 0 auto 0 1rem;
-  padding: 0;
-}
-
-.mc-nav-link {
-  border-radius: var(--mc-radius-pill);
-  color: var(--mc-ink);
-  display: block;
-  font-size: 0.95rem;
-  font-weight: 500;
-  padding: 0.5rem 0.7rem;
-  text-decoration: none;
-  transition: background-color var(--mc-dur-fast) ease, color var(--mc-dur-fast) ease;
-  white-space: nowrap;
-}
-
-.mc-nav-link:hover {
-  color: var(--mc-rust);
-}
-
-.mc-nav-link.is-active {
-  background: var(--mc-soft);
-  color: var(--mc-rust);
-  font-weight: 600;
-}
-
-.mc-nav-more {
-  margin-left: 0.15rem;
-  position: relative;
-}
-
-.mc-nav-more__trigger {
-  align-items: center;
-  background: var(--mc-soft);
-  border: 0;
-  border-radius: var(--mc-radius-pill);
-  color: var(--mc-rust);
-  display: inline-flex;
-  font-size: 0.95rem;
-  font-weight: 500;
-  gap: 0.35rem;
-  padding: 0.5rem 0.95rem;
-}
-
-.mc-nav-more__menu {
-  border-radius: var(--mc-radius-md);
-  margin-top: 0.45rem;
-  min-width: 11rem;
-  padding: 0.4rem;
-}
-
-.mc-nav-more__menu .dropdown-item {
-  border-radius: var(--mc-radius-sm);
-  font-size: 0.9rem;
-  padding: 0.5rem 0.75rem;
-}
-
-.mc-nav-actions {
-  align-items: center;
-  display: flex;
-  gap: 0.6rem;
-  margin-left: auto;
-}
-
-.mc-nav-divider {
-  background: var(--mc-line);
-  height: 24px;
-  width: 1px;
-}
-
-.mc-nav-bell .mc-notification-trigger {
-  background: none;
-  border: 0;
-  border-radius: 50%;
-  color: var(--mc-ink);
-  display: grid;
-  height: 38px;
-  padding: 0;
-  place-items: center;
-  width: 38px;
-}
-
-.mc-avatar {
-  background: var(--mc-soft);
-  border-radius: 50%;
-  color: var(--mc-rust);
-  display: grid;
-  flex-shrink: 0;
-  height: 34px;
-  place-items: center;
-  width: 34px;
-}
-
-.mc-account__trigger {
-  align-items: center;
-  background: var(--mc-glass-strong);
-  border: 1px solid var(--mc-line);
-  border-radius: var(--mc-radius-pill);
-  color: var(--mc-ink);
-  display: inline-flex;
-  gap: 0.4rem;
-  padding: 0.2rem 0.7rem 0.2rem 0.25rem;
-}
-
-.mc-account__appearance {
-  align-items: center;
-  color: var(--mc-muted);
-  display: flex;
-  font-size: 0.8rem;
-  gap: 1rem;
-  justify-content: space-between;
-  padding: 0.35rem 1rem;
-}
-
-/* The two segmented controls: a tinted track; the language pill is filled, the
-   theme pill is white with a coloured icon. */
-.mc-lang-toggle {
-  background: var(--mc-soft);
-  border-color: transparent;
-}
-
 .mc-theme-toggle .mc-lang-toggle__option.is-active {
   background: #fff;
   box-shadow: 0 1px 3px rgba(53, 39, 29, 0.16);
@@ -6370,130 +6256,6 @@ body:lang(bn) {
 :root[data-bs-theme=dark] .mc-theme-toggle .mc-lang-toggle__option.is-active {
   background: var(--mc-surface-raised);
   color: var(--mc-rust-dark);
-}
-
-.mc-nav-toggle {
-  background: var(--mc-soft);
-  border: 0;
-  border-radius: 50%;
-  color: var(--mc-ink);
-  display: grid;
-  height: 40px;
-  place-items: center;
-  width: 40px;
-}
-
-/* Small screens */
-.mc-mobile-menu {
-  background: var(--mc-ivory);
-  border-top: 1px solid var(--mc-line);
-  display: flex;
-  flex-direction: column;
-  left: 0;
-  max-height: calc(100dvh - 62px);
-  min-height: calc(100dvh - 62px);
-  overflow-y: auto;
-  padding: 0.75rem 1.25rem 1.5rem;
-  position: absolute;
-  right: 0;
-  top: 100%;
-}
-
-.mc-mobile-menu__links {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.mc-mobile-menu__links .mc-nav-link {
-  border-radius: 14px;
-  font-size: 1.05rem;
-  padding: 0.95rem 1.1rem;
-}
-
-.mc-mobile-menu__settings {
-  border-top: 1px solid var(--mc-line);
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-}
-
-.mc-mobile-menu__row {
-  align-items: center;
-  color: var(--mc-muted);
-  display: flex;
-  font-size: 0.95rem;
-  justify-content: space-between;
-  padding: 0.4rem 0.2rem;
-}
-
-.mc-mobile-menu__account {
-  margin-top: auto;
-  padding-top: 1.5rem;
-}
-
-.mc-mobile-menu__auth {
-  display: grid;
-  gap: 0.6rem;
-  grid-template-columns: 1fr 1fr;
-}
-
-.mc-account-card {
-  align-items: center;
-  background: var(--mc-glass-strong);
-  border: 1px solid var(--mc-line);
-  border-radius: 18px;
-  color: var(--mc-ink);
-  display: flex;
-  gap: 0.9rem;
-  padding: 0.9rem 1rem;
-  text-decoration: none;
-}
-
-.mc-account-card .mc-avatar {
-  height: 44px;
-  width: 44px;
-}
-
-.mc-account-card__text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  line-height: 1.25;
-  min-width: 0;
-}
-
-.mc-account-card__text small {
-  color: var(--mc-muted);
-}
-
-.mc-account-card__text strong {
-  font-size: 1.1rem;
-  overflow-wrap: anywhere;
-}
-
-.mc-mobile-menu__logout {
-  align-items: center;
-  background: none;
-  border: 0;
-  color: var(--mc-muted);
-  display: flex;
-  font-size: 0.85rem;
-  gap: 0.4rem;
-  justify-content: center;
-  margin: 0.8rem auto 0;
-  padding: 0.3rem 0.6rem;
-}
-
-@media (min-width: 992px) and (max-width: 1399.98px) {
-  .mc-navbar__bar .mc-brand-title { display: none; }
-  .mc-nav-link { font-size: 0.88rem; padding: 0.45rem 0.55rem; }
-}
-
-@media (min-width: 992px) and (max-width: 1199.98px) {
-  .mc-navbar__bar { gap: 0.5rem; }
-  .mc-nav-actions { gap: 0.4rem; }
-  .mc-nav-links { margin-left: 0.25rem; }
-  .mc-nav-link, .mc-nav-more__trigger { font-size: 0.82rem; padding: 0.4rem 0.45rem; }
 }
 
 /* Status and urgency chips: translucent tints with a lighter label, so they sit on dark surfaces instead of glowing as pastel blocks. */
@@ -6552,26 +6314,30 @@ body:lang(bn) {
   color: #7fd49b;
 }
 
-/* Super-admin charts. Series colours are tokens so the dark theme can lift them. */
-.mc-chart {
-  --mc-chart-1: #2a78d6;
-  --mc-chart-2: #c4551f;
-  --mc-chart-3: #168a62;
-  --mc-chart-4: #8a5cc9;
-}
-
-:root[data-bs-theme="dark"] .mc-chart {
-  --mc-chart-1: #6aa8f0;
-  --mc-chart-2: #f08a5a;
-  --mc-chart-3: #4fcf9f;
-  --mc-chart-4: #b79af0;
-}
-
-.mc-chart .recharts-surface:focus,
-.mc-chart .recharts-wrapper:focus { outline: none; }
-
 /* Bootstrap cards default to the page colour in dark mode, which flattens them into the background. */
 :root[data-bs-theme="dark"] .card {
   --bs-card-bg: var(--mc-surface);
   --bs-card-cap-bg: var(--mc-surface-raised);
+}
+
+/* Main now also has journey planner surfaces. */
+:root[data-bs-theme="dark"] :is(.mc-journey-card, .mc-journey-option) {
+  background: var(--mc-surface);
+  border-color: var(--mc-line);
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] :is(.mc-eid-jamaat, .mc-chart-tooltip) {
+  background: var(--mc-surface);
+  color: var(--mc-ink);
+}
+
+:root[data-bs-theme="dark"] .btn-warning.text-dark {
+  color: var(--bs-btn-color) !important;
+}
+
+:root[data-bs-theme="dark"] .mc-community-filter__category.is-active {
+  background: var(--mc-rust);
+  border-color: var(--mc-rust);
+  color: #fff;
 }

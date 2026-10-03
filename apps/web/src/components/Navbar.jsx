@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, ChevronDown, ChevronRight, Heart, Landmark, LogOut, Menu, ShieldCheck, UserRound, X } from "lucide-react";
-import { useTranslation } from "react-i18next";
-
-import LanguageSwitcher from "./LanguageSwitcher";
-import ThemeSwitcher from "./ThemeSwitcher";
-import { statusLabel } from "../utils/labels";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, ShieldCheck, UserRound } from "lucide-react";
 import NotificationList from "./notifications/NotificationList";
+import ThemeSwitcher from "./ThemeSwitcher";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { fetchNotifications } from "../utils/notificationApi";
@@ -15,56 +11,25 @@ import logo from "../assets/Logo.png";
 
 const NAVBAR_NOTIFICATION_LIMIT = 6;
 
-// Links shown in the bar itself.
-const PRIMARY_LINKS = [
-  { to: "/", end: true, labelKey: "nav.home" },
-  { to: "/browse", labelKey: "nav.browse" },
-  { to: "/campaigns", labelKey: "nav.campaigns" },
-  { to: "/blood-donation", labelKey: "nav.bloodDonation" },
-  { to: "/volunteers", labelKey: "nav.volunteers" },
-];
-
-// Links tucked into "More" on a wide screen (and listed in full in the mobile menu).
-// Help goes to the contact form on the home page.
-const MORE_LINKS = [
-  { to: "/community", labelKey: "nav.community" },
-  { to: { pathname: "/", hash: "#about" }, labelKey: "nav.help", isHash: true },
-];
-
 export default function Navbar() {
-  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const [open, setOpen] = useState(false); // mobile menu
+  const [open, setOpen] = useState(false); // mobile collapse
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
-  const moreRef = useRef(null);
 
   const close = () => setOpen(false);
   const closeDropdowns = () => setActiveDropdown(null);
 
   useEffect(() => {
     const handleEscape = (event) => {
-      if (event.key === "Escape") {
-        if (activeDropdown) closeDropdowns();
-        setOpen(false);
+      if (event.key === "Escape" && activeDropdown) {
+        closeDropdowns();
       }
     };
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [activeDropdown]);
-
-  useEffect(() => {
-    if (activeDropdown !== "more") return undefined;
-
-    const handleClickOutside = (event) => {
-      if (moreRef.current && !moreRef.current.contains(event.target)) setActiveDropdown(null);
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activeDropdown]);
 
   useEffect(() => {
@@ -74,12 +39,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", updateScrollState);
   }, []);
 
-  // Changing page closes the menus.
-  useEffect(() => {
-    setOpen(false);
-    setActiveDropdown(null);
-  }, [pathname]);
-
   const handleLogout = () => {
     logout();
     close();
@@ -87,144 +46,95 @@ export default function Navbar() {
     navigate("/");
   };
 
-  const navLinkClass = ({ isActive }) => "mc-nav-link" + (isActive ? " is-active" : "");
-  const moreActive = pathname.startsWith("/community");
-  const toggleDropdown = (name) => setActiveDropdown((current) => (current === name ? null : name));
+  const navLinkClass = ({ isActive }) => "nav-link" + (isActive ? " active" : "");
 
   return (
-    <nav className={`mc-navbar sticky-top${isScrolled ? " is-scrolled" : ""}`}>
-      <div className="container px-3 px-lg-0 mc-navbar__bar">
-        <Link className="navbar-brand mc-brand" to="/" onClick={close}>
-          <img src={logo} alt={t('common.logoAlt')} className="mc-brand-logo me-2" />
+    <nav className={`navbar navbar-expand-lg navbar-dark mc-navbar sticky-top${isScrolled ? " is-scrolled" : ""}`}>
+      <div className="container px-3 px-lg-0">
+        <Link className="navbar-brand mc-brand me-2 me-lg-0" to="/" onClick={close}>
+          <img src={logo} alt="MosqueConnect logo" className="mc-brand-logo me-2" />
           <span className="mc-brand-title">
             Mosque<span className="mc-brand-accent">Connect</span>
           </span>
         </Link>
+        <button
+          className="navbar-toggler ms-2 ms-lg-0"
+          type="button"
+          aria-label="Toggle navigation"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <Menu size={20} aria-hidden="true" />
+        </button>
 
-        {/* Wide screens: the links, then "More". */}
-        <ul className="mc-nav-links d-none d-lg-flex">
-          {PRIMARY_LINKS.map(({ to, end, labelKey }) => (
-            <li key={to}>
-              <NavLink end={end} className={navLinkClass} to={to}>{t(labelKey)}</NavLink>
+        <div className={"collapse navbar-collapse mt-1 mt-lg-0" + (open ? " show" : "")}>
+          <ul className="navbar-nav ms-auto align-items-start align-items-lg-center gap-1 gap-lg-1 py-1 py-lg-0">
+            <li className="nav-item">
+              <NavLink end className={navLinkClass} to="/" onClick={close}>Home</NavLink>
             </li>
-          ))}
-          <li className="mc-nav-more" ref={moreRef}>
-            <button
-              type="button"
-              className={"mc-nav-more__trigger" + (moreActive || activeDropdown === "more" ? " is-active" : "")}
-              aria-expanded={activeDropdown === "more"}
-              aria-haspopup="true"
-              onClick={() => toggleDropdown("more")}
-            >
-              {t("nav.more")} <ChevronDown size={14} aria-hidden="true" />
-            </button>
-            <ul className={"dropdown-menu mc-nav-more__menu" + (activeDropdown === "more" ? " show" : "")}>
-              {MORE_LINKS.map(({ to, labelKey }) => (
-                <li key={labelKey}>
-                  <Link className="dropdown-item" to={to} onClick={closeDropdowns}>{t(labelKey)}</Link>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/browse" onClick={close}>Browse Mosques</NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/journey" onClick={close}>Journey</NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/support" onClick={close}>Support</NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/campaigns" onClick={close}>Campaigns</NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/community" onClick={close}>Community</NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/blood-donation" onClick={close}>Blood Donation</NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink className={navLinkClass} to="/volunteers" onClick={close}>Volunteers</NavLink>
+            </li>
+
+            <li className="nav-item mc-navbar__appearance mt-1 mt-lg-0">
+              <ThemeSwitcher />
+            </li>
+
+            {!user ? (
+              <>
+                <li className="nav-item ms-lg-2 mt-1 mt-lg-0">
+                  <Link className="btn btn-outline-mc btn-sm w-100 w-lg-auto" to="/login" onClick={close}>Login</Link>
                 </li>
-              ))}
-            </ul>
-          </li>
-        </ul>
-
-        <div className="mc-nav-actions">
-          <div className="d-none d-lg-block"><LanguageSwitcher /></div>
-
-          {user ? (
-            <>
-              <span className="mc-nav-divider d-none d-lg-block" aria-hidden="true" />
-              <NotificationBell
-                isOpen={activeDropdown === "notifications"}
-                onToggle={() => toggleDropdown("notifications")}
-                onClose={closeDropdowns}
-                onNavigate={() => { close(); closeDropdowns(); }}
-              />
-              <div className="d-none d-lg-block">
+                <li className="nav-item mt-1 mt-lg-0">
+                  <Link className="btn btn-warning btn-sm text-dark fw-semibold w-100 w-lg-auto" to="/register" onClick={close}>
+                    Register
+                  </Link>
+                </li>
+              </>
+            ) : (
+              <>
+                <NotificationBell
+                  isOpen={activeDropdown === "notifications"}
+                  onToggle={() => setActiveDropdown((current) => (current === "notifications" ? null : "notifications"))}
+                  onClose={closeDropdowns}
+                  onNavigate={() => { close(); closeDropdowns(); }}
+                />
                 <ProfileMenu
                   user={user}
                   onLogout={handleLogout}
                   isOpen={activeDropdown === "profile"}
-                  onToggle={() => toggleDropdown("profile")}
+                  onToggle={() => setActiveDropdown((current) => (current === "profile" ? null : "profile"))}
                   onClose={closeDropdowns}
                 />
-              </div>
-            </>
-          ) : (
-            <div className="d-none d-lg-flex align-items-center gap-2">
-              <ThemeSwitcher />
-              <Link className="btn btn-outline-mc btn-sm" to="/login">{t('nav.login')}</Link>
-              <Link className="btn btn-mc btn-sm fw-semibold" to="/register">{t('nav.register')}</Link>
-            </div>
-          )}
-
-          <button
-            className="mc-nav-toggle d-lg-none"
-            type="button"
-            aria-label={t('common.toggleNavigation')}
-            aria-expanded={open}
-            onClick={() => setOpen((value) => !value)}
-          >
-            {open ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
-          </button>
+              </>
+            )}
+          </ul>
         </div>
       </div>
-
-      {/* Small screens: a full-height menu. */}
-      {open && (
-        <div className="mc-mobile-menu d-lg-none">
-          <ul className="mc-mobile-menu__links">
-            {[...PRIMARY_LINKS, ...MORE_LINKS].map(({ to, end, labelKey, isHash }) => (
-              <li key={labelKey}>
-                {isHash ? (
-                  <Link className="mc-nav-link" to={to} onClick={close}>{t(labelKey)}</Link>
-                ) : (
-                  <NavLink end={end} className={navLinkClass} to={to} onClick={close}>{t(labelKey)}</NavLink>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          <div className="mc-mobile-menu__settings">
-            <div className="mc-mobile-menu__row">
-              <span>{t("nav.language")}</span>
-              <LanguageSwitcher />
-            </div>
-            <div className="mc-mobile-menu__row">
-              <span>{t("nav.appearance")}</span>
-              <ThemeSwitcher />
-            </div>
-          </div>
-
-          {user ? (
-            <div className="mc-mobile-menu__account">
-              <Link to="/profile" className="mc-account-card" onClick={close}>
-                <span className="mc-avatar" aria-hidden="true"><UserRound size={20} /></span>
-                <span className="mc-account-card__text">
-                  <small>{t("nav.signedInAs")}</small>
-                  <strong>{user.phone || user.name}</strong>
-                </span>
-                <ChevronRight size={18} aria-hidden="true" />
-              </Link>
-              <button type="button" className="mc-mobile-menu__logout" onClick={handleLogout}>
-                <LogOut size={15} aria-hidden="true" /> {t("profile.logout")}
-              </button>
-            </div>
-          ) : (
-            <div className="mc-mobile-menu__account mc-mobile-menu__auth">
-              <Link className="btn btn-outline-mc" to="/login" onClick={close}>{t("nav.login")}</Link>
-              <Link className="btn btn-mc fw-semibold" to="/register" onClick={close}>{t("nav.register")}</Link>
-            </div>
-          )}
-        </div>
-      )}
       <span className="mc-navbar__progress" aria-hidden="true" />
     </nav>
   );
 }
 
 function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
-  const { t } = useTranslation();
   const wrapperRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -252,12 +162,12 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       .catch((requestError) => {
         if (requestError.name === "AbortError") return;
         handleRequestError(requestError);
-        setError(requestError.message || t('notification.loadError'));
+        setError(requestError.message || "Notifications could not be loaded.");
       })
       .finally(() => {
         if (!signal?.aborted) setLoading(false);
       });
-  }, [handleRequestError, t]);
+  }, [handleRequestError]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -309,7 +219,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
         setNotifications((current) => current.map((item) => (
           item.id === notification.id ? { ...item, is_read: 0 } : item
         )));
-        setActionError(requestError.message || t('notification.markReadError'));
+        setActionError(requestError.message || "The notification could not be marked as read.");
       }
     }
 
@@ -329,7 +239,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       await markAllAsRead();
     } catch (requestError) {
       setNotifications(previous);
-      setActionError(requestError.message || t('notification.markAllReadError'));
+      setActionError(requestError.message || "Notifications could not be marked as read.");
     } finally {
       setMarkingAll(false);
     }
@@ -339,19 +249,19 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
   const hasUnread = unreadCount > 0 || notifications.some((notification) => !isNotificationRead(notification));
 
   return (
-    <div className="dropdown mc-nav-bell" ref={wrapperRef}>
+    <li className="nav-item dropdown ms-lg-2" ref={wrapperRef}>
       <button
         type="button"
-        className="mc-notification-trigger position-relative"
-        title={t('notification.title')}
-        aria-label={unreadCount ? t('notification.ariaLabelUnread', { unread: unreadCount }) : t('notification.title')}
+        className="nav-link mc-notification-trigger position-relative"
+        title="Notifications"
+        aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"}
         aria-expanded={isOpen}
         aria-haspopup="true"
         onClick={onToggle}
       >
         <Bell size={18} aria-hidden="true" />
         {unreadCount > 0 && <span className="mc-notification-badge" aria-hidden="true">{displayCount}</span>}
-        {unreadLoading && <span className="visually-hidden" role="status">{t('notification.loadingUnread')}</span>}
+        {unreadLoading && <span className="visually-hidden" role="status">Loading unread count</span>}
       </button>
       <div
         ref={dropdownRef}
@@ -360,8 +270,8 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
       >
         <div className="mc-notif-menu__header">
           <div>
-            <strong>{t('notification.title')}</strong>
-            {unreadCount > 0 && <span>{t('notification.unreadCount', { unread: unreadCount })}</span>}
+            <strong>Notifications</strong>
+            {unreadCount > 0 && <span>{unreadCount} unread</span>}
           </div>
           <button
             type="button"
@@ -370,7 +280,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
             disabled={!hasUnread || markingAll}
           >
             <CheckCheck size={14} aria-hidden="true" />
-            {markingAll ? t('notification.marking') : t('notification.markAllRead')}
+            {markingAll ? "Marking..." : "Mark all read"}
           </button>
         </div>
         {actionError && <div className="mc-notif-menu__error" role="alert">{actionError}</div>}
@@ -385,15 +295,14 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
           />
         </div>
         <div className="mc-notif-menu__footer">
-          <Link to="/notifications" onClick={onNavigate}>{t('notification.viewAll')}</Link>
+          <Link to="/notifications" onClick={onNavigate}>View all notifications</Link>
         </div>
       </div>
-    </div>
+    </li>
   );
 }
 
 function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
-  const { t } = useTranslation();
   const wrapperRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -416,54 +325,72 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
   }, [isOpen, onClose]);
 
   const isAdminApproved = user.role === "mosque_admin" && user.status === "approved";
+  const isAdminPending = user.role === "mosque_admin" && user.status === "pending";
   const isSuperAdmin = user.role === "super_admin";
 
   return (
-    <div className="dropdown mc-account" ref={wrapperRef}>
-      <button
-        type="button"
-        className="mc-account__trigger"
-        aria-label={user.name}
+    <li className="nav-item dropdown" ref={wrapperRef}>
+      <a
+        className="nav-link dropdown-toggle d-flex align-items-center"
+        href="#"
+        role="button"
         aria-expanded={isOpen}
-        aria-haspopup="true"
-        onClick={onToggle}
+        onClick={(e) => { e.preventDefault(); onToggle(); }}
       >
-        <span className="mc-avatar" aria-hidden="true"><UserRound size={16} /></span>
-        <ChevronDown size={14} aria-hidden="true" />
-      </button>
+        <UserRound size={18} className="me-1" aria-hidden="true" />
+        <span>
+          {user.name}
+          {isAdminApproved && (
+            <span className="badge bg-success-subtle text-success border border-success-subtle ms-1" style={{ fontSize: "10px" }}>
+              Admin
+            </span>
+          )}
+          {isAdminPending && (
+            <span className="badge bg-warning-subtle text-warning border border-warning-subtle text-dark ms-1" style={{ fontSize: "10px" }}>
+              Pending
+            </span>
+          )}
+          {isSuperAdmin && (
+            <span className="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" style={{ fontSize: "10px" }}>
+              Super Admin
+            </span>
+          )}
+        </span>
+      </a>
       <ul
         ref={dropdownRef}
-        className={"dropdown-menu dropdown-menu-end mc-account__menu" + (isOpen ? " show" : "")}
+        className={"dropdown-menu dropdown-menu-end" + (isOpen ? " show" : "")}
       >
+        {/* User identity header */}
         <li className="px-3 py-2 border-bottom">
           <div className="fw-bold small">{user.fullName || user.name}</div>
           <div className="text-muted" style={{ fontSize: "11px" }}>
             {isSuperAdmin ? (
-              <span>{t('profile.systemAdministrator')}</span>
+              <span>System Administrator</span>
             ) : user.role === "mosque_admin" ? (
               <div className="mt-0.5">
-                <div>{t('profile.adminLabel')}: <strong>{user.mosqueName}</strong></div>
+                <div>Admin: <strong>{user.mosqueName}</strong></div>
                 <div className="mt-1">
-                  {t('profile.status')}:{" "}
+                  Status:{" "}
                   <span className={`badge py-0.5 px-1 bg-${user.status === "approved" ? "success" : user.status === "rejected" ? "danger" : "warning text-dark"}`}>
-                    {statusLabel(t, user.status)}
+                    {user.status}
                   </span>
                 </div>
               </div>
             ) : (
-              <span>{t('profile.communityMember')}</span>
+              <span>Community Member</span>
             )}
           </div>
         </li>
 
         <li>
           <Link className="dropdown-item d-flex align-items-center" to="/profile" onClick={onClose}>
-            <UserRound size={15} className="me-2" aria-hidden="true" />{t('profile.myProfile')}
+            <UserRound size={15} className="me-2" aria-hidden="true" />My Profile
           </Link>
         </li>
         <li>
           <Link className="dropdown-item d-flex align-items-center" to="/profile" onClick={onClose}>
-            <Heart size={15} className="me-2" aria-hidden="true" />{t('profile.followedMosques')}
+            <Heart size={15} className="me-2" aria-hidden="true" />Followed Mosques
           </Link>
         </li>
 
@@ -472,7 +399,7 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
             <li><hr className="dropdown-divider" /></li>
             <li>
               <Link className="dropdown-item d-flex align-items-center text-success fw-bold" to="/admin/dashboard" onClick={onClose}>
-                <Landmark size={15} className="me-2" aria-hidden="true" />{t('profile.mosqueDashboard')}
+                <Landmark size={15} className="me-2" aria-hidden="true" />Mosque Dashboard
               </Link>
             </li>
           </>
@@ -483,17 +410,12 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
             <li><hr className="dropdown-divider" /></li>
             <li>
               <Link className="dropdown-item d-flex align-items-center text-danger fw-bold" to="/super-admin/dashboard" onClick={onClose}>
-                <ShieldCheck size={15} className="me-2" aria-hidden="true" />{t('profile.systemDashboard')}
+                <ShieldCheck size={15} className="me-2" aria-hidden="true" />System Dashboard
               </Link>
             </li>
           </>
         )}
 
-        <li><hr className="dropdown-divider" /></li>
-        <li className="mc-account__appearance">
-          <span>{t('nav.appearance')}</span>
-          <ThemeSwitcher />
-        </li>
         <li><hr className="dropdown-divider" /></li>
         <li>
           <button
@@ -506,10 +428,10 @@ function ProfileMenu({ user, onLogout, isOpen, onToggle, onClose }) {
               onLogout();
             }}
           >
-            <LogOut size={15} className="me-2" aria-hidden="true" />{t('profile.logout')}
+            <LogOut size={15} className="me-2" aria-hidden="true" />Logout
           </button>
         </li>
       </ul>
-    </div>
+    </li>
   );
 }

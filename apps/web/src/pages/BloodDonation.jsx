@@ -13,11 +13,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../utils/api";
-import { formatApiDate } from "../utils/intl";
-import { useLocale } from "../hooks/useLocale";
 
 export default function BloodDonation() {
-  const { t, locale } = useLocale();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -109,9 +106,9 @@ export default function BloodDonation() {
         <div>
           <h2 className="fw-bold mb-1 d-flex align-items-center gap-2">
             <Droplet size={26} className="text-danger" />
-            {t("blood.title")}
+            Blood Donations
           </h2>
-          <p className="text-muted mb-0 small">{t("blood.subtitle")}</p>
+          <p className="text-muted mb-0 small">Request blood or help community members in emergencies.</p>
         </div>
         <button 
           className="btn btn-mc d-flex align-items-center gap-2"
@@ -120,7 +117,7 @@ export default function BloodDonation() {
             else { setFormSuccess(false); setShowForm(!showForm); }
           }}
         >
-          {showForm ? t("blood.cancelRequest") : <><Plus size={18} /> {t("blood.requestBlood")}</>}
+          {showForm ? "Cancel Request" : <><Plus size={18} /> Request Blood</>}
         </button>
       </div>
 
@@ -128,59 +125,59 @@ export default function BloodDonation() {
       {showForm && (
         <div className="card border-0 shadow-sm mb-5 border-top border-4 border-mc">
           <div className="card-body p-4">
-            <h5 className="fw-bold mb-4">{t("blood.createTitle")}</h5>
+            <h5 className="fw-bold mb-4">Create Blood Request</h5>
             {formSuccess ? (
               <div className="alert alert-success text-center py-4 mb-0">
                 <CheckCircle size={40} className="mb-2 text-success mx-auto" />
-                <h6 className="fw-bold">{t("blood.successTitle")}</h6>
-                <p className="small mb-0 text-dark">{t("blood.successCopy")}</p>
+                <h6 className="fw-bold">Request Published Successfully!</h6>
+                <p className="small mb-0 text-dark">Your request is now visible to the community.</p>
               </div>
             ) : (
               <form onSubmit={handleCreateRequest}>
                 <div className="row g-3">
                   <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold small">{t("blood.bloodGroup")} <span className="text-danger">*</span></label>
+                    <label className="form-label fw-semibold small">Blood Group <span className="text-danger">*</span></label>
                     <select className="form-select" value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} required>
-                      <option value="">{t("blood.selectGroup")}</option>
+                      <option value="">Select Group</option>
                       {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(g => (
                         <option key={g} value={g}>{g}</option>
                       ))}
                     </select>
                   </div>
                   <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold small">{t("blood.units")} <span className="text-danger">*</span></label>
+                    <label className="form-label fw-semibold small">Required Bags (Units) <span className="text-danger">*</span></label>
                     <input type="number" min="1" max="10" className="form-control" value={units} onChange={(e) => setUnits(e.target.value)} required />
                   </div>
                   <div className="col-12 mb-3">
-                    <label className="form-label fw-semibold small">{t("blood.hospital")} <span className="text-danger">*</span></label>
-                    <input type="text" className="form-control" placeholder={t("blood.hospitalPlaceholder")} value={hospital} onChange={(e) => setHospital(e.target.value)} required />
+                    <label className="form-label fw-semibold small">Hospital Name & Area <span className="text-danger">*</span></label>
+                    <input type="text" className="form-control" placeholder="e.g. Labaid Hospital, Dhanmondi" value={hospital} onChange={(e) => setHospital(e.target.value)} required />
                   </div>
                   <div className="col-md-4 mb-3">
-                    <label className="form-label fw-semibold small">{t("blood.neededBy")} <span className="text-danger">*</span></label>
+                    <label className="form-label fw-semibold small">Needed By Date <span className="text-danger">*</span></label>
                     <input type="date" className="form-control" value={neededBy} onChange={(e) => setNeededBy(e.target.value)} required />
                   </div>
                   <div className="col-md-4 mb-3">
-                    <label className="form-label fw-semibold small">{t("blood.phone")} <span className="text-danger">*</span></label>
-                    <input type="tel" className="form-control" placeholder={t("blood.phonePlaceholder")} value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                    <label className="form-label fw-semibold small">Contact Phone <span className="text-danger">*</span></label>
+                    <input type="tel" className="form-control" placeholder="e.g. 01711223344" value={phone} onChange={(e) => setPhone(e.target.value)} required />
                   </div>
                   <div className="col-md-4 mb-3">
-                    <label className="form-label fw-semibold small">{t("blood.urgency")} <span className="text-danger">*</span></label>
+                    <label className="form-label fw-semibold small">Urgency Level <span className="text-danger">*</span></label>
                     <select className="form-select" value={urgency} onChange={(e) => setUrgency(e.target.value)} required>
-                      <option value="normal">{t("blood.urgencyNormal")}</option>
-                      <option value="high">{t("blood.urgencyHigh")}</option>
-                      <option value="critical">{t("blood.urgencyCritical")}</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High (Urgent)</option>
+                      <option value="critical">Critical</option>
                     </select>
                   </div>
                   <div className="col-12 mb-4">
-                    <label className="form-label fw-semibold small">{t("blood.details")}</label>
-                    <textarea className="form-control" rows="2" placeholder={t("blood.detailsPlaceholder")} value={details} onChange={(e) => setDetails(e.target.value)}></textarea>
+                    <label className="form-label fw-semibold small">Additional Details (Optional)</label>
+                    <textarea className="form-control" rows="2" placeholder="Mention specific requirements like fresh blood or platelets..." value={details} onChange={(e) => setDetails(e.target.value)}></textarea>
                   </div>
                 </div>
                 <div className="d-flex justify-content-end gap-2">
-                  <button type="button" className="btn btn-light border" onClick={() => setShowForm(false)} disabled={submittingForm}>{t("common.cancel")}</button>
+                  <button type="button" className="btn btn-light border" onClick={() => setShowForm(false)} disabled={submittingForm}>Cancel</button>
                   <button type="submit" className="btn btn-mc d-flex align-items-center gap-2" disabled={submittingForm}>
                     {submittingForm ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> : <Droplet size={16} />}
-                    {submittingForm ? t("blood.publishing") : t("blood.publish")}
+                    {submittingForm ? "Publishing..." : "Publish Request"}
                   </button>
                 </div>
               </form>
@@ -207,15 +204,15 @@ export default function BloodDonation() {
       ) : error ? (
         <div className="alert alert-warning text-center py-5 shadow-sm">
           <AlertCircle size={32} className="text-warning mb-3 mx-auto" />
-          <h5 className="fw-bold">{t("blood.loadFailed")}</h5>
+          <h5 className="fw-bold">Failed to load requests</h5>
           <p>{error}</p>
-          <button className="btn btn-warning mt-2" onClick={() => fetchData()}>{t("common.tryAgain")}</button>
+          <button className="btn btn-warning mt-2" onClick={() => fetchData()}>Try Again</button>
         </div>
       ) : requests.length === 0 ? (
         <div className="text-center py-5 text-muted border rounded shadow-sm bg-white">
           <Heart size={48} className="mb-3 opacity-25 mx-auto" />
-          <h5 className="fw-bold">{t("blood.emptyTitle")}</h5>
-          <p className="mb-0">{t("blood.emptyCopy")}</p>
+          <h5 className="fw-bold">No Active Requests</h5>
+          <p className="mb-0">Alhamdulillah, there are no active blood emergencies right now.</p>
         </div>
       ) : (
         <div className="d-flex flex-column gap-3">
@@ -234,19 +231,19 @@ export default function BloodDonation() {
                       <div className="d-flex align-items-center justify-content-center bg-danger-subtle text-danger fw-bold rounded-circle mx-auto mb-2" style={{ width: "60px", height: "60px", fontSize: "1.2rem" }}>
                         {req.group}
                       </div>
-                      <span className="badge bg-light text-dark border">{t("blood.bags", { count: req.units })}</span>
+                      <span className="badge bg-light text-dark border">{req.units} Bag{req.units > 1 ? "s" : ""}</span>
                     </div>
 
                     <div className="col ps-sm-4">
                       <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
                         <div className="d-flex flex-wrap align-items-center gap-2">
-                          <h5 className="fw-bold mb-0 text-dark d-sm-none">{req.group} &bull; {t("blood.bags", { count: req.units })}</h5>
-                          <h5 className="fw-bold mb-0 text-dark d-none d-sm-block">{t("blood.required")}</h5>
-                          {req.urgent && req.status === "active" && <span className="badge bg-danger">{t("blood.urgent")}</span>}
-                          {isFulfilled && <span className="badge bg-success">{t("blood.fulfilled")}</span>}
+                          <h5 className="fw-bold mb-0 text-dark d-sm-none">{req.group} &bull; {req.units} Bag{req.units > 1 ? "s" : ""}</h5>
+                          <h5 className="fw-bold mb-0 text-dark d-none d-sm-block">Blood Required</h5>
+                          {req.urgent && req.status === "active" && <span className="badge bg-danger">Urgent</span>}
+                          {isFulfilled && <span className="badge bg-success">Fulfilled</span>}
                         </div>
                         <span className="text-muted small d-flex align-items-center gap-1">
-                          <Clock size={13} /> {formatApiDate(req.date, locale)}
+                          <Clock size={13} /> {req.date}
                         </span>
                       </div>
 
@@ -274,9 +271,9 @@ export default function BloodDonation() {
                           ) : (
                             <Heart size={16} />
                           )}
-                          {hasResponded ? t("blood.youResponded") : isOwn ? t("blood.yourRequest") : isFulfilled ? t("blood.completed") : t("blood.canDonate")}
+                          {hasResponded ? "You Responded" : isOwn ? "Your request" : isFulfilled ? "Completed" : "I Can Donate"}
                         </button>
-                        {isOwn && <button className="btn btn-sm btn-outline-mc" onClick={() => handleClose(req.id)}>{t("blood.markFulfilled")}</button>}
+                        {isOwn && <button className="btn btn-sm btn-outline-mc" onClick={() => handleClose(req.id)}>Mark fulfilled</button>}
                       </div>
                     </div>
 

@@ -1,9 +1,5 @@
-import { DEFAULT_LOCALE, timeOptions } from "./intl.js";
-
-// Callers that show the name pass a translated fallback; the English default
-// keeps the filter logic below working on its own.
-export function getEventMosqueName(event, fallback = "Mosque to be announced") {
-  return event?.mosque?.name || fallback;
+export function getEventMosqueName(event) {
+  return event?.mosque?.name || "Mosque to be announced";
 }
 
 export function parseEventDate(value) {
@@ -19,11 +15,10 @@ export function parseEventDate(value) {
 }
 
 export function formatEventDate(value, options = {}) {
-  const { locale = DEFAULT_LOCALE, fallback = "Date to be announced" } = options;
   const date = parseEventDate(value);
-  if (!date) return value || fallback;
+  if (!date) return value || "Date to be announced";
 
-  return new Intl.DateTimeFormat(locale, {
+  return new Intl.DateTimeFormat(undefined, {
     weekday: options.compact ? undefined : "long",
     month: "short",
     day: "numeric",
@@ -31,20 +26,23 @@ export function formatEventDate(value, options = {}) {
   }).format(date);
 }
 
-export function formatEventTime(value, locale = DEFAULT_LOCALE) {
+export function formatEventTime(value) {
   if (!value || typeof value !== "string") return null;
 
   const [hours, minutes] = value.split(":").map(Number);
   if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return value;
 
   const date = new Date(2000, 0, 1, hours, minutes);
-  return new Intl.DateTimeFormat(locale, timeOptions(locale)).format(date);
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
-export function formatEventTimeRange(event, locale = DEFAULT_LOCALE, fallback = "Time to be announced") {
-  return [formatEventTime(event?.start_time, locale), formatEventTime(event?.end_time, locale)]
+export function formatEventTimeRange(event) {
+  return [formatEventTime(event?.start_time), formatEventTime(event?.end_time)]
     .filter(Boolean)
-    .join(" – ") || fallback;
+    .join(" – ") || "Time to be announced";
 }
 
 export function isEventPast(event, now = new Date()) {
@@ -79,7 +77,7 @@ export function filterEvents(events, filters = {}, now = new Date()) {
 
   return events.filter((event) => {
     const eventDate = parseEventDate(event.event_date);
-    const mosqueName = getEventMosqueName(event, filters.mosqueFallback);
+    const mosqueName = getEventMosqueName(event);
     const searchable = [event.title, mosqueName, event.category, event.location]
       .filter(Boolean)
       .join(" ")

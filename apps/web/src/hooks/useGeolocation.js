@@ -30,7 +30,7 @@ export function requestGeolocation({ force = false } = {}) {
       fallback: true,
       loading: false,
       status: "failure",
-      message: null,
+      message: "Location services are not supported by this browser.",
       errorCode: "unsupported",
     });
     return Promise.resolve(currentOrigin);
@@ -64,12 +64,19 @@ export function requestGeolocation({ force = false } = {}) {
             : error?.code === 3
               ? "timeout"
               : "unknown";
+        const messages = {
+          denied: "Location permission was denied.",
+          unavailable: "Your current location is unavailable.",
+          timeout: "Finding your location took too long.",
+          unknown: "We could not determine your location.",
+        };
+
         dispatch({
           ...DEFAULT_CENTER,
           fallback: true,
           loading: false,
           status: "failure",
-          message: null,
+          message: messages[errorCode],
           errorCode,
         });
         resolve(currentOrigin);

@@ -23,7 +23,6 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { useLocale } from "../hooks/useLocale";
 import { apiRequest } from "../utils/api";
 import { DASHBOARD_SECTIONS, dashboardSection } from "../utils/dashboardFormat";
 import DashboardOverview from "../components/admin/dashboard/DashboardOverview";

@@ -1,6 +1,4 @@
 import { apiUrl } from "../config.js";
-import { translate } from "../i18n/translate.js";
-import { networkFetch } from "./network.js";
 
 export const DISCOVERY_RADIUS_KM = 20;
 export const MAX_DISCOVERY_RADIUS_KM = 100;
@@ -138,9 +136,9 @@ export function filterMosques(mosques, filters = {}) {
 function validateDiscoveryRequest(latitude, longitude, radius) {
   const origin = coordinatesOf({ latitude, longitude });
   const safeRadius = finiteNumber(radius);
-  if (!origin) throw new Error(translate("error.invalidCoordinates"));
+  if (!origin) throw new Error("A valid latitude and longitude are required.");
   if (safeRadius === null || safeRadius <= 0 || safeRadius > MAX_DISCOVERY_RADIUS_KM) {
-    throw new Error(translate("error.invalidRadius", { max: MAX_DISCOVERY_RADIUS_KM }));
+    throw new Error(`Radius must be greater than 0 and at most ${MAX_DISCOVERY_RADIUS_KM} km.`);
   }
   return { origin, radius: safeRadius };
 }
@@ -177,13 +175,13 @@ export function fetchNearbyMosques({ latitude, longitude, radius = DISCOVERY_RAD
     radius: String(validated.radius),
   });
 
-  const request = networkFetch(apiUrl(`/api/mosques/nearby?${query}`), {
+  const request = fetch(apiUrl(`/api/mosques/nearby?${query}`), {
     headers: { Accept: "application/json" },
   })
     .then(async (response) => {
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.message || translate("error.nearbyLoad"));
-      if (!Array.isArray(payload.data)) throw new Error(translate("error.nearbyFormat"));
+      if (!response.ok) throw new Error(payload.message || "Nearby mosques could not be loaded.");
+      if (!Array.isArray(payload.data)) throw new Error("The nearby mosque response was not in the expected format.");
       return normalizeMosques(payload.data, validated.origin, validated.radius);
     })
     .catch((error) => {
@@ -205,26 +203,26 @@ export function directionsUrl(mosque) {
 export function fetchMosqueById(id) {
   const mosqueId = String(id ?? "").trim();
   if (!mosqueId) {
-    return Promise.reject(new Error(translate("error.mosqueIdRequired")));
+    return Promise.reject(new Error("A mosque id is required."));
   }
 
-  return networkFetch(apiUrl(`/api/mosques/${encodeURIComponent(mosqueId)}`), {
+  return fetch(apiUrl(`/api/mosques/${encodeURIComponent(mosqueId)}`), {
     headers: { Accept: "application/json" },
   }).then(async (response) => {
     const payload = await response.json().catch(() => ({}));
     if (response.status === 404) {
-      throw new Error(payload.message || translate("error.mosqueNotFound"));
+      throw new Error(payload.message || "Mosque not found.");
     }
     if (!response.ok) {
-      throw new Error(payload.message || translate("error.mosqueLoad"));
+      throw new Error(payload.message || "Mosque details could not be loaded.");
     }
     if (!payload.data || typeof payload.data !== "object") {
-      throw new Error(translate("error.mosqueFormat"));
+      throw new Error("The mosque response was not in the expected format.");
     }
 
     const mosque = normalizeMosque(payload.data, null, { requireDistance: false });
     if (!mosque) {
-      throw new Error(translate("error.mosqueNoLocation"));
+      throw new Error("This mosque is missing a valid location.");
     }
     return mosque;
   });
@@ -232,9 +230,9 @@ export function fetchMosqueById(id) {
 
 export async function followMosque(mosqueId) {
   const id = String(mosqueId ?? "").trim();
-  if (!id) throw new Error(translate("error.mosqueIdRequiredToFollow"));
+  if (!id) throw new Error("A mosque id is required to follow.");
 
-  const response = await networkFetch(apiUrl(`/api/mosques/${encodeURIComponent(id)}/follow`), {
+  const response = await fetch(apiUrl(`/api/mosques/${encodeURIComponent(id)}/follow`), {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -245,19 +243,19 @@ export async function followMosque(mosqueId) {
 
   const payload = await response.json().catch(() => ({}));
   if (response.status === 409) {
-    return { ok: true, message: payload.message || translate("error.alreadyFollowing") };
+    return { ok: true, message: payload.message || "Already following this mosque." };
   }
   if (!response.ok) {
-    throw new Error(payload.message || translate("error.followFailed"));
+    throw new Error(payload.message || "Failed to follow mosque.");
   }
   return { ok: true, data: payload.data };
 }
 
 export async function unfollowMosque(mosqueId) {
   const id = String(mosqueId ?? "").trim();
-  if (!id) throw new Error(translate("error.mosqueIdRequiredToUnfollow"));
+  if (!id) throw new Error("A mosque id is required to unfollow.");
 
-  const response = await networkFetch(apiUrl(`/api/mosques/${encodeURIComponent(id)}/follow`), {
+  const response = await fetch(apiUrl(`/api/mosques/${encodeURIComponent(id)}/follow`), {
     method: "DELETE",
     headers: {
       Accept: "application/json",
@@ -267,10 +265,10 @@ export async function unfollowMosque(mosqueId) {
 
   const payload = await response.json().catch(() => ({}));
   if (response.status === 404) {
-    return { ok: true, message: payload.message || translate("error.notFollowing") };
+    return { ok: true, message: payload.message || "You are not following this mosque." };
   }
   if (!response.ok) {
-    throw new Error(payload.message || translate("error.unfollowFailed"));
+    throw new Error(payload.message || "Failed to unfollow mosque.");
   }
   return { ok: true };
 }
@@ -279,7 +277,7 @@ export async function fetchFollowedMosques() {
   const token = localStorage.getItem("mc_auth_token");
   if (!token) return [];
 
-  const response = await networkFetch(apiUrl("/api/me/followed-mosques"), {
+  const response = await fetch(apiUrl("/api/me/followed-mosques"), {
     headers: {
       Accept: "application/json",
       Authorization: `Bearer ${token}`,
@@ -288,7 +286,7 @@ export async function fetchFollowedMosques() {
 
   if (response.status === 401 || response.status === 403) return [];
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.message || translate("error.followedLoad"));
+  if (!response.ok) throw new Error(payload.message || "Could not load followed mosques.");
   // Same shape as every other mosque in the app, so cards can render them.
   return Array.isArray(payload.data)
     ? payload.data.map((record) => normalizeMosque(record, null, { requireDistance: false })).filter(Boolean)

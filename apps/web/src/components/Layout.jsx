@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { ArrowUp } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import MaintenanceBanner from "./MaintenanceBanner";
@@ -176,14 +175,13 @@ export default function Layout({ children }) {
 // reader is. The ring reads --mc-scroll-progress, which the shell above already
 // maintains, so this renders once and never re-renders while scrolling.
 function BackToTop() {
-  const { t } = useTranslation();
   const handleClick = () => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
   };
 
   return (
-    <button type="button" className="mc-to-top" onClick={handleClick} aria-label={t("common.backToTop")}>
+    <button type="button" className="mc-to-top" onClick={handleClick} aria-label="Back to top">
       <svg className="mc-to-top__ring" viewBox="0 0 40 40" aria-hidden="true">
         <circle className="mc-to-top__track" cx="20" cy="20" r="18" pathLength="100" />
         <circle className="mc-to-top__value" cx="20" cy="20" r="18" pathLength="100" />

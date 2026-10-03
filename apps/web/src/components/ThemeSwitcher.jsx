@@ -1,29 +1,26 @@
 import { Monitor, Moon, Sun } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { useTheme } from "../hooks/useTheme";
 
 const OPTIONS = [
-  { value: "system", icon: Monitor, labelKey: "theme.system" },
-  { value: "light", icon: Sun, labelKey: "theme.light" },
-  { value: "dark", icon: Moon, labelKey: "theme.dark" },
+  { value: "system", icon: Monitor, label: "System" },
+  { value: "light", icon: Sun, label: "Light" },
+  { value: "dark", icon: Moon, label: "Dark" },
 ];
 
-// System | Light | Dark, as icon buttons. It reuses the segmented-control look
-// of the language switcher it sits beside.
+// System | Light | Dark, as accessible icon buttons.
 export default function ThemeSwitcher() {
-  const { t } = useTranslation();
   const { preference, setPreference } = useTheme();
 
   return (
-    <div className="mc-lang-toggle mc-theme-toggle" role="group" aria-label={t("theme.label")}>
-      {OPTIONS.map(({ value, icon: Icon, labelKey }) => (
+    <div className="mc-lang-toggle mc-theme-toggle" role="group" aria-label="Appearance">
+      {OPTIONS.map(({ value, icon: Icon, label }) => (
         <button
           type="button"
           key={value}
           className={"mc-lang-toggle__option" + (preference === value ? " is-active" : "")}
           aria-pressed={preference === value}
-          aria-label={t(labelKey)}
-          title={t(labelKey)}
+          aria-label={label}
+          title={label}
           onClick={() => setPreference(value)}
         >
           <Icon size={15} aria-hidden="true" />

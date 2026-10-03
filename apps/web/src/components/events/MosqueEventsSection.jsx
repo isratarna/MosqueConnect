@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import useEventRegistration from "../../hooks/useEventRegistration";
-import { useTranslation } from "react-i18next";
-import { translate } from "../../i18n/translate";
 import { fetchEventCollection } from "../../utils/eventApi";
 import { filterEvents } from "../../utils/eventFilters";
 import EventList from "./EventList";
 import EventRegistrationFeedback from "./EventRegistrationFeedback";
 
 export default function MosqueEventsSection({ mosqueId }) {
-  const { t } = useTranslation();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,7 +24,7 @@ export default function MosqueEventsSection({ mosqueId }) {
       .then(({ events: mosqueEvents }) => setEvents(mosqueEvents))
       .catch((requestError) => {
         if (requestError.name !== "AbortError") {
-          setError(requestError.message || translate("event.mosqueSection.loadError"));
+          setError(requestError.message || "Mosque events could not be loaded.");
         }
       })
       .finally(() => {
@@ -46,7 +43,7 @@ export default function MosqueEventsSection({ mosqueId }) {
     <div className="card mc-card mc-mosque-events">
       <div className="card-body">
         <h5 className="fw-bold mb-3">
-          <CalendarDays size={18} className="text-mc me-2" aria-hidden="true" />{t("event.mosqueSection.title")}
+          <CalendarDays size={18} className="text-mc me-2" aria-hidden="true" />Upcoming Events
         </h5>
         <EventRegistrationFeedback feedback={registration.feedback} onDismiss={registration.clearFeedback} />
         <EventList
@@ -59,7 +56,7 @@ export default function MosqueEventsSection({ mosqueId }) {
           registeredEventIds={registration.registeredEventIds}
           registrationLoadingIds={registration.registrationLoadingIds}
           registrationEnabled={registration.registrationEnabled}
-          emptyMessage={t("event.mosqueSection.empty")}
+          emptyMessage="No upcoming events have been published by this mosque."
         />
       </div>
     </div>
