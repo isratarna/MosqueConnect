@@ -201,6 +201,17 @@ export function updateReport(id, status, resolutionNote = "") {
   });
 }
 
+export function fetchContactMessages(params = {}, { signal } = {}) {
+  return request(queryPath("/api/super-admin/contact-messages", params), { signal });
+}
+
+export function updateContactMessage(id, status) {
+  return request(`/api/super-admin/contact-messages/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
 export function fetchAuditLogs(params = {}, { signal } = {}) {
   return request(queryPath("/api/super-admin/audit-logs", params), { signal });
 }

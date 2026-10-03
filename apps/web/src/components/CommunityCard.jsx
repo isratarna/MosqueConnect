@@ -6,6 +6,7 @@ import {
   Droplets,
   MapPin,
   Megaphone,
+  HandCoins,
   UsersRound, PackageSearch } from "lucide-react";
 import { getCommunityCategoryLabel } from "../data/community";
 import { getAnnouncementDetailsPath, isAnnouncementItem } from "../data/announcements";
@@ -17,6 +18,7 @@ const CATEGORY_ICONS = {
   blood: Droplets,
   volunteer: UsersRound,
   lost_found: PackageSearch,
+  campaign: HandCoins,
 };
 
 const URGENCY_LABELS = {
@@ -68,7 +70,7 @@ export default function CommunityCard({ item, featured = false }) {
         {item.mosqueVerified && <VerifiedBadge />}
         {(announcementDetailsPath || item.mosqueId || item.actionPath) && (
           <span className="mc-community-card__actions">
-            {item.actionPath && <Link to={item.actionPath}>View requests</Link>}
+            {item.actionPath && <Link to={item.actionPath}>{item.actionLabel || "View"}</Link>}
             {announcementDetailsPath && <Link to={announcementDetailsPath}>Read details</Link>}
             {item.mosqueId && <Link to={`/mosque/${item.mosqueId}`}>View mosque</Link>}
           </span>

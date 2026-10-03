@@ -10,6 +10,7 @@ import {
   FileWarning,
   Flag,
   GitMerge,
+  Mail,
   Megaphone,
   Pencil,
   RefreshCw,
@@ -26,6 +27,7 @@ import {
   fetchAuditLogs,
   fetchBroadcasts,
   fetchClaims,
+  fetchContactMessages,
   fetchManagedMosques,
   fetchManagedUsers,
   fetchModerationQueue,
@@ -35,6 +37,7 @@ import {
   fetchSystemStatistics,
   reviewClaim,
   sendBroadcast,
+  updateContactMessage,
   updateContentModeration,
   updateManagedUser,
   updateMosqueVerification,
@@ -443,6 +446,48 @@ export function ReportsPanel() {
         </table></div><Pager payload={state.data} onPage={setPage} /></div>
       </PanelState>
       {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
+    </>
+  );
+}
+
+const CONTACT_STATUSES = ["new", "read", "replied", "archived"];
+const CONTACT_ACTIONS = [["read", "Mark read"], ["replied", "Mark replied"], ["archived", "Archive"]];
+
+export function ContactMessagesPanel() {
+  const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const [busy, setBusy] = useState(null);
+  const state = useRemoteData((signal) => fetchContactMessages({ status, page }, { signal }), [status, page]);
+
+  return (
+    <>
+      <PanelHeader title="Contact messages" description="Messages sent from the public contact form." onRefresh={state.refresh}>
+        <select className="form-select form-select-sm" style={{ width: 145 }} value={status} aria-label="Filter by status" onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+          <option value="">All statuses</option>
+          {CONTACT_STATUSES.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}
+        </select>
+      </PanelHeader>
+      <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
+        <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table align-middle mb-0">
+          <thead className="table-light"><tr><th>From</th><th>Message</th><th>Status</th><th>Received</th><th>Actions</th></tr></thead>
+          <tbody>{state.data?.data?.map((item) => (
+            <tr key={item.id}>
+              <td><strong>{item.name}</strong><div className="small text-muted">{item.email}</div></td>
+              <td style={{ maxWidth: 360, whiteSpace: "pre-wrap" }}>{item.message}</td>
+              <td><StatusBadge value={item.status} /></td>
+              <td className="small text-muted">{dateTime(item.created_at)}</td>
+              <td>
+                <div className="d-flex flex-wrap gap-1">
+                  {CONTACT_ACTIONS.filter(([next]) => next !== item.status).map(([next, label]) => (
+                    <button key={next} type="button" className="btn btn-sm btn-outline-secondary" disabled={busy === item.id} onClick={() => mutate(() => updateContactMessage(item.id, next), { ...state, setBusy, key: item.id })}>{label}</button>
+                  ))}
+                  <a className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" href={`mailto:${item.email}?subject=${encodeURIComponent("Re: your message to MosqueConnect")}`}><Mail size={13} aria-hidden="true" />Reply</a>
+                </div>
+              </td>
+            </tr>
+          ))}</tbody>
+        </table></div><Pager payload={state.data} onPage={setPage} /></div>
+      </PanelState>
     </>
   );
 }

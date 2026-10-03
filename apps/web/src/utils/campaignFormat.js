@@ -1,9 +1,10 @@
-export function formatCampaignMoney(amount, currency = "BDT") {
+export function formatCampaignMoney(amount, currency = "BDT", { compact = false } = {}) {
   return new Intl.NumberFormat("en-BD", {
     style: "currency",
     currency,
-    minimumFractionDigits: Number(amount) % 1 ? 2 : 0,
-    maximumFractionDigits: 2,
+    ...(compact
+      ? { notation: "compact", maximumFractionDigits: 1, currencyDisplay: "narrowSymbol" }
+      : { minimumFractionDigits: Number(amount) % 1 ? 2 : 0, maximumFractionDigits: 2 }),
   }).format(Number(amount) || 0);
 }
 

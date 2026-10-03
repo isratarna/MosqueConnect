@@ -16,6 +16,7 @@ export async function apiRequest(path, { body, headers, ...options } = {}) {
   if (!response.ok) {
     const error = new Error(Object.values(data.errors || {}).flat().join(" ") || data.message || "Unable to complete the request. Please try again.");
     error.status = response.status;
+    error.errors = data.errors || {};
     throw error;
   }
   return data;

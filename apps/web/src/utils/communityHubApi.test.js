@@ -13,9 +13,10 @@ test("labelOf finds labels and falls back to the key", () => {
   assert.equal(labelOf(LOST_FOUND_CATEGORIES, "unknown"), "unknown");
 });
 
-test("impactStatsFrom turns the stats API into compact home page tiles", () => {
-  const tiles = impactStatsFrom({ mosques_count: 124, members_count: 8400, donations_confirmed_total: 2100000, volunteer_signups_count: 0 });
-  assert.deepEqual(tiles.map((tile) => tile.value), ["124", "8.4K", "৳2.1M", "0"]);
+test("impactStatsFrom turns the stats API into four numeric home page tiles", () => {
+  const tiles = impactStatsFrom({ mosques_count: 124, members_count: "8400", donations_confirmed_total: 2100000, volunteer_signups_count: 0 });
+  assert.deepEqual(tiles.map((tile) => tile.value), [124, 8400, 2100000, 0]);
+  assert.deepEqual(tiles.map((tile) => Boolean(tile.money)), [false, false, true, false]);
   assert.deepEqual(impactStatsFrom(null), []);
 });
 

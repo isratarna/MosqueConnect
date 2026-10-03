@@ -190,6 +190,11 @@ export default function Login({ registering = false }) {
                     </div>
                   </div>
 
+                  {registering && (
+                    <p className="small text-muted mb-3">
+                      By continuing you agree to the <Link to="/terms" target="_blank" className="text-mc">Terms of Use</Link> and <Link to="/privacy" target="_blank" className="text-mc">Privacy Policy</Link>.
+                    </p>
+                  )}
                   <button
                     type="submit"
                     className="btn btn-mc w-100 btn-lg mb-3 d-flex align-items-center justify-content-center gap-2"
