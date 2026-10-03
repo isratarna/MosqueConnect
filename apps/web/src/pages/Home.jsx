@@ -31,12 +31,14 @@ import { useAuth } from "../context/AuthContext";
 import { DEFAULT_CENTER } from "../config";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
 import { directionsUrl } from "../utils/mosqueDiscovery";
-import { dhuhrJamaatLabel, isEstimatedPrayer } from "../utils/prayerTime";
+import { isEstimatedPrayer, nextJamaatLabel } from "../utils/prayerTime";
+import { useNow } from "../hooks/useNow";
 import { fetchEventCollection } from "../utils/eventApi";
 import { formatEventDate, formatEventTimeRange, getEventMosqueName, isEventPast } from "../utils/eventFilters";
 import EstimatedBadge from "../components/EstimatedBadge";
 import EidBanner from "../components/EidBanner";
 import CatchableJamaatCard, { JourneyEntryCard } from "../components/journey/CatchableJamaatCard";
+import { EventCardSkeleton, SkeletonRegion } from "../components/skeletons";
 
 const MIN_CARD_WIDTH = 240;
 const CARD_GAP = 16;
@@ -368,6 +370,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
+  const now = useNow();
   const pointerStartX = useRef(0);
   const viewportRef = useRef(null);
   const [viewportWidth, setViewportWidth] = useState(0);
@@ -567,6 +570,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                 const absOffset = Math.abs(normalizedOffset);
                 const isActive = normalizedOffset === 0;
                 const isVisible = absOffset <= maxOffset;
+                const nextJamaat = nextJamaatLabel(mosque.prayer, now);
 
                 if (!isVisible) return null;
 
@@ -628,8 +632,8 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                           <div className="mc-next-prayer mb-2">
                             <span>Next Jamat</span>
                             <strong>
-                              {dhuhrJamaatLabel(mosque.prayer) || "Times unavailable"}
-                              {isEstimatedPrayer(mosque.prayer_sources, "Dhuhr") && <EstimatedBadge className="ms-1" />}
+                              {nextJamaat?.text || "Times unavailable"}
+                              {nextJamaat && isEstimatedPrayer(mosque.prayer_sources, nextJamaat.prayer) && <EstimatedBadge className="ms-1" />}
                             </strong>
                           </div>
                         </div>
@@ -777,19 +781,13 @@ function UpcomingEventsSection() {
         </div>
 
         {state.status === "loading" && (
-          <div className="row g-3" aria-busy="true" role="status">
-            <span className="visually-hidden">Loading upcoming events…</span>
-            {Array.from({ length: UPCOMING_EVENTS_COUNT }, (_, index) => (
-              <div className="col-md-6 col-lg-4" key={index}>
-                <div className="mc-event-card mc-card mc-event-card--skeleton" aria-hidden="true">
-                  <span className="mc-skeleton-line mc-skeleton-line--sm" />
-                  <span className="mc-skeleton-line mc-skeleton-line--lg" />
-                  <span className="mc-skeleton-line" />
-                  <span className="mc-skeleton-line" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <SkeletonRegion label="Loading upcoming events…" delay={0}>
+            <div className="row g-3">
+              {Array.from({ length: UPCOMING_EVENTS_COUNT }, (_, index) => (
+                <div className="col-md-6 col-lg-4" key={index}><EventCardSkeleton /></div>
+              ))}
+            </div>
+          </SkeletonRegion>
         )}
 
         {state.status === "error" && (

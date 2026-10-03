@@ -3,6 +3,7 @@ import { Crown, Search, Trash2 } from "lucide-react";
 import Modal from "../Modal";
 import { fetchManagedUsers } from "../../utils/systemAdminApi";
 import { fetchMosqueTeamAsSuperAdmin, revokeMember, transferOwnership } from "../../utils/teamApi";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 /**
  * Super-admin view of one mosque's team: revoke anyone's access, or transfer
@@ -89,7 +90,7 @@ export default function MosqueTeamModal({ mosque, onClose, onChanged }) {
       {loadError ? (
         <div className="alert alert-danger py-2">{loadError} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={reload}>Retry</button></div>
       ) : !members ? (
-        <p className="text-muted small" role="status">Loading team…</p>
+        <SkeletonRegion label="Loading team…"><BlockStack heights={[40, 40, 40]} /></SkeletonRegion>
       ) : members.length === 0 ? (
         <p className="text-muted small">Nobody manages this mosque yet.</p>
       ) : (

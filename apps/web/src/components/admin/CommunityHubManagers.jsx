@@ -7,6 +7,7 @@ import {
   updateGoodsDonation, updateLostFoundStatus,
 } from "../../utils/communityHubApi";
 import { formatShortDate } from "../../utils/dashboardFormat";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 /** Loads one admin list and reloads it when the filter or `revision` changes. */
 function useAdminList(load, mosqueId, status) {
@@ -31,7 +32,7 @@ function useAdminList(load, mosqueId, status) {
 }
 
 function ListState({ loading, error, empty, onRetry, children }) {
-  if (loading) return <p role="status" className="text-muted">Loading…</p>;
+  if (loading) return <SkeletonRegion label="Loading…"><BlockStack heights={[72, 72]} /></SkeletonRegion>;
   if (error) return <div className="alert alert-danger" role="alert">{error} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={onRetry}>Retry</button></div>;
   if (empty) return <div className="text-center text-muted py-4"><Search size={26} aria-hidden="true" /><p className="mb-0 mt-2">{empty}</p></div>;
   return children;

@@ -21,6 +21,8 @@ import {
   getEventMosqueName,
   isEventPast,
 } from "../utils/eventFilters";
+import { PageSkeleton } from "../components/skeletons";
+import ReportButton from "../components/ReportButton";
 
 export default function EventDetails() {
   const { id } = useParams();
@@ -50,7 +52,7 @@ export default function EventDetails() {
     return () => controller.abort();
   }, [id]);
 
-  if (loading) return <EventDetailsState message="Loading event details..." />;
+  if (loading) return <PageSkeleton label="Loading event details…" />;
   if (notFound) return <EventUnavailable />;
   if (error || !event) return <EventDetailsState error={error || "Event details could not be loaded."} />;
 
@@ -87,6 +89,7 @@ export default function EventDetails() {
             </div>
 
             <h1>{event.title}</h1>
+            <div className="mb-3"><ReportButton type="event" id={event.id} /></div>
             <p className="mc-event-details__mosque">Hosted by {mosqueName}</p>
 
             <div className="mc-event-details__body">

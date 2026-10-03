@@ -6,6 +6,7 @@ import { useNow } from "../../hooks/useNow";
 import { fetchCatchable, formatMinutes, formatTime, minutesUntil } from "../../utils/journeyApi";
 import { directionsUrl } from "../../utils/mosqueDiscovery";
 import EstimatedBadge from "../EstimatedBadge";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 /*
  * Home card: "Next jamat you can catch". Location theke kacher mosque gulor
@@ -67,7 +68,7 @@ export default function CatchableJamaatCard({ origin }) {
         )}
 
         {hasLocation && state.status === "loading" && (
-          <p className="small text-muted mb-0"><LoaderCircle className="spin" size={14} aria-hidden="true" /> Checking nearby jamaats…</p>
+          <SkeletonRegion label="Checking nearby jamaats…"><BlockStack heights={[48, 48]} /></SkeletonRegion>
         )}
 
         {hasLocation && state.status === "error" && <p className="small text-danger mb-0">{state.error}</p>}

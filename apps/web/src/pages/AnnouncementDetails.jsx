@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   CalendarDays,
   Clock3,
-  LoaderCircle,
   MapPin,
   Phone,
   TriangleAlert,
@@ -13,6 +12,8 @@ import {
 import { CommunityCategoryIcon } from "../components/CommunityCard";
 import VerifiedBadge from "../components/VerifiedBadge";
 import { fetchAnnouncementById } from "../utils/announcementApi";
+import { PageSkeleton } from "../components/skeletons";
+import ReportButton from "../components/ReportButton";
 
 export default function AnnouncementDetails() {
   const { id } = useParams();
@@ -48,10 +49,7 @@ export default function AnnouncementDetails() {
   if (status === "loading") {
     return (
       <section className="mc-announcement-details mc-atmospheric-section">
-        <div className="container py-5 text-center" role="status">
-          <LoaderCircle size={36} className="text-mc spin" aria-hidden="true" />
-          <p className="text-muted mt-3 mb-0">Loading announcement…</p>
-        </div>
+        <PageSkeleton label="Loading announcement…" />
       </section>
     );
   }
@@ -84,6 +82,7 @@ export default function AnnouncementDetails() {
             </div>
 
             <h1>{announcement.title}</h1>
+            <div className="mb-3"><ReportButton type="announcement" id={announcement.id} /></div>
             {announcement.publishedLabel && (
               <div className="mc-announcement-details__published">
                 <Clock3 size={15} aria-hidden="true" />

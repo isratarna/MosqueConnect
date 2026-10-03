@@ -4,6 +4,7 @@ import { Search, TriangleAlert } from "lucide-react";
 import CampaignCard from "../components/campaigns/CampaignCard";
 import Pagination from "../components/Pagination";
 import { CAMPAIGN_CATEGORIES, fetchCampaigns } from "../utils/campaignApi";
+import { CampaignCardSkeleton, SkeletonRegion } from "../components/skeletons";
 
 export default function Campaigns() {
   const [searchParams] = useSearchParams();
@@ -56,7 +57,9 @@ export default function Campaigns() {
           </select>
         </div>
 
-        {loading && <div className="mc-campaign-state" role="status">Loading active campaigns...</div>}
+        <SkeletonRegion label="Loading active campaigns…" loading={loading}>
+          <div className="mc-campaign-grid">{Array.from({ length: 6 }, (_, index) => <CampaignCardSkeleton key={index} />)}</div>
+        </SkeletonRegion>
         {error && <div className="mc-campaign-state is-error" role="alert"><TriangleAlert size={28} /> {error}</div>}
         {!loading && !error && campaigns.length === 0 && <div className="mc-campaign-state">No active campaigns match your search.</div>}
         {!loading && !error && campaigns.length > 0 && (

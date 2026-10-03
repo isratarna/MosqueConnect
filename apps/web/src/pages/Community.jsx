@@ -12,6 +12,7 @@ import { fetchFollowedMosques } from "../utils/mosqueDiscovery";
 import { apiRequest } from "../utils/api";
 import { fetchEventCollection } from "../utils/eventApi";
 import { filterEvents, getEventMosqueName } from "../utils/eventFilters";
+import { ListRowsSkeleton, SkeletonRegion } from "../components/skeletons";
 
 const CATEGORY_FILTERS = [
   { key: "announcement", label: "Announcement" },
@@ -347,7 +348,7 @@ export default function Community() {
             </div>
             <span className="mc-community-section__count" aria-live="polite">{filteredUpdates.length} updates</span>
           </div>
-          {feedLoading ? <p role="status">Loading community updates...</p> : feedError ? <div className="alert alert-danger" role="alert">{feedError} <button className="btn btn-sm btn-outline-danger" onClick={retryEvents}>Retry</button></div> : feedItems.length ? (
+          {feedLoading ? <SkeletonRegion label="Loading community updates…"><ListRowsSkeleton rows={4} /></SkeletonRegion> : feedError ? <div className="alert alert-danger" role="alert">{feedError} <button className="btn btn-sm btn-outline-danger" onClick={retryEvents}>Retry</button></div> : feedItems.length ? (
             <>
               <div className="mc-community-feed-list mc-motion-stagger">
                 {feedItems.map((item) => (

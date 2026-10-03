@@ -6667,3 +6667,69 @@ main {
 .mc-faq__answer { margin-top: 0.5rem; }
 .mc-info-steps { list-style: none; margin: 0; padding: 0; }
 .mc-info-steps li + li { margin-top: 0.5rem; }
+
+/* Skeleton loading placeholders (components/skeletons) */
+:root {
+  --mc-skeleton-base: rgba(125, 105, 85, 0.12);
+  --mc-skeleton-shine: rgba(125, 105, 85, 0.24);
+}
+:root[data-bs-theme="dark"] {
+  --mc-skeleton-base: rgba(255, 238, 215, 0.08);
+  --mc-skeleton-shine: rgba(255, 238, 215, 0.18);
+}
+.mc-skeleton {
+  animation: mc-shimmer 1.4s ease infinite;
+  background: linear-gradient(90deg, var(--mc-skeleton-base) 25%, var(--mc-skeleton-shine) 37%, var(--mc-skeleton-base) 63%);
+  background-size: 400% 100%;
+  display: block;
+  max-width: 100%;
+}
+.mc-skeleton-text { display: grid; gap: 0.5rem; }
+@keyframes mc-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mc-skeleton { animation: none; }
+}
+
+/* Accessibility: skip link, and no focus ring on the programmatically focused main landmark */
+.mc-skip-link {
+  background: var(--mc-rust, #b4521f);
+  border-radius: 0 0 0.5rem 0;
+  color: #fff;
+  left: 0;
+  padding: 0.6rem 1rem;
+  position: fixed;
+  top: 0;
+  transform: translateY(-120%);
+  z-index: 2000;
+}
+.mc-skip-link:focus { transform: none; }
+.mc-page-shell:focus { outline: none; }
+
+/* Nearby carousel controls: the light-theme white button hid the light icons in dark mode. */
+:root[data-bs-theme="dark"] .mc-nearby-showcase__controls .btn {
+  background: var(--mc-glass-strong);
+  border-color: var(--mc-glass-line);
+  color: var(--bs-body-color);
+}
+:root[data-bs-theme="dark"] .mc-nearby-showcase__controls .btn:hover,
+:root[data-bs-theme="dark"] .mc-nearby-showcase__controls .btn:focus-visible {
+  background: var(--mc-rust);
+  border-color: var(--mc-rust);
+  color: #fff;
+}
+
+/* An active category button keeps its white icon on hover/focus (the generic hover colour made it rust-on-rust). */
+.mc-community-filter__category.is-active:hover,
+.mc-community-filter__category.is-active:focus-visible {
+  background: var(--mc-rust);
+  border-color: var(--mc-rust);
+  color: #fff;
+}
+
+/* The search row's `svg { color: rust }` also hit the category icons, so the active (rust) button lost its icon. */
+.mc-community-filter__category.is-active svg {
+  color: #fff;
+}

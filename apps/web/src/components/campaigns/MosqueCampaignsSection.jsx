@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchCampaigns } from "../../utils/campaignApi";
 import CampaignCard from "./CampaignCard";
+import { CampaignCardSkeleton, SkeletonRegion } from "../skeletons";
 
 export default function MosqueCampaignsSection({ mosqueId }) {
   const [campaigns, setCampaigns] = useState([]);
@@ -16,7 +17,7 @@ export default function MosqueCampaignsSection({ mosqueId }) {
     return () => controller.abort();
   }, [mosqueId]);
 
-  if (loading) return <p className="text-muted small" role="status">Loading donation campaigns...</p>;
+  if (loading) return <SkeletonRegion label="Loading donation campaigns…" className="mt-4"><CampaignCardSkeleton /></SkeletonRegion>;
   if (!campaigns.length) return null;
 
   return (

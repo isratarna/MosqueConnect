@@ -27,6 +27,8 @@ export function internationalPhone(countryCode, phone) {
   return `${countryCode}${digits}`;
 }
 
+export { bangladeshLocalNumber, bangladeshPhone, isBangladeshMobile } from "./phone.js";
+
 export function returnPath(location, fallback = "/") {
   const path = location.state?.from;
   return typeof path === "string" && path.startsWith("/") && !path.startsWith("//") && !path.includes("\\") && !/^\/(login|register)([/?#]|$)/.test(path) ? path : fallback;

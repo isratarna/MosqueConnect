@@ -8,6 +8,7 @@ import {
   reviewCampaignDonation, saveAdminCampaign, transitionAdminCampaign,
 } from "../../utils/campaignApi";
 import { formatCampaignDate, formatCampaignMoney } from "../../utils/campaignFormat";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 const emptyForm = () => ({
   title: "", summary: "", description: "", category: CAMPAIGN_CATEGORIES[0], target_amount: "",
@@ -87,7 +88,7 @@ export default function CampaignManager({ mosqueId }) {
       {notice && <div className="alert alert-success alert-dismissible" role="status">{notice}<button className="btn-close" type="button" aria-label="Dismiss" onClick={() => setNotice("")} /></div>}
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {editing && <CampaignForm form={form} setValue={setValue} saving={saving} isNew={editing === "new"} onSubmit={submit} onCancel={() => setEditing(null)} />}
-      {loading && <div className="text-center text-muted py-5" role="status">Loading campaigns...</div>}
+      <SkeletonRegion label="Loading campaigns…" loading={loading}><BlockStack heights={[110, 110]} /></SkeletonRegion>
       {!loading && campaigns.length === 0 && !editing && <div className="mc-admin-campaigns__empty">No campaigns yet. Create a draft when you are ready to start fundraising.</div>}
       <div className="mc-admin-campaigns__list">
         {campaigns.map((campaign) => (
@@ -149,7 +150,7 @@ function DonationReview({ mosqueId, campaign, onChanged }) {
   return (
     <section className="mc-donation-review">
       <div className="d-flex justify-content-between"><h6>Manual support records</h6><button className="btn btn-sm btn-link" type="button" onClick={() => loadDonations()}><RefreshCw size={14} /> Refresh</button></div>
-      {error && <div className="alert alert-danger py-2">{error}</div>}{loading && <p className="text-muted small">Loading support records...</p>}
+      {error && <div className="alert alert-danger py-2">{error}</div>}<SkeletonRegion label="Loading support records…" loading={loading}><BlockStack heights={[56, 56]} /></SkeletonRegion>
       {!loading && items.length === 0 && <p className="text-muted small mb-0">No support has been submitted for this campaign.</p>}
       {items.map((item) => <div className="mc-donation-review__row" key={item.id}><div><strong>{item.is_anonymous ? "Anonymous supporter" : item.donor_name || "Unnamed supporter"}</strong><span>{formatCampaignMoney(item.amount, campaign.currency)} · {item.payment_method.replaceAll("_", " ")}</span>{item.reference && <small>Ref: {item.reference}</small>}</div><div className="d-flex align-items-center gap-2"><span className={`badge ${item.status === "confirmed" ? "bg-success" : item.status === "rejected" ? "bg-secondary" : "bg-warning text-dark"}`}>{item.status}</span>{item.status === "pending" && <><button className="btn btn-sm btn-success" type="button" onClick={() => review(item, "confirm")}><Check size={14} /> Confirm</button><button className="btn btn-sm btn-outline-danger" type="button" onClick={() => review(item, "reject")}><X size={14} /> Reject</button></>}</div></div>)}
     </section>

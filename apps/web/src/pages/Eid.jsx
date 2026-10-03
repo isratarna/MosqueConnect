@@ -6,6 +6,7 @@ import EidJamaatCard, { formatEidDate } from "../components/eid/EidJamaatCard";
 import { requestGeolocation, useGeolocation } from "../hooks/useGeolocation";
 import { fetchEidSeason, fetchNearbyEidJamaats } from "../utils/eidApi";
 import { formatClockTime } from "../utils/prayerTime";
+import { PageSkeleton } from "../components/skeletons";
 
 const RADIUS_OPTIONS = [5, 10, 20, 50];
 
@@ -60,12 +61,7 @@ export default function Eid() {
   })), [jamaats]);
 
   if (season === undefined) {
-    return (
-      <div className="container py-5 text-center" role="status">
-        <LoaderCircle size={36} className="text-mc spin" aria-hidden="true" />
-        <p className="text-muted mt-3 mb-0">Loading Eid jamaats…</p>
-      </div>
-    );
+    return <PageSkeleton label="Loading Eid jamaats…" />;
   }
 
   if (!season?.active) {

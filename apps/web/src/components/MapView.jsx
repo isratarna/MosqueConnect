@@ -7,12 +7,14 @@
 import { Component, useCallback, useMemo, useState } from "react";
 import { GoogleMap, MarkerF, InfoWindowF } from "@react-google-maps/api";
 import { Link } from "react-router-dom";
-import { LoaderCircle, Map, TriangleAlert } from "lucide-react";
+import { Map, TriangleAlert } from "lucide-react";
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
 import { coordinatesOf } from "../utils/mosqueDiscovery";
-import { dhuhrJamaatLabel } from "../utils/prayerTime";
+import { nextJamaatLabel } from "../utils/prayerTime";
+import { useNow } from "../hooks/useNow";
 import { useGoogleMapsLoader } from "./GoogleMapsProvider";
 import VerifiedBadge from "./VerifiedBadge";
+import { Skeleton, SkeletonRegion } from "./skeletons";
 
 const MAP_OPTIONS = {
   mapTypeControl: false,
@@ -67,6 +69,7 @@ export default function MapView({
   onMosqueSelect,
 }) {
   const { disabled, isLoaded, loadError } = useGoogleMapsLoader();
+  const now = useNow();
 
   if (disabled) {
     return (
@@ -91,11 +94,9 @@ export default function MapView({
 
   if (!isLoaded) {
     return (
-      <MapPlaceholder
-        className={`${className} mc-map--loading`}
-        icon={<LoaderCircle className="text-mc spin" size={32} aria-label="Loading map" />}
-        message="Loading map…"
-      />
+      <SkeletonRegion label="Loading map…" delay={0}>
+        <div className={`${className} mc-map--loading`}><Skeleton height="100%" radius="12px" /></div>
+      </SkeletonRegion>
     );
   }
 
@@ -213,9 +214,10 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
                     {mosque.verification_status && (
                       <><br /><span style={{ fontSize: 12, textTransform: "capitalize" }}>{mosque.verification_status}</span></>
                     )}
-                    {dhuhrJamaatLabel(mosque.prayer) && (
-                      <><br /><span style={{ fontSize: 12 }}>Next Jamat: {dhuhrJamaatLabel(mosque.prayer)}{mosque.prayer_sources?.Dhuhr === "calculated" ? " (estimated)" : ""}</span></>
-                    )}
+                    {(() => {
+                      const next = nextJamaatLabel(mosque.prayer, now);
+                      return next && <><br /><span style={{ fontSize: 12 }}>Next Jamat: {next.text}{mosque.prayer_sources?.[next.prayer] === "calculated" ? " (estimated)" : ""}</span></>;
+                    })()}
                     <br />
                     <Link to={mosque.profile_path || `/mosque/${mosque.id}`} style={{ fontSize: 13 }}>
                       View profile →

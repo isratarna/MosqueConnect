@@ -9,6 +9,9 @@ import {
 
 const NotificationContext = createContext(null);
 
+// How often the badge re-checks while the tab is visible.
+const UNREAD_POLL_MS = 60_000;
+
 export function NotificationProvider({ children }) {
   const { user, clearSession } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -22,7 +25,8 @@ export function NotificationProvider({ children }) {
     }
   }, [clearSession]);
 
-  const refreshUnreadCount = useCallback(async ({ signal } = {}) => {
+  // `silent` background refreshes keep the current badge and error untouched until the answer arrives.
+  const refreshUnreadCount = useCallback(async ({ signal, silent = false } = {}) => {
     if (!user) {
       setUnreadCount(0);
       setUnreadError("");
@@ -30,8 +34,10 @@ export function NotificationProvider({ children }) {
       return 0;
     }
 
-    setUnreadLoading(true);
-    setUnreadError("");
+    if (!silent) {
+      setUnreadLoading(true);
+      setUnreadError("");
+    }
 
     try {
       const count = await fetchUnreadNotificationCount({ signal });
@@ -40,10 +46,10 @@ export function NotificationProvider({ children }) {
     } catch (error) {
       if (error.name === "AbortError") throw error;
       handleRequestError(error);
-      setUnreadError(error.message || "Unread notifications could not be loaded.");
+      if (!silent) setUnreadError(error.message || "Unread notifications could not be loaded.");
       throw error;
     } finally {
-      if (!signal?.aborted) setUnreadLoading(false);
+      if (!silent && !signal?.aborted) setUnreadLoading(false);
     }
   }, [handleRequestError, user]);
 
@@ -57,7 +63,23 @@ export function NotificationProvider({ children }) {
 
     const controller = new AbortController();
     refreshUnreadCount({ signal: controller.signal }).catch(() => {});
-    return () => controller.abort();
+
+    // Keep the badge current: poll while the tab is visible, and check again when the user comes back to it.
+    const refreshQuietly = () => {
+      if (document.visibilityState === "visible") refreshUnreadCount({ signal: controller.signal, silent: true }).catch(() => {});
+    };
+    const timer = window.setInterval(refreshQuietly, UNREAD_POLL_MS);
+    document.addEventListener("visibilitychange", refreshQuietly);
+    window.addEventListener("focus", refreshQuietly);
+    window.addEventListener("online", refreshQuietly);
+
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshQuietly);
+      window.removeEventListener("focus", refreshQuietly);
+      window.removeEventListener("online", refreshQuietly);
+    };
   }, [refreshUnreadCount, user]);
 
   const markAsRead = useCallback(async (id) => {

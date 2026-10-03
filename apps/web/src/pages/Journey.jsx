@@ -15,6 +15,7 @@ import {
   planJourney,
   selectedStops,
 } from "../utils/journeyApi";
+import { BlockStack, SkeletonRegion } from "../components/skeletons";
 
 /*
  * /journey ar /journey/:id. Form -> POST /api/journeys/plan -> map + timeline.
@@ -203,7 +204,7 @@ export default function Journey() {
           {!plan && status !== "loading" && (
             <div className="mc-journey-empty card"><div className="card-body text-muted small">Enter a trip to see the prayers on the way.</div></div>
           )}
-          {status === "loading" && !plan && <p className="text-muted"><LoaderCircle className="spin" size={16} aria-hidden="true" /> Loading plan…</p>}
+          <SkeletonRegion label="Loading plan…" loading={status === "loading" && !plan}><BlockStack heights={[56, 56, 56]} /></SkeletonRegion>
 
           {plan && (
             <div className="d-grid gap-3">

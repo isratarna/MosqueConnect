@@ -36,6 +36,8 @@ export default function Layout({ children }) {
       }
     }
     window.scrollTo(0, 0);
+    // Screen readers and keyboard users start at the top of the new page.
+    pageRef.current?.focus({ preventScroll: true });
   }, [pathname, hash]);
 
   useEffect(() => {
@@ -162,9 +164,10 @@ export default function Layout({ children }) {
 
   return (
     <>
+      <a className="mc-skip-link" href="#main-content">Skip to main content</a>
       <Navbar />
       <MaintenanceBanner />
-      <main ref={pageRef} className="mc-page-shell">{children}</main>
+      <main ref={pageRef} id="main-content" tabIndex={-1} className="mc-page-shell">{children}</main>
       <Footer />
       <BackToTop />
     </>

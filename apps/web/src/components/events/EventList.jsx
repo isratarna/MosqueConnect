@@ -1,6 +1,7 @@
-import { CalendarX2, CircleAlert, LoaderCircle } from "lucide-react";
+import { CalendarX2, CircleAlert } from "lucide-react";
 import EventCard from "./EventCard";
 import ScrollRail from "../ScrollRail";
+import { EventCardSkeleton, SkeletonRegion } from "../skeletons";
 
 export default function EventList({
   events = [],
@@ -20,10 +21,9 @@ export default function EventList({
 }) {
   if (loading) {
     return (
-      <div className="mc-event-state" role="status">
-        <LoaderCircle className="mc-event-state__spinner" size={28} aria-hidden="true" />
-        <span>Loading community events...</span>
-      </div>
+      <SkeletonRegion label="Loading community events…">
+        <div className="mc-event-list">{Array.from({ length: 3 }, (_, index) => <EventCardSkeleton key={index} />)}</div>
+      </SkeletonRegion>
     );
   }
 

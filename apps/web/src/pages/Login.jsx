@@ -10,7 +10,18 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { internationalPhone, returnPath } from "../utils/api";
+import { returnPath } from "../utils/api";
+import { bangladeshLocalNumber, bangladeshPhone, isBangladeshMobile } from "../utils/phone";
+
+/** Inline SVG, because Windows does not draw flag emoji (it shows the letters BD). */
+function BangladeshFlag() {
+  return (
+    <svg className="me-2" width="22" height="13" viewBox="0 0 10 6" role="img" aria-label="Bangladesh flag">
+      <rect width="10" height="6" fill="#006a4e" />
+      <circle cx="4.5" cy="3" r="2" fill="#f42a41" />
+    </svg>
+  );
+}
 
 export default function Login({ registering = false }) {
   const { sendOtp, verifyOtp } = useAuth();
@@ -18,7 +29,6 @@ export default function Login({ registering = false }) {
   const location = useLocation();
 
   const [step, setStep] = useState("phone"); // "phone" | "otp"
-  const [countryCode, setCountryCode] = useState("+880");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,13 +40,12 @@ export default function Login({ registering = false }) {
     setError("");
     setMessage("");
 
-    const localPhone = phone.replace(/\D/g, "");
-    if (!localPhone || localPhone.length < 6 || localPhone.length > 15) {
-      setError("Please enter a valid phone number.");
+    if (!isBangladeshMobile(phone)) {
+      setError("Please enter a valid Bangladeshi mobile number, e.g. 01712345678.");
       return;
     }
 
-    const fullPhone = internationalPhone(countryCode, localPhone);
+    const fullPhone = bangladeshPhone(phone);
 
     setLoading(true);
     const res = await sendOtp(fullPhone);
@@ -61,8 +70,7 @@ export default function Login({ registering = false }) {
       return;
     }
 
-    const localPhone = phone.replace(/\D/g, "");
-    const fullPhone = internationalPhone(countryCode, localPhone);
+    const fullPhone = bangladeshPhone(phone);
 
     setLoading(true);
     const res = await verifyOtp(fullPhone, trimmedOtp);
@@ -90,8 +98,7 @@ export default function Login({ registering = false }) {
     if (loading) return;
     setError("");
     
-    const localPhone = phone.replace(/\D/g, "");
-    const fullPhone = internationalPhone(countryCode, localPhone);
+    const fullPhone = bangladeshPhone(phone);
     
     setLoading(true);
     const res = await sendOtp(fullPhone);
@@ -127,7 +134,7 @@ export default function Login({ registering = false }) {
                 <p className="text-muted mb-0">
                   {step === "phone"
                     ? (registering ? "Verify your phone to create an account, then complete your profile. Mosque administrators can apply from a mosque profile." : "Log in using your phone number and OTP.")
-                    : `We sent a 6-digit code to ${internationalPhone(countryCode, phone)}.`}
+                    : `We sent a 6-digit code to ${bangladeshPhone(phone)}.`}
                 </p>
               </div>
 
@@ -150,34 +157,19 @@ export default function Login({ registering = false }) {
                   <div className="mb-3">
                     <label className="form-label" htmlFor="login-phone">Phone Number</label>
                     <div className="input-group">
-                      <select 
-                        className="form-select bg-light border-end-0" 
-                        style={{ maxWidth: '120px', flex: '0 0 120px', cursor: 'pointer' }}
-                        value={countryCode}
-                        onChange={(e) => {
-                          setCountryCode(e.target.value);
-                          setError("");
-                        }}
-                        disabled={loading}
-                        aria-label="Country Code"
-                      >
-                        <option value="+880">🇧🇩 +880</option>
-                        <option value="+1">🇺🇸 +1</option>
-                        <option value="+44">🇬🇧 +44</option>
-                        <option value="+91">🇮🇳 +91</option>
-                        <option value="+971">🇦🇪 +971</option>
-                        <option value="+966">🇸🇦 +966</option>
-                        <option value="+60">🇲🇾 +60</option>
-                      </select>
+                      <span className="input-group-text bg-light fw-semibold d-flex align-items-center" id="login-phone-prefix"><BangladeshFlag /> +880</span>
                       <input
                         id="login-phone"
                         autoComplete="tel-national"
                         type="tel"
+                        inputMode="numeric"
                         className="form-control flex-grow-1"
-                        placeholder="e.g. 1712345678"
+                        placeholder="1712345678"
+                        aria-describedby="login-phone-prefix login-phone-help"
                         value={phone}
                         onChange={(e) => {
-                          setPhone(e.target.value.replace(/\D/g, ""));
+                          // 017…, +88017… and 88017… all become 17…
+                          setPhone(bangladeshLocalNumber(e.target.value));
                           setError("");
                         }}
                         disabled={loading}
@@ -185,8 +177,8 @@ export default function Login({ registering = false }) {
                         autoFocus
                       />
                     </div>
-                    <div className="form-text text-muted small">
-                      Select your country code and enter your local number.
+                    <div id="login-phone-help" className="form-text text-muted small">
+                      Enter your Bangladeshi mobile number, e.g. 01712345678.
                     </div>
                   </div>
 

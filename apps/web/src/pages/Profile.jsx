@@ -11,6 +11,7 @@ import { describeValue } from "../utils/suggestionFormat";
 import { roleLabel } from "../utils/teamRoles";
 import { TrustedBadge } from "../components/suggestions/SuggestionReviewList";
 import { COMPLAINT_CATEGORIES, COMPLAINT_STATUS, GOODS_STATUS, LOST_FOUND_STATUS, labelOf } from "../utils/communityHubApi";
+import { ListRowsSkeleton, MosqueCardSkeleton, SkeletonRegion } from "../components/skeletons";
 
 const tabs = { followed: "Followed Mosques", invites: "Team Invitations", activity: "Event Registrations", donations: "Donations", suggestions: "My Corrections", feedback: "My Feedback", lostfound: "My Lost & Found", claims: "Mosque Applications", settings: "Settings" };
 const endpoints = { invites: "/api/me/mosque-invites", activity: "/api/me/event-registrations", donations: "/api/me/donations", suggestions: "/api/me/suggestions", feedback: "/api/me/complaints", lostfound: "/api/lost-found/me", claims: "/api/me/mosque-claims" };
@@ -103,13 +104,13 @@ export default function Profile() {
               {error && <div className="alert alert-danger" role="alert">{error} {endpoints[activeTab] && <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => setRevision((n) => n + 1)}>Retry</button>}</div>}
               {message && <div className="alert alert-success" role="status">{message}</div>}
               {activeTab === "followed" && <>
-                {follows.loading && <p role="status">Loading followed mosques...</p>}
+                <SkeletonRegion label="Loading followed mosques…" loading={follows.loading}><div className="row g-3">{[0, 1].map((key) => <div className="col-md-6" key={key}><MosqueCardSkeleton /></div>)}</div></SkeletonRegion>
                 {follows.error && <div className="alert alert-danger" role="alert">{follows.error} <button className="btn btn-sm btn-outline-danger" onClick={follows.refreshFollowedMosques}>Retry</button></div>}
                 {!follows.loading && !follows.error && follows.followedMosques.length === 0 && <p>You are not following any mosques yet. <Link to="/browse">Browse mosques</Link> to get started.</p>}
                 <div className="row g-3">{follows.followedMosques.map((mosque) => <div className="col-md-6" key={mosque.id}><MosqueCard mosque={mosque} /></div>)}</div>
               </>}
               {endpoints[activeTab] && <>
-                {loading && <p role="status">Loading...</p>}
+                <SkeletonRegion label="Loading…" loading={loading}><ListRowsSkeleton rows={3} /></SkeletonRegion>
                 {!loading && !error && items.length === 0 && <p className="text-muted">{emptyText[activeTab]}</p>}
                 {!loading && items.map((item) => <div className="border rounded p-3 mb-3" key={item.id}>
                   {activeTab === "activity" && (item.event ? <Link to={`/community/events/${item.event_id}`}>{item.event.title}</Link> : <span>Event registration #{item.event_id}</span>)}

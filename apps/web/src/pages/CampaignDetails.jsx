@@ -6,6 +6,8 @@ import CampaignStatusBadge from "../components/campaigns/CampaignStatusBadge";
 import CampaignSupportAction from "../components/campaigns/CampaignSupportAction";
 import { CampaignApiError, fetchCampaign } from "../utils/campaignApi";
 import { formatCampaignDate, formatCampaignMoney } from "../utils/campaignFormat";
+import { PageSkeleton } from "../components/skeletons";
+import ReportButton from "../components/ReportButton";
 
 export default function CampaignDetails() {
   const { id } = useParams();
@@ -26,7 +28,7 @@ export default function CampaignDetails() {
     return () => controller.abort();
   }, [id]);
 
-  if (loading) return <CampaignDetailsState message="Loading campaign details..." />;
+  if (loading) return <PageSkeleton label="Loading campaign details…" />;
   if (error || !campaign) return <CampaignDetailsState error={error || "Campaign details could not be loaded."} />;
 
   return (
@@ -38,6 +40,7 @@ export default function CampaignDetails() {
             {campaign.image_url && <img src={campaign.image_url} alt="" className="mc-campaign-details__image" />}
             <div className="mc-campaign-card__meta"><span>{campaign.category}</span><CampaignStatusBadge status={campaign.status} /></div>
             <h1>{campaign.title}</h1>
+            <div className="mb-3"><ReportButton type="campaign" id={campaign.id} /></div>
             <p className="mc-campaign-details__summary">{campaign.summary}</p>
             <CampaignProgress campaign={campaign} />
             <div className="mc-campaign-details__body">

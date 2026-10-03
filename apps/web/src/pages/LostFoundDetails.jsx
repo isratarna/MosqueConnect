@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, CheckCircle2, MapPin, Phone, RotateCcw } from "lucide-react";
 import { labelOf, LOST_FOUND_CATEGORIES, LOST_FOUND_STATUS, fetchLostFoundItem, updateLostFoundStatus } from "../utils/communityHubApi";
+import { PageSkeleton } from "../components/skeletons";
+import ReportButton from "../components/ReportButton";
 
 export default function LostFoundDetails() {
   const { id } = useParams();
@@ -37,7 +39,7 @@ export default function LostFoundDetails() {
     return (
       <div className="container py-5" style={{ minHeight: "60vh" }}>
         {back}
-        {error ? <div className="alert alert-danger" role="alert">{error}</div> : <p role="status">Loading item…</p>}
+        {error ? <div className="alert alert-danger" role="alert">{error}</div> : <PageSkeleton label="Loading item…" />}
       </div>
     );
   }
@@ -62,6 +64,7 @@ export default function LostFoundDetails() {
                 <span className={`badge ${statusClass}`}>{statusLabel}</span>
               </div>
               <h1 className="h3 fw-bold">{item.title}</h1>
+              <div className="mb-2"><ReportButton type="lost_found" id={item.id} /></div>
               <p className="text-muted" style={{ whiteSpace: "pre-line" }}>{item.description}</p>
               <ul className="list-unstyled small mb-3">
                 <li className="mb-1"><CalendarDays size={15} className="text-mc me-2" aria-hidden="true" />{item.type === "lost" ? "Lost on" : "Found on"} {item.occurred_on}</li>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "../Modal";
 import { fetchManagedUser } from "../../utils/systemAdminApi";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 const dateTime = (value) => value ? new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "—";
 const labelize = (value = "") => String(value).replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -32,7 +33,7 @@ export default function UserDetailModal({ userId, onClose }) {
   return (
     <Modal title={user ? user.name : "User details"} onClose={onClose} size="modal-lg">
       {error && <div className="alert alert-danger">{error}</div>}
-      {!data && !error && <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading…</div>}
+      {!data && !error && <SkeletonRegion label="Loading user…"><BlockStack heights={[32, 120, 120]} /></SkeletonRegion>}
       {data && (
         <>
           <div className="d-flex flex-wrap gap-3 small mb-4 border-bottom pb-3">

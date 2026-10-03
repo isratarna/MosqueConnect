@@ -249,6 +249,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
     readChange,
     markAsRead,
     markAllAsRead,
+    refreshUnreadCount,
     handleRequestError,
   } = useNotifications();
   const [notifications, setNotifications] = useState([]);
@@ -278,8 +279,10 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
     if (!isOpen) return undefined;
     const controller = new AbortController();
     loadNotifications(controller.signal);
+    // Opening the bell is a good moment to re-sync the badge with the server.
+    refreshUnreadCount({ signal: controller.signal, silent: true }).catch(() => {});
     return () => controller.abort();
-  }, [isOpen, loadNotifications, reloadKey]);
+  }, [isOpen, loadNotifications, refreshUnreadCount, reloadKey]);
 
   useEffect(() => {
     if (!readChange) return;

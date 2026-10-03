@@ -8,6 +8,8 @@ import {
   setAnnouncementPublished,
   updateAnnouncement,
 } from "../../utils/dashboardApi";
+import { BlockStack, SkeletonRegion } from "../skeletons";
+import ConfirmDialog from "../ConfirmDialog";
 
 const emptyForm = { title: "", body: "", urgency: "low", status: "published" };
 
@@ -149,31 +151,18 @@ export default function AnnouncementManager({ mosqueId }) {
       )}
 
       {deletingId && (
-        <>
-          <div className="modal-backdrop fade show" />
-          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true" aria-labelledby="delete-announcement-title">
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content border-0 shadow-lg">
-                <div className="modal-header border-0 pb-0">
-                  <h5 className="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="delete-announcement-title"><AlertCircle size={22} aria-hidden="true" /> Delete announcement?</h5>
-                  <button type="button" className="btn-close" onClick={() => setDeletingId(null)} aria-label="Close" />
-                </div>
-                <div className="modal-body">This cannot be undone.</div>
-                <div className="modal-footer border-0 pt-0">
-                  <button type="button" className="btn btn-light border" onClick={() => setDeletingId(null)}>Cancel</button>
-                  <button type="button" className="btn btn-danger" onClick={executeDelete} disabled={actionBusy}>Yes, delete</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
+        <ConfirmDialog
+          title="Delete announcement?"
+          message="This cannot be undone."
+          confirmLabel="Yes, delete"
+          tone="danger"
+          onConfirm={executeDelete}
+          onClose={() => setDeletingId(null)}
+        />
       )}
 
       {loading ? (
-        <div className="d-grid gap-3 placeholder-glow" aria-busy="true">
-          <span className="visually-hidden" role="status">Loading announcements…</span>
-          {[1, 2, 3].map((i) => <div key={i} className="placeholder rounded w-100" style={{ height: 88 }} />)}
-        </div>
+        <SkeletonRegion label="Loading announcements…"><BlockStack heights={[88, 88, 88]} /></SkeletonRegion>
       ) : announcements.length === 0 ? (
         <div className="text-center py-5 text-muted border rounded">
           <Megaphone size={40} className="mb-2 opacity-25" aria-hidden="true" />

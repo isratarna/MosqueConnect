@@ -5,6 +5,7 @@ import { apiRequest } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
+import { PageSkeleton } from "../components/skeletons";
 
 export default function MosqueAdminClaim() {
   const { user } = useAuth();
@@ -91,14 +92,7 @@ export default function MosqueAdminClaim() {
   };
 
   if (loading) {
-    return (
-      <div className="container py-5 text-center">
-        <div className="spinner-border text-mc mb-3" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p className="text-muted">Checking application status...</p>
-      </div>
-    );
+    return <PageSkeleton label="Checking application status…" />;
   }
 
   if (fetchError) {
