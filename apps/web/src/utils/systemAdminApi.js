@@ -1,7 +1,5 @@
 import { apiUrl } from "../config";
 import { getAuthHeaders } from "./authApi";
-import { translate } from "../i18n/translate.js";
-import { networkFetch } from "./network.js";
 
 export class SystemAdminApiError extends Error {
   constructor(message, status, payload = {}) {
@@ -13,7 +11,7 @@ export class SystemAdminApiError extends Error {
 }
 
 async function request(path, options = {}) {
-  const response = await networkFetch(apiUrl(path), {
+  const response = await fetch(apiUrl(path), {
     ...options,
     headers: {
       ...getAuthHeaders(),
@@ -26,7 +24,7 @@ async function request(path, options = {}) {
   if (!response.ok) {
     const message = payload.message
       || (payload.errors && Object.values(payload.errors).flat().join(" "))
-      || translate("error.adminRequestFailed");
+      || "The administration request could not be completed.";
     throw new SystemAdminApiError(message, response.status, payload);
   }
 
@@ -62,12 +60,12 @@ export function reviewClaim(id, action, reviewNote = "") {
 }
 
 export async function downloadClaimDocument(id) {
-  const response = await networkFetch(apiUrl(`/api/super-admin/claims/${id}/document`), {
+  const response = await fetch(apiUrl(`/api/super-admin/claims/${id}/document`), {
     headers: getAuthHeaders(),
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new SystemAdminApiError(payload.message || translate("error.proofDownloadFailed"), response.status, payload);
+    throw new SystemAdminApiError(payload.message || "The proof document could not be downloaded.", response.status, payload);
   }
   const disposition = response.headers.get("content-disposition") || "";
   const filename = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)/i)?.[1];

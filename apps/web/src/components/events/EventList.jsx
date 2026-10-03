@@ -1,7 +1,6 @@
 import { CalendarX2, CircleAlert, LoaderCircle } from "lucide-react";
 import EventCard from "./EventCard";
 import ScrollRail from "../ScrollRail";
-import { useTranslation } from "react-i18next";
 
 export default function EventList({
   events = [],
@@ -13,19 +12,17 @@ export default function EventList({
   registeredEventIds = new Set(),
   registrationLoadingIds = new Set(),
   registrationEnabled = false,
-  emptyMessage,
+  emptyMessage = "No published events are available right now.",
   // "rail" lays the cards out as a horizontal scroller instead of a grid, which
   // suits a browsable run of upcoming events better than a grid that leaves a
   // hole whenever the count is not a multiple of the column count.
   layout = "grid",
 }) {
-  const { t } = useTranslation();
-
   if (loading) {
     return (
       <div className="mc-event-state" role="status">
         <LoaderCircle className="mc-event-state__spinner" size={28} aria-hidden="true" />
-        <span>{t("event.list.loading")}</span>
+        <span>Loading community events...</span>
       </div>
     );
   }
@@ -34,9 +31,9 @@ export default function EventList({
     return (
       <div className="mc-event-state is-error" role="alert">
         <CircleAlert size={28} aria-hidden="true" />
-        <strong>{t("event.list.loadError")}</strong>
+        <strong>Events could not be loaded</strong>
         <span>{error}</span>
-        {onRetry && <button type="button" className="btn btn-outline-mc btn-sm" onClick={onRetry}>{t("common.tryAgain")}</button>}
+        {onRetry && <button type="button" className="btn btn-outline-mc btn-sm" onClick={onRetry}>Try again</button>}
       </div>
     );
   }
@@ -45,7 +42,7 @@ export default function EventList({
     return (
       <div className="mc-event-state">
         <CalendarX2 size={28} aria-hidden="true" />
-        <span>{emptyMessage ?? t("event.list.empty")}</span>
+        <span>{emptyMessage}</span>
       </div>
     );
   }
@@ -64,7 +61,7 @@ export default function EventList({
 
   if (layout === "rail") {
     return (
-      <ScrollRail className="mc-event-rail" label={t("event.list.railLabel")}>
+      <ScrollRail className="mc-event-rail" label="upcoming events">
         {cards}
       </ScrollRail>
     );

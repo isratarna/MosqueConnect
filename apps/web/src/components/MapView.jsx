@@ -8,8 +8,6 @@ import { Component, useCallback, useMemo, useState } from "react";
 import { GoogleMap, MarkerF, InfoWindowF } from "@react-google-maps/api";
 import { Link } from "react-router-dom";
 import { LoaderCircle, Map, TriangleAlert } from "lucide-react";
-import { Trans } from "react-i18next";
-import { useLocale } from "../hooks/useLocale";
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
 import { coordinatesOf } from "../utils/mosqueDiscovery";
 import { dhuhrJamaatLabel } from "../utils/prayerTime";
@@ -68,7 +66,6 @@ export default function MapView({
   selectedMosqueId,
   onMosqueSelect,
 }) {
-  const { t } = useLocale();
   const { disabled, isLoaded, loadError } = useGoogleMapsLoader();
 
   if (disabled) {
@@ -76,8 +73,8 @@ export default function MapView({
       <MapPlaceholder
         className={className}
         icon={<Map size={46} aria-hidden="true" />}
-        title={t("map.placeholderTitle")}
-        message={<Trans i18nKey="map.apiKeyHint" components={{ code: <code /> }} />}
+        title="Interactive map ready"
+        message={<>Add your Google Maps API key to <code>.env</code> to enable it.</>}
       />
     );
   }
@@ -87,7 +84,7 @@ export default function MapView({
       <MapPlaceholder
         className={className}
         icon={<TriangleAlert size={42} aria-hidden="true" />}
-        message={t("map.loadError")}
+        message="Could not load Google Maps. Check your API key."
       />
     );
   }
@@ -96,8 +93,8 @@ export default function MapView({
     return (
       <MapPlaceholder
         className={`${className} mc-map--loading`}
-        icon={<LoaderCircle className="text-mc spin" size={32} aria-label={t("map.loadingLabel")} />}
-        message={t("map.loading")}
+        icon={<LoaderCircle className="text-mc spin" size={32} aria-label="Loading map" />}
+        message="Loading map…"
       />
     );
   }
@@ -109,7 +106,7 @@ export default function MapView({
         <MapPlaceholder
           className={className}
           icon={<TriangleAlert size={42} aria-hidden="true" />}
-          message={t("map.displayError")}
+          message="The map could not be displayed. Other page content is still available."
         />
       }
     >
@@ -127,7 +124,6 @@ export default function MapView({
 }
 
 function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId, onMosqueSelect }) {
-  const { t, locale } = useLocale();
   const [internalActiveId, setInternalActiveId] = useState(null);
   const [mapReady, setMapReady] = useState(false);
   const isControlled = selectedMosqueId !== undefined;
@@ -177,7 +173,7 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
         {mapReady && safeUserPosition && window.google?.maps?.SymbolPath && (
           <MarkerF
             position={safeUserPosition}
-            title={t("map.youAreHere")}
+            title="You are here"
             icon={{
               path: window.google.maps.SymbolPath.CIRCLE,
               scale: 8,
@@ -211,18 +207,18 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
                       {(mosque.verified || mosque.verification_status === "verified") && <VerifiedBadge />}
                     </div>
                     <span style={{ color: "#666", fontSize: 12 }}>{mosque.address}</span>
-                    {(mosque.distance ?? mosque.distance_km) != null && (
-                      <><br /><span style={{ fontSize: 12 }}>{t("home.carousel.kmAway", { distance: mosque.distance ?? mosque.distance_km })}</span></>
+                    {(mosque.distance !== undefined || mosque.distance_km !== undefined) && (
+                      <><br /><span style={{ fontSize: 12 }}>{mosque.distance ?? mosque.distance_km} km away</span></>
                     )}
                     {mosque.verification_status && (
-                      <><br /><span style={{ fontSize: 12, textTransform: "capitalize" }}>{t(`verification.${mosque.verification_status}`, { defaultValue: mosque.verification_status })}</span></>
+                      <><br /><span style={{ fontSize: 12, textTransform: "capitalize" }}>{mosque.verification_status}</span></>
                     )}
-                    {dhuhrJamaatLabel(mosque.prayer, locale, t("prayer.dhuhr")) && (
-                      <><br /><span style={{ fontSize: 12 }}>{t("home.carousel.nextJamat")}: {dhuhrJamaatLabel(mosque.prayer, locale, t("prayer.dhuhr"))}{mosque.prayer_sources?.Dhuhr === "calculated" ? ` (${t("prayer.estimatedShort")})` : ""}</span></>
+                    {dhuhrJamaatLabel(mosque.prayer) && (
+                      <><br /><span style={{ fontSize: 12 }}>Next Jamat: {dhuhrJamaatLabel(mosque.prayer)}{mosque.prayer_sources?.Dhuhr === "calculated" ? " (estimated)" : ""}</span></>
                     )}
                     <br />
                     <Link to={mosque.profile_path || `/mosque/${mosque.id}`} style={{ fontSize: 13 }}>
-                      {t("home.carousel.viewProfile")} →
+                      View profile →
                     </Link>
                   </div>
                 </InfoWindowF>

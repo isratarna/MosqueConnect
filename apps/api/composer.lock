@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "575c0eae0192da3296ab92e8d749c8be",
+    "content-hash": "4367eee1164ca94ba5b87476d8fb8283",
     "packages": [
         {
             "name": "brick/math",
@@ -1056,6 +1056,63 @@
                 }
             ],
             "time": "2026-07-17T13:53:03+00:00"
+        },
+        {
+            "name": "islamic-network/prayer-times",
+            "version": "1.0.29",
+            "source": {
+                "type": "git",
+                "url": "https://1x.ax/islamic-network/libraries/prayer-times.git",
+                "reference": "f7ed3a2467fbced252a0914c8b202c8b61ca58b9"
+            },
+            "require": {
+                "islamic-network/prayer-times-moonsighting": "^1.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "IslamicNetwork\\PrayerTimes\\": "src/PrayerTimes/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-or-later"
+            ],
+            "description": "Precise and Powerful PHP Prayer Times Library",
+            "time": "2024-03-17T08:24:32+00:00"
+        },
+        {
+            "name": "islamic-network/prayer-times-moonsighting",
+            "version": "1.1",
+            "source": {
+                "type": "git",
+                "url": "https://1x.ax/islamic-network/libraries/prayer-times-moonsighting",
+                "reference": "73f2b0ee9d41fa145f262d372a06cb9a9dae353e"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "IslamicNetwork\\MoonSighting\\": "src/MoonSighting/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-or-later"
+            ],
+            "description": "PHP Prayer Times Library to Calculate Fajr and Isha times per moonsighting.com",
+            "homepage": "https://flarum.org/",
+            "keywords": [
+                "islam",
+                "moonsighting.com",
+                "prayer times"
+            ],
+            "time": "2020-07-22T06:16:24+00:00"
         },
         {
             "name": "laravel/framework",

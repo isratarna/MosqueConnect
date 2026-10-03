@@ -9,20 +9,18 @@ use Carbon\CarbonInterface;
 use DateTime;
 use DateTimeZone;
 use Illuminate\Support\Facades\Cache;
-// TEMPORARY: package removed while its host (1x.ax) is down.
-// use IslamicNetwork\PrayerTimes\PrayerTimes;
+use IslamicNetwork\PrayerTimes\PrayerTimes;
 
 class PrayerCalculator
 {
-    // TEMPORARY: restore with the package.
-    // /** Library result keys for each stored prayer name. */
-    // private const LIBRARY_KEYS = [
-    //     PrayerTime::PRAYER_FAJR => PrayerTimes::FAJR,
-    //     PrayerTime::PRAYER_DHUHR => PrayerTimes::ZHUHR,
-    //     PrayerTime::PRAYER_ASR => PrayerTimes::ASR,
-    //     PrayerTime::PRAYER_MAGHRIB => PrayerTimes::MAGHRIB,
-    //     PrayerTime::PRAYER_ISHA => PrayerTimes::ISHA,
-    // ];
+    /** Library result keys for each stored prayer name. */
+    private const LIBRARY_KEYS = [
+        PrayerTime::PRAYER_FAJR => PrayerTimes::FAJR,
+        PrayerTime::PRAYER_DHUHR => PrayerTimes::ZHUHR,
+        PrayerTime::PRAYER_ASR => PrayerTimes::ASR,
+        PrayerTime::PRAYER_MAGHRIB => PrayerTimes::MAGHRIB,
+        PrayerTime::PRAYER_ISHA => PrayerTimes::ISHA,
+    ];
 
     /**
      * Calculated adhan times and estimated jamaat times for a mosque.
@@ -60,11 +58,6 @@ class PrayerCalculator
      */
     public function calculate(float $latitude, float $longitude, string $day): array
     {
-        // TEMPORARY STUB: no calculated times until the package is restored, so the
-        // API falls back to the times mosques publish themselves.
-        return [];
-
-        /* Original implementation, to restore with the package:
         $timezone = config('prayer.timezone');
         $calculator = new PrayerTimes(config('prayer.method'), config('prayer.asr_school'));
         $raw = $calculator->getTimes(new DateTime($day, new DateTimeZone($timezone)), $latitude, $longitude);
@@ -89,6 +82,6 @@ class PrayerCalculator
             ];
         }
 
-        */
+        return $times;
     }
 }

@@ -1,7 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Compass } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import Layout from "./components/Layout";
 import RouteErrorBoundary from "./components/RouteErrorBoundary";
 import { useAuth } from "./context/AuthContext";
@@ -28,9 +27,9 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
 const Eid = lazy(() => import("./pages/Eid"));
+const Journey = lazy(() => import("./pages/Journey"));
 
 function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
-  const { t } = useTranslation();
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -38,7 +37,7 @@ function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
         <div className="spinner-border text-mc" role="status">
-          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="visually-hidden">Loading...</span>
         </div>
       </div>
     );
@@ -70,6 +69,8 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/eid" element={<Eid />} />
+          <Route path="/journey" element={<Journey />} />
+          <Route path="/journey/:id" element={<Journey />} />
           <Route path="/support" element={<Support />} />
           <Route path="/support/continue" element={<SupportContinue />} />
           <Route path="/community" element={<Community />} />
@@ -151,24 +152,20 @@ function DashboardSectionRedirect({ section }) {
 }
 
 function PageLoading() {
-  const { t } = useTranslation();
-
   return (
     <div className="d-flex justify-content-center align-items-center py-5" role="status">
       <div className="spinner-border text-mc" aria-hidden="true" />
-      <span className="visually-hidden">{t("common.loadingPage")}</span>
+      <span className="visually-hidden">Loading page...</span>
     </div>
   );
 }
 
 function NotFound() {
-  const { t } = useTranslation();
-
   return (
     <div className="container py-5 text-center">
       <Compass size={42} className="text-mc" aria-hidden="true" />
-      <h3 className="mt-3">{t("error.pageNotFound")}</h3>
-      <Link to="/" className="btn btn-mc mt-2">{t("common.backHome")}</Link>
+      <h3 className="mt-3">Page not found</h3>
+      <Link to="/" className="btn btn-mc mt-2">Back home</Link>
     </div>
   );
 }

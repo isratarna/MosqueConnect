@@ -11,10 +11,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { internationalPhone, returnPath } from "../utils/api";
-import { useLocale } from "../hooks/useLocale";
 
 export default function Login({ registering = false }) {
-  const { t } = useLocale();
   const { sendOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,7 +32,7 @@ export default function Login({ registering = false }) {
 
     const localPhone = phone.replace(/\D/g, "");
     if (!localPhone || localPhone.length < 6 || localPhone.length > 15) {
-      setError(t("auth.invalidPhone"));
+      setError("Please enter a valid phone number.");
       return;
     }
 
@@ -45,11 +43,11 @@ export default function Login({ registering = false }) {
     setLoading(false);
 
     if (!res.ok) {
-      setError(res.error || t("auth.sendFailed"));
+      setError(res.error || "Failed to send OTP. Please check your phone number format.");
       return;
     }
 
-    setMessage(res.message || t("auth.otpSent", { phone: fullPhone }));
+    setMessage(res.message || `OTP sent successfully to ${fullPhone}.`);
     setStep("otp");
   };
 
@@ -59,7 +57,7 @@ export default function Login({ registering = false }) {
 
     const trimmedOtp = otp.trim();
     if (!/^\d{6}$/.test(trimmedOtp)) {
-      setError(t("auth.invalidOtp"));
+      setError("Please enter the 6-digit verification code.");
       return;
     }
 
@@ -71,7 +69,7 @@ export default function Login({ registering = false }) {
     setLoading(false);
 
     if (!res.ok) {
-      setError(res.error || t("auth.verifyFailed"));
+      setError(res.error || "Invalid or expired OTP. Please try again.");
       return;
     }
 
@@ -100,9 +98,9 @@ export default function Login({ registering = false }) {
     setLoading(false);
 
     if (!res.ok) {
-      setError(res.error || t("auth.resendFailed"));
+      setError(res.error || "Failed to resend OTP. Please try again later.");
     } else {
-      setMessage(t("auth.resent"));
+      setMessage("A new OTP has been sent to your phone.");
     }
   };
 
@@ -124,12 +122,12 @@ export default function Login({ registering = false }) {
                   <LogIn size={25} aria-hidden="true" />
                 </div>
                 <h3 className="fw-bold mb-1">
-                  {step === "phone" ? (registering ? t("auth.createAccount") : t("auth.welcomeBack")) : t("auth.enterCode")}
+                  {step === "phone" ? (registering ? "Create your account" : "Welcome back") : "Enter Verification Code"}
                 </h3>
                 <p className="text-muted mb-0">
                   {step === "phone"
-                    ? (registering ? t("auth.registerCopy") : t("auth.loginCopy"))
-                    : t("auth.codeSent", { phone: internationalPhone(countryCode, phone) })}
+                    ? (registering ? "Verify your phone to create an account, then complete your profile. Mosque administrators can apply from a mosque profile." : "Log in using your phone number and OTP.")
+                    : `We sent a 6-digit code to ${internationalPhone(countryCode, phone)}.`}
                 </p>
               </div>
 
@@ -150,7 +148,7 @@ export default function Login({ registering = false }) {
               {step === "phone" ? (
                 <form onSubmit={handleSendOtp} noValidate>
                   <div className="mb-3">
-                    <label className="form-label" htmlFor="login-phone">{t("auth.phoneLabel")}</label>
+                    <label className="form-label" htmlFor="login-phone">Phone Number</label>
                     <div className="input-group">
                       <select 
                         className="form-select bg-light border-end-0" 
@@ -161,7 +159,7 @@ export default function Login({ registering = false }) {
                           setError("");
                         }}
                         disabled={loading}
-                        aria-label={t("auth.countryCode")}
+                        aria-label="Country Code"
                       >
                         <option value="+880">🇧🇩 +880</option>
                         <option value="+1">🇺🇸 +1</option>
@@ -176,7 +174,7 @@ export default function Login({ registering = false }) {
                         autoComplete="tel-national"
                         type="tel"
                         className="form-control flex-grow-1"
-                        placeholder={t("auth.phonePlaceholder")}
+                        placeholder="e.g. 1712345678"
                         value={phone}
                         onChange={(e) => {
                           setPhone(e.target.value.replace(/\D/g, ""));
@@ -188,7 +186,7 @@ export default function Login({ registering = false }) {
                       />
                     </div>
                     <div className="form-text text-muted small">
-                      {t("auth.phoneHelp")}
+                      Select your country code and enter your local number.
                     </div>
                   </div>
 
@@ -200,24 +198,24 @@ export default function Login({ registering = false }) {
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-                        <span>{t("auth.sendingOtp")}</span>
+                        <span>Sending OTP...</span>
                       </>
                     ) : (
-                      t("auth.sendOtp")
+                      "Send OTP"
                     )}
                   </button>
 
                   <p className="text-center mb-0 small">
-                    {registering ? t("auth.haveAccount") : t("auth.noAccount")}
+                    {registering ? "Already have an account? " : "Don't have an account? "}
                     <Link to={registering ? "/login" : "/register"} state={location.state} className="text-mc fw-semibold text-decoration-none">
-                      {registering ? t("auth.login") : t("auth.register")}
+                      {registering ? "Log in" : "Register"}
                     </Link>
                   </p>
                 </form>
               ) : (
                 <form onSubmit={handleVerifyOtp} noValidate>
                   <div className="mb-3">
-                    <label className="form-label" htmlFor="login-otp">{t("auth.otpLabel")}</label>
+                    <label className="form-label" htmlFor="login-otp">Verification Code (OTP)</label>
                     <div className="input-group">
                       <span className="input-group-text">
                         <KeyRound size={16} aria-hidden="true" />
@@ -230,7 +228,7 @@ export default function Login({ registering = false }) {
                         pattern="[0-9]*"
                         maxLength={6}
                         className="form-control"
-                        placeholder={t("auth.otpPlaceholder")}
+                        placeholder="Enter 6-digit OTP"
                         value={otp}
                         onChange={(e) => {
                           setOtp(e.target.value.replace(/\D/g, ""));
@@ -251,10 +249,10 @@ export default function Login({ registering = false }) {
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-                        <span>{t("auth.verifying")}</span>
+                        <span>Verifying...</span>
                       </>
                     ) : (
-                      t("auth.verify")
+                      "Verify OTP"
                     )}
                   </button>
 
@@ -266,7 +264,7 @@ export default function Login({ registering = false }) {
                       disabled={loading}
                     >
                       <ArrowLeft size={14} />
-                      {t("auth.changePhone")}
+                      Change phone
                     </button>
 
                     <button
@@ -276,7 +274,7 @@ export default function Login({ registering = false }) {
                       disabled={loading}
                     >
                       <RotateCcw size={14} />
-                      {t("auth.resend")}
+                      Resend OTP
                     </button>
                   </div>
                 </form>

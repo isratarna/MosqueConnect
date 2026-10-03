@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { List as ListIcon, LoaderCircle, Map as MapIcon, MapPin, RefreshCw, Search, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
-import { useLocale } from "../hooks/useLocale";
 import { FACILITY_META } from "../data/mosques";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
 import { DISCOVERY_RADIUS_KM, filterMosques } from "../utils/mosqueDiscovery";
@@ -11,7 +10,6 @@ import MapView from "../components/MapView";
 import Pagination from "../components/Pagination";
 
 export default function Browse() {
-  const { t } = useLocale();
   const origin = useGeolocation();
   const discovery = useMosqueDiscovery(origin);
   const all = discovery.mosques;
@@ -125,14 +123,14 @@ export default function Browse() {
     <>
       <section className="mc-hero mc-browse-hero">
         <div className="container">
-          <h1 className="h3 fw-bold mb-1">{t("browse.title")}</h1>
-          <p className="mb-3 text-body-secondary">{t("browse.subtitle")}</p>
+          <h1 className="h3 fw-bold mb-1">Browse Mosques</h1>
+          <p className="mb-3 text-body-secondary">Find mosques that match your preferences.</p>
           <div className="input-group input-group-lg shadow-sm">
             <span className="input-group-text bg-white border-0"><Search size={18} className="text-mc" aria-hidden="true" /></span>
             <input
               type="text"
               className="form-control border-0"
-              placeholder={t("browse.searchPlaceholder")}
+              placeholder="Search by mosque name or area…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -148,24 +146,24 @@ export default function Browse() {
               <div className="card mc-card mc-browse-filters">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h6 className="fw-bold mb-0"><SlidersHorizontal size={16} className="me-1" aria-hidden="true" />{t("browse.filters")}</h6>
+                    <h6 className="fw-bold mb-0"><SlidersHorizontal size={16} className="me-1" aria-hidden="true" />Filters</h6>
                     <button className="btn btn-link btn-sm text-decoration-none p-0" onClick={clearFilters}>
-                      {t("browse.clear")}
+                      Clear
                     </button>
                   </div>
 
                   {/* Location filter */}
                   <label className="form-label small fw-semibold text-uppercase text-muted mb-2">
-                    <MapPin size={13} className="me-1" aria-hidden="true" />{t("browse.location")}
+                    <MapPin size={13} className="me-1" aria-hidden="true" />Location
                   </label>
                   <div className="mb-3">
                     <select
                       className="form-select form-select-sm mb-2"
                       value={selectedDistrict}
                       onChange={handleDistrictChange}
-                      aria-label={t("browse.selectDistrict")}
+                      aria-label="Select district"
                     >
-                      <option value="">{t("browse.allDistricts")}</option>
+                      <option value="">All districts</option>
                       {locationOptions.districts.map((d) => (
                         <option key={d} value={d}>{d}</option>
                       ))}
@@ -176,9 +174,9 @@ export default function Browse() {
                       value={selectedArea}
                       onChange={(e) => setSelectedArea(e.target.value)}
                       disabled={!selectedDistrict}
-                      aria-label={t("browse.selectArea")}
+                      aria-label="Select area"
                     >
-                      <option value="">{t("browse.allAreas")}</option>
+                      <option value="">All areas</option>
                       {selectedDistrict &&
                         locationOptions.areas[selectedDistrict]?.map((a) => (
                           <option key={a} value={a}>{a}</option>
@@ -190,24 +188,24 @@ export default function Browse() {
                         className="btn btn-link btn-sm text-decoration-none p-0 mt-1"
                         onClick={clearLocation}
                       >
-                        {t("browse.clearLocation")}
+                        Clear Location
                       </button>
                     )}
 
                     <div className="mt-2" aria-live="polite">
                       {origin.status === "idle" && (
-                        <button className="btn btn-sm btn-outline-mc" onClick={() => requestGeolocation({ force: origin.status === "failure" })}>{t("browse.useMyLocation")}</button>
+                        <button className="btn btn-sm btn-outline-mc" onClick={() => requestGeolocation({ force: origin.status === "failure" })}>Use my location</button>
                       )}
-                      {origin.status === "requesting" && <div className="small text-muted">{t("browse.requesting")}</div>}
-                      {origin.status === "locating" && <div className="small text-muted">{t("browse.locating")}</div>}
-                      {origin.status === "success" && <div className="small text-success">{t("browse.usingLocation", { count: all.length })}</div>}
-                      {origin.status === "failure" && <div className="small text-danger">{t("browse.locationUnavailable")}</div>}
+                      {origin.status === "requesting" && <div className="small text-muted">Requesting permission…</div>}
+                      {origin.status === "locating" && <div className="small text-muted">Locating…</div>}
+                      {origin.status === "success" && <div className="small text-success">Using your location — {all.length} mosques nearby</div>}
+                      {origin.status === "failure" && <div className="small text-danger">Location unavailable — try manual search</div>}
                     </div>
                   </div>
 
                   <hr className="my-3" />
 
-                  <label className="form-label small fw-semibold text-uppercase text-muted">{t("browse.facilities")}</label>
+                  <label className="form-label small fw-semibold text-uppercase text-muted">Facilities</label>
                   <div className="mb-3">
                     {Object.entries(FACILITY_META).map(([key, meta]) => (
                       <div className="form-check" key={key}>
@@ -220,13 +218,13 @@ export default function Browse() {
                         />
                         <label className="form-check-label small" htmlFor={`f_${key}`}>
                           <FacilityIcon facilityKey={key} size={14} className="me-1 text-mc" />
-                          {t(meta.labelKey)}
+                          {meta.label}
                         </label>
                       </div>
                     ))}
                   </div>
 
-                  <label className="form-label small fw-semibold text-uppercase text-muted">{t("browse.maxDistance")}</label>
+                  <label className="form-label small fw-semibold text-uppercase text-muted">Max distance</label>
                   <input
                     type="range"
                     className="form-range"
@@ -236,14 +234,14 @@ export default function Browse() {
                     onChange={(e) => setMaxDistance(+e.target.value)}
                   />
                   <div className="small text-muted mb-3">
-                    {t("browse.withinKm", { km: maxDistance ?? DISCOVERY_RADIUS_KM })}
+                    {maxDistance === null ? `Within ${DISCOVERY_RADIUS_KM} km` : `Within ${maxDistance} km`}
                   </div>
 
-                  <label className="form-label small fw-semibold text-uppercase text-muted">{t("browse.sortBy")}</label>
+                  <label className="form-label small fw-semibold text-uppercase text-muted">Sort by</label>
                   <select className="form-select form-select-sm" value={sort} onChange={(e) => setSort(e.target.value)}>
-                    <option value="distance">{t("browse.sortDistance")}</option>
-                    <option value="rating">{t("browse.sortRating")}</option>
-                    <option value="name">{t("browse.sortName")}</option>
+                    <option value="distance">Nearest first</option>
+                    <option value="rating">Highest rated</option>
+                    <option value="name">Name (A–Z)</option>
                   </select>
                 </div>
               </div>
@@ -254,36 +252,37 @@ export default function Browse() {
               <div className="mc-browse-results-toolbar">
                 <div className="text-muted mc-browse-results-count">
                   {totalResults === 0
-                    ? t("browse.showingNone")
-                    : t("browse.showing", { start: startIndex, end: endIndex, total: totalResults })}
+                    ? "Showing 0 of 0 mosques"
+                    : `Showing ${startIndex}–${endIndex} of ${totalResults} mosques`}
                 </div>
                 <div className="mc-browse-results-actions">
                   <div className="mc-browse-page-size">
-                    <span className="text-muted small text-nowrap">{t("browse.resultsPerPage")}</span>
+                    <span className="text-muted small text-nowrap">Results per page:</span>
                     <select
                       className="form-select form-select-sm"
                       style={{ width: "auto" }}
                       value={pageSize}
                       onChange={(e) => setPageSize(Number(e.target.value))}
-                      aria-label={t("browse.resultsPerPageAria")}
+                      aria-label="Results per page"
                     >
-                      {[6, 9, 12, 18].map((size) => (
-                        <option key={size} value={size}>{t("browse.resultsOption", { count: size })}</option>
-                      ))}
+                      <option value={6}>6 results</option>
+                      <option value={9}>9 results</option>
+                      <option value={12}>12 results</option>
+                      <option value={18}>18 results</option>
                     </select>
                   </div>
-                  <div className="btn-group" role="group" aria-label={t("browse.viewToggle")}>
+                  <div className="btn-group" role="group" aria-label="View toggle">
                     <button
                       className={"btn btn-sm " + (view === "list" ? "btn-mc" : "btn-outline-mc")}
                       onClick={() => setView("list")}
                     >
-                      <ListIcon size={15} className="me-1" aria-hidden="true" />{t("browse.list")}
+                      <ListIcon size={15} className="me-1" aria-hidden="true" />List
                     </button>
                     <button
                       className={"btn btn-sm " + (view === "map" ? "btn-mc" : "btn-outline-mc")}
                       onClick={() => setView("map")}
                     >
-                      <MapIcon size={15} className="me-1" aria-hidden="true" />{t("browse.map")}
+                      <MapIcon size={15} className="me-1" aria-hidden="true" />Map
                     </button>
                   </div>
                 </div>
@@ -293,14 +292,14 @@ export default function Browse() {
                 {discovery.status === "loading" && all.length === 0 ? (
                   <div className="text-center text-muted py-5" role="status">
                     <LoaderCircle size={34} className="spin d-block mx-auto mb-2" aria-hidden="true" />
-                    {t("browse.loadingNearby")}
+                    Loading nearby mosques…
                   </div>
                 ) : discovery.status === "error" ? (
                   <div className="text-center text-muted py-5" role="alert">
                     <TriangleAlert size={38} className="d-block mx-auto mb-2 text-danger" aria-hidden="true" />
                     <div className="mb-3">{discovery.error}</div>
                     <button type="button" className="btn btn-outline-mc btn-sm" onClick={discovery.retry}>
-                      <RefreshCw size={14} aria-hidden="true" /> {t("common.retry")}
+                      <RefreshCw size={14} aria-hidden="true" /> Retry
                     </button>
                   </div>
                 ) : view === "list" ? (
@@ -315,7 +314,7 @@ export default function Browse() {
                   ) : (
                     <div className="text-center text-muted py-5">
                       <Search size={42} className="d-block mx-auto mb-2 opacity-50" aria-hidden="true" />
-                      {t("browse.noResults")}
+                      No mosques match your filters. Try clearing some.
                     </div>
                   )
                 ) : (

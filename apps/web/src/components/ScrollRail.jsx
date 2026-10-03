@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useTranslation } from "react-i18next";
 
 // How much of the visible width one arrow press travels.
 const PAGE_FRACTION = 0.85;
@@ -14,7 +13,6 @@ const PAGE_FRACTION = 0.85;
  * addition for pointer users rather than the only way to move.
  */
 export default function ScrollRail({ children, label, className = "" }) {
-  const { t } = useTranslation();
   const trackRef = useRef(null);
   const [position, setPosition] = useState({ progress: 0, atStart: true, atEnd: true });
 
@@ -79,7 +77,7 @@ export default function ScrollRail({ children, label, className = "" }) {
             className="btn btn-outline-mc btn-sm"
             onClick={() => scrollByPage(-1)}
             disabled={position.atStart}
-            aria-label={label ? t("rail.backwards", { label }) : t("rail.backwardsPlain")}
+            aria-label={label ? `Scroll ${label} backwards` : "Scroll backwards"}
           >
             <ChevronLeft size={14} aria-hidden="true" />
           </button>
@@ -88,7 +86,7 @@ export default function ScrollRail({ children, label, className = "" }) {
             className="btn btn-outline-mc btn-sm"
             onClick={() => scrollByPage(1)}
             disabled={position.atEnd}
-            aria-label={label ? t("rail.forwards", { label }) : t("rail.forwardsPlain")}
+            aria-label={label ? `Scroll ${label} forwards` : "Scroll forwards"}
           >
             <ChevronRight size={14} aria-hidden="true" />
           </button>

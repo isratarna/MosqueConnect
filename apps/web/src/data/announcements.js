@@ -13,12 +13,12 @@ export function getAnnouncementDetailsPath(id) {
 
 export function getAnnouncementUrgency(urgency) {
   if (urgency === "urgent" || urgency === "high") {
-    return { labelKey: "urgency.urgent", tone: "urgent" };
+    return { label: "Urgent", tone: "urgent" };
   }
 
   if (urgency === "important" || urgency === "medium") {
-    return { labelKey: "urgency.important", tone: "important" };
+    return { label: "Important", tone: "important" };
   }
 
-  return { labelKey: "urgency.normal", tone: "normal" };
+  return { label: "Normal", tone: "normal" };
 }

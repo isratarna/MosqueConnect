@@ -1,14 +1,17 @@
-import { useTranslation } from "react-i18next";
-
-const KNOWN_STATUSES = ["draft", "published", "cancelled", "completed", "past"];
+const STATUS_LABELS = {
+  draft: "Draft",
+  published: "Published",
+  cancelled: "Cancelled",
+  completed: "Completed",
+  past: "Past event",
+};
 
 export default function EventStatusBadge({ status }) {
-  const { t } = useTranslation();
-  const normalizedStatus = KNOWN_STATUSES.includes(status) ? status : "published";
+  const normalizedStatus = STATUS_LABELS[status] ? status : "published";
 
   return (
     <span className={`mc-event-status is-${normalizedStatus}`}>
-      {t(`event.status.${normalizedStatus}`)}
+      {STATUS_LABELS[normalizedStatus]}
     </span>
   );
 }

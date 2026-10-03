@@ -7,9 +7,7 @@ import {
   MapPin,
   Megaphone,
   UsersRound, PackageSearch } from "lucide-react";
-import { BLOOD_SOURCE, getCommunityCategoryLabelKey } from "../data/community";
-import { useLocale } from "../hooks/useLocale";
-import { formatApiDate } from "../utils/intl";
+import { getCommunityCategoryLabel } from "../data/community";
 import { getAnnouncementDetailsPath, isAnnouncementItem } from "../data/announcements";
 import VerifiedBadge from "./VerifiedBadge";
 
@@ -21,9 +19,9 @@ const CATEGORY_ICONS = {
   lost_found: PackageSearch,
 };
 
-const URGENCY_LABEL_KEYS = {
-  urgent: "urgency.urgent",
-  important: "urgency.important",
+const URGENCY_LABELS = {
+  urgent: "Urgent",
+  important: "Important",
 };
 
 export function CommunityCategoryIcon({ category, size = 18, ...props }) {
@@ -32,12 +30,7 @@ export function CommunityCategoryIcon({ category, size = 18, ...props }) {
 }
 
 export default function CommunityCard({ item, featured = false }) {
-  const { t, locale } = useLocale();
-  const isBlood = item.category === "blood";
-  const title = isBlood ? t("community.bloodRequested", { group: item.blood_group }) : item.title;
-  const summary = isBlood ? item.summary || t("community.contactToHelp") : item.summary;
-  const sourceName = item.mosqueName === BLOOD_SOURCE ? t("community.bloodSource") : item.mosqueName;
-  const urgencyLabelKey = URGENCY_LABEL_KEYS[item.urgency];
+  const urgencyLabel = URGENCY_LABELS[item.urgency];
   const announcementDetailsPath = isAnnouncementItem(item)
     ? getAnnouncementDetailsPath(item.id)
     : null;
@@ -47,17 +40,17 @@ export default function CommunityCard({ item, featured = false }) {
       <div className="mc-community-card__meta">
         <span className="mc-community-card__category">
           <CommunityCategoryIcon category={item.category} size={15} />
-          {t(getCommunityCategoryLabelKey(item.category))}
+          {getCommunityCategoryLabel(item.category)}
         </span>
-        {urgencyLabelKey && <span className={`mc-community-card__urgency is-${item.urgency}`}>{t(urgencyLabelKey)}</span>}
+        {urgencyLabel && <span className={`mc-community-card__urgency is-${item.urgency}`}>{urgencyLabel}</span>}
       </div>
 
       <h3>
         {announcementDetailsPath ? (
-          <Link to={announcementDetailsPath} className="mc-community-card__title-link">{title}</Link>
-        ) : title}
+          <Link to={announcementDetailsPath} className="mc-community-card__title-link">{item.title}</Link>
+        ) : item.title}
       </h3>
-      <p>{summary}</p>
+      <p>{item.summary}</p>
 
       <div className="mc-community-card__details">
         <span>
@@ -66,18 +59,18 @@ export default function CommunityCard({ item, featured = false }) {
         </span>
         <span>
           <Clock3 size={14} aria-hidden="true" />
-          {formatApiDate(item.publishedLabel, locale)}
+          {item.publishedLabel}
         </span>
       </div>
 
       <div className="mc-community-card__source">
-        <span>{sourceName}</span>
+        <span>{item.mosqueName}</span>
         {item.mosqueVerified && <VerifiedBadge />}
         {(announcementDetailsPath || item.mosqueId || item.actionPath) && (
           <span className="mc-community-card__actions">
-            {item.actionPath && <Link to={item.actionPath}>{t("community.viewRequests")}</Link>}
-            {announcementDetailsPath && <Link to={announcementDetailsPath}>{t("community.readDetails")}</Link>}
-            {item.mosqueId && <Link to={`/mosque/${item.mosqueId}`}>{t("community.viewMosque")}</Link>}
+            {item.actionPath && <Link to={item.actionPath}>View requests</Link>}
+            {announcementDetailsPath && <Link to={announcementDetailsPath}>Read details</Link>}
+            {item.mosqueId && <Link to={`/mosque/${item.mosqueId}`}>View mosque</Link>}
           </span>
         )}
       </div>

@@ -6,13 +6,10 @@ import Pagination from "../components/Pagination";
 import { useNotifications } from "../context/NotificationContext";
 import { fetchNotifications } from "../utils/notificationApi";
 import { getNotificationPath, isNotificationRead } from "../utils/notificationUtils";
-import { translate } from "../i18n/translate";
-import { useLocale } from "../hooks/useLocale";
 
 const PAGE_SIZE = 15;
 
 export default function Notifications() {
-  const { t } = useLocale();
   const navigate = useNavigate();
   const {
     unreadCount,
@@ -43,7 +40,7 @@ export default function Notifications() {
       .catch((requestError) => {
         if (requestError.name === "AbortError") return;
         handleRequestError(requestError);
-        setError(requestError.message || translate("notification.loadError"));
+        setError(requestError.message || "Notifications could not be loaded.");
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -77,7 +74,7 @@ export default function Notifications() {
         setNotifications((current) => current.map((item) => (
           item.id === notification.id ? { ...item, is_read: 0 } : item
         )));
-        setActionError(requestError.message || translate("notification.markReadError"));
+        setActionError(requestError.message || "The notification could not be marked as read.");
       }
     }
 
@@ -95,7 +92,7 @@ export default function Notifications() {
       await markAllAsRead();
     } catch (requestError) {
       setNotifications(previous);
-      setActionError(requestError.message || translate("notification.markAllReadError"));
+      setActionError(requestError.message || "Notifications could not be marked as read.");
     } finally {
       setMarkingAll(false);
     }
@@ -106,9 +103,9 @@ export default function Notifications() {
       <div className="container py-5">
         <div className="mc-notifications-page__header">
           <div>
-            <p className="mc-kicker">{t("notification.kicker")}</p>
-            <h1>{t("notification.pageTitle")}</h1>
-            <p>{t("notification.pageCopy")}</p>
+            <p className="mc-kicker">Your updates</p>
+            <h1>Notifications</h1>
+            <p>Announcements, events, prayer changes, and platform updates in one place.</p>
           </div>
           <button
             type="button"
@@ -117,7 +114,7 @@ export default function Notifications() {
             disabled={markingAll || (unreadCount === 0 && !notifications.some((notification) => !isNotificationRead(notification)))}
           >
             <CheckCheck size={16} aria-hidden="true" />
-            {markingAll ? t("notification.markingAllPage") : t("notification.markAllPage")}
+            {markingAll ? "Marking as read..." : "Mark all as read"}
           </button>
         </div>
 

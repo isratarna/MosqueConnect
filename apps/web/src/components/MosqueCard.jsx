@@ -1,7 +1,5 @@
 import { Link } from "react-router-dom";
 import { Clock3, Heart, MapPin, Navigation, Star } from "lucide-react";
-import { useLocale } from "../hooks/useLocale";
-import { formatNumber } from "../utils/intl";
 import { directionsUrl } from "../utils/mosqueDiscovery";
 import { dhuhrJamaatLabel, isEstimatedPrayer } from "../utils/prayerTime";
 import { useFollow } from "../context/FollowContext";
@@ -11,7 +9,6 @@ import VerifiedBadge from "./VerifiedBadge";
 
 // A mosque result card used on the Browse page.
 export default function MosqueCard({ mosque }) {
-  const { t, locale } = useLocale();
   const { isFollowing: following, toggleFollow } = useFollow(mosque?.id);
   const directions = directionsUrl(mosque);
 
@@ -35,7 +32,7 @@ export default function MosqueCard({ mosque }) {
           </div>
 
           <span className="badge mc-badge ms-2 text-nowrap">
-            {t("common.distanceKm", { distance: mosque.distance })}
+            {mosque.distance} km
           </span>
         </div>
 
@@ -48,15 +45,15 @@ export default function MosqueCard({ mosque }) {
           {mosque.rating !== null && (
             <>
               <Star size={14} className="text-warning me-1" fill="currentColor" aria-hidden="true" />
-              {formatNumber(mosque.rating, locale)}
+              {mosque.rating}
             </>
           )}
           {mosque.verified && <VerifiedBadge className={mosque.rating !== null ? "ms-1" : "ms-0"} />}
 
-          {dhuhrJamaatLabel(mosque.prayer, locale, t("prayer.dhuhr")) && (
+          {dhuhrJamaatLabel(mosque.prayer) && (
             <span className="text-muted ms-2">
               <Clock3 size={14} className="me-1" aria-hidden="true" />
-              {dhuhrJamaatLabel(mosque.prayer, locale, t("prayer.dhuhr"))}
+              {dhuhrJamaatLabel(mosque.prayer)}
               {isEstimatedPrayer(mosque.prayer_sources, "Dhuhr") && <EstimatedBadge className="ms-1" />}
             </span>
           )}
@@ -69,7 +66,7 @@ export default function MosqueCard({ mosque }) {
 
           {mosque.facilities.length > 3 && (
             <span className="badge mc-badge">
-              {t("mosque.moreFacilities", { count: mosque.facilities.length - 3 })}
+              +{mosque.facilities.length - 3}
             </span>
           )}
         </div>
@@ -79,7 +76,7 @@ export default function MosqueCard({ mosque }) {
             to={`/mosque/${mosque.id}`}
             className="btn btn-mc btn-sm flex-fill"
           >
-            {t("mosque.view")}
+            View
           </Link>
 
           {directions && (
@@ -88,8 +85,7 @@ export default function MosqueCard({ mosque }) {
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline-mc btn-sm"
-              title={t("mosque.getDirections")}
-              aria-label={t("mosque.getDirections")}
+              title="Get directions"
             >
               <Navigation size={16} aria-hidden="true" />
             </a>
@@ -99,8 +95,7 @@ export default function MosqueCard({ mosque }) {
             className={`btn btn-sm ${
               following ? "btn-danger" : "btn-outline-secondary"
             }`}
-            title={following ? t("mosque.unfollow") : t("mosque.follow")}
-            aria-label={following ? t("mosque.unfollow") : t("mosque.follow")}
+            title={following ? "Unfollow" : "Follow"}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

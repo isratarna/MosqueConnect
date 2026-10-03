@@ -6,16 +6,15 @@
  * hooks and service utilities under src/.
  */
 
-// Labels are translation keys, resolved with t() where a facility is shown.
 export const FACILITY_META = {
-  women_area:  { label: "Women's Prayer Area", labelKey: "facility.women_area" },
-  child_care:  { label: "Child Care", labelKey: "facility.child_care" },
-  wudu:        { label: "Wudu Facility", labelKey: "facility.wudu" },
-  parking:     { label: "Parking", labelKey: "facility.parking" },
-  ac:          { label: "Air Conditioned", labelKey: "facility.ac" },
-  wheelchair:  { label: "Wheelchair Access", labelKey: "facility.wheelchair" },
-  quran_class: { label: "Quran Classes", labelKey: "facility.quran_class" },
-  library:     { label: "Library", labelKey: "facility.library" },
+  women_area:  { label: "Women's Prayer Area" },
+  child_care:  { label: "Child Care" },
+  wudu:        { label: "Wudu Facility" },
+  parking:     { label: "Parking" },
+  ac:          { label: "Air Conditioned" },
+  wheelchair:  { label: "Wheelchair Access" },
+  quran_class: { label: "Quran Classes" },
+  library:     { label: "Library" },
 };
 
 const MOSQUE_IMAGES = [

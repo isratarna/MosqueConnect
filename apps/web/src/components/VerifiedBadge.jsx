@@ -1,13 +1,9 @@
-import { useTranslation } from "react-i18next";
-
 export default function VerifiedBadge({ className = "" }) {
-  const { t } = useTranslation();
-
   return (
     <span
       className={className}
-      title={t("badge.verifiedTitle")}
-      aria-label={t("badge.verified")}
+      title="Verified by MosqueConnect"
+      aria-label="Verified"
       style={{ 
         marginLeft: "0.3rem",
         display: "inline-flex",

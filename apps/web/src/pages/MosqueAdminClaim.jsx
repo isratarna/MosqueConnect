@@ -5,11 +5,8 @@ import { apiRequest } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
-import { useLocale } from "../hooks/useLocale";
-import { statusLabel } from "../utils/labels";
 
 export default function MosqueAdminClaim() {
-  const { t } = useLocale();
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
@@ -97,9 +94,9 @@ export default function MosqueAdminClaim() {
     return (
       <div className="container py-5 text-center">
         <div className="spinner-border text-mc mb-3" role="status">
-          <span className="visually-hidden">{t("common.loading")}</span>
+          <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="text-muted">{t("admin.claim.checking")}</p>
+        <p className="text-muted">Checking application status...</p>
       </div>
     );
   }
@@ -108,9 +105,9 @@ export default function MosqueAdminClaim() {
     return (
       <div className="container py-5 text-center">
         <FileWarning size={48} className="text-danger mb-3" />
-        <h4 className="fw-bold">{t("admin.claim.loadFailed")}</h4>
+        <h4 className="fw-bold">Unable to load status</h4>
         <p className="text-muted">{fetchError}</p>
-        <button className="btn btn-outline-mc mt-3" onClick={() => window.location.reload()}>{t("common.tryAgain")}</button>
+        <button className="btn btn-outline-mc mt-3" onClick={() => window.location.reload()}>Try Again</button>
       </div>
     );
   }
@@ -132,26 +129,26 @@ export default function MosqueAdminClaim() {
           )}
           
           <h3 className="fw-bold mb-2">
-            {t("admin.claim.statusTitle", { status: statusLabel(t, status) })}
+            Application Status: <span className="text-capitalize">{status.replace("_", " ")}</span>
           </h3>
           
           <p className="text-muted mb-4 fs-5">
-            {status === "approved"
-              ? t("admin.claim.approved")
+            {status === "approved" 
+              ? "Jazakallah Khair! Your mosque administration request has been approved." 
               : status === "rejected"
-                ? t("admin.claim.rejected")
-                : t("admin.claim.pending")}
+                ? "Unfortunately, your application was not approved at this time."
+                : "Your verification request is currently under review by our team. We will update you soon."}
           </p>
 
           {note && (
             <div className={`alert ${status === "rejected" ? "alert-danger" : "alert-info"} text-start d-inline-block mx-auto mb-4`}>
-              <strong>{t("admin.claim.reviewerNote")}</strong> {note}
+              <strong>Note from reviewer:</strong> {note}
             </div>
           )}
           
           <div>
             <Link to={status === "approved" ? "/admin/dashboard" : "/"} className="btn btn-mc px-4 py-2">
-              {status === "approved" ? t("admin.claim.goDashboard") : t("admin.claim.returnHome")}
+              {status === "approved" ? "Go to Dashboard" : "Return to Home"}
             </Link>
           </div>
         </div>
@@ -165,8 +162,8 @@ export default function MosqueAdminClaim() {
         <span className="rounded-circle bg-success-subtle text-success p-3 d-inline-block mb-3">
           <ShieldCheck size={32} />
         </span>
-        <h2 className="fw-bold">{t("admin.claim.title")}</h2>
-        <p className="text-muted">{t("admin.claim.subtitle")}</p>
+        <h2 className="fw-bold">Mosque Administrator Claim</h2>
+        <p className="text-muted">Apply to manage your mosque's profile, events, and announcements on MosqueConnect.</p>
       </div>
 
       <div className="card border-0 shadow-sm">
@@ -180,11 +177,11 @@ export default function MosqueAdminClaim() {
           <form onSubmit={handleSubmit}>
             <div className="row g-4">
               <div className="col-12">
-                <h5 className="fw-bold border-bottom pb-2">{t("admin.claim.applicantInfo")}</h5>
+                <h5 className="fw-bold border-bottom pb-2">Applicant Information</h5>
               </div>
               
               <div className="col-md-6">
-                <label className="form-label fw-semibold">{t("admin.claim.fullName")} <span className="text-danger">*</span></label>
+                <label className="form-label fw-semibold">Full Name <span className="text-danger">*</span></label>
                 <input 
                   type="text" 
                   className="form-control" 
@@ -195,7 +192,7 @@ export default function MosqueAdminClaim() {
               </div>
               
               <div className="col-md-6">
-                <label className="form-label fw-semibold">{t("admin.claim.phone")} <span className="text-danger">*</span></label>
+                <label className="form-label fw-semibold">Phone Number <span className="text-danger">*</span></label>
                 <input 
                   type="tel" 
                   className="form-control" 
@@ -206,11 +203,11 @@ export default function MosqueAdminClaim() {
               </div>
 
               <div className="col-12">
-                <label className="form-label fw-semibold">{t("admin.claim.role")} <span className="text-danger">*</span></label>
+                <label className="form-label fw-semibold">Your Role in the Mosque <span className="text-danger">*</span></label>
                 <input 
                   type="text" 
                   className="form-control" 
-                  placeholder={t("admin.claim.rolePlaceholder")}
+                  placeholder="e.g. Committee Member, Imam, Secretary"
                   value={role} 
                   onChange={(e) => setRole(e.target.value)} 
                   required 
@@ -218,11 +215,11 @@ export default function MosqueAdminClaim() {
               </div>
 
               <div className="col-12 mt-4">
-                <h5 className="fw-bold border-bottom pb-2">{t("admin.claim.mosqueInfo")}</h5>
+                <h5 className="fw-bold border-bottom pb-2">Mosque Information</h5>
               </div>
               
               <div className="col-12">
-                <label className="form-label fw-semibold">{t("admin.claim.selectMosque")} <span className="text-danger">*</span></label>
+                <label className="form-label fw-semibold">Select Mosque <span className="text-danger">*</span></label>
                 <select 
                   className="form-select" 
                   value={mosqueId} 
@@ -230,7 +227,7 @@ export default function MosqueAdminClaim() {
                   required
                   disabled={loadingMosques}
                 >
-                  <option value="">{loadingMosques ? t("admin.claim.locating") : t("admin.claim.selectOption")}</option>
+                  <option value="">{loadingMosques ? "Locating nearby mosques..." : "-- Select a Mosque --"}</option>
                   {mosques.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name} {m.address ? `- ${m.address}` : ""}
@@ -239,14 +236,16 @@ export default function MosqueAdminClaim() {
                 </select>
                 {discovery.status === "error" && (
                   <div className="small text-danger mt-1">
-                    {t("admin.claim.loadMosquesFailed", { error: discovery.error })}
+                    Failed to load nearby mosques: {discovery.error}. Please ensure location services are enabled.
                   </div>
                 )}
               </div>
 
               <div className="col-12 mt-4">
-                <h5 className="fw-bold border-bottom pb-2">{t("admin.claim.proof")}</h5>
-                <p className="small text-muted mb-3">{t("admin.claim.proofHelp")}</p>
+                <h5 className="fw-bold border-bottom pb-2">Verification Proof</h5>
+                <p className="small text-muted mb-3">
+                  Please upload a document that proves your association with the mosque (e.g. official letterhead, committee resolution, ID card). Maximum size: 5MB.
+                </p>
               </div>
               
               <div className="col-12">
@@ -261,23 +260,23 @@ export default function MosqueAdminClaim() {
                   />
                   <label htmlFor="proof-upload" className="cursor-pointer m-0 d-block" style={{ cursor: 'pointer' }}>
                     <Upload size={32} className="text-secondary mb-2" />
-                    <div className="fw-semibold text-mc">{t("admin.claim.upload")}</div>
-                    <div className="small text-muted mt-1">{document ? document.name : t("admin.claim.formats")}</div>
+                    <div className="fw-semibold text-mc">Click to upload document</div>
+                    <div className="small text-muted mt-1">{document ? document.name : "Supported formats: PDF, JPG, PNG"}</div>
                   </label>
                 </div>
               </div>
             </div>
             
             <div className="mt-5 text-end">
-              <Link to="/" className="btn btn-light border px-4 py-2 me-2" disabled={submitting}>{t("common.cancel")}</Link>
+              <Link to="/" className="btn btn-light border px-4 py-2 me-2" disabled={submitting}>Cancel</Link>
               <button type="submit" className="btn btn-mc px-4 py-2 d-inline-flex align-items-center gap-2" disabled={submitting}>
                 {submitting ? (
                   <>
                     <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    {t("admin.claim.submitting")}
+                    Submitting...
                   </>
                 ) : (
-                  t("admin.claim.submit")
+                  "Submit Application"
                 )}
               </button>
             </div>

@@ -1,22 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { MOSQUES } from "../data/mosques";
-import {
-  availabilityValue,
-  BLOOD_AVAILABILITY,
-  BLOOD_GROUPS,
-  CONTACT_METHODS,
-  CUSTOM_SUPPORT_TYPES,
-  DELIVERY_METHODS,
-  GOODS_CONDITIONS,
-  MONEY_PURPOSES,
-  PAYMENT_METHODS,
-  PICKUP_DELIVERY_METHOD,
-  VOLUNTEER_AVAILABILITY,
-  WIDER_COMMUNITY,
-} from "../data/supportFlow";
 import { useAuth } from "../context/AuthContext";
-import { useLocale } from "../hooks/useLocale";
 
 const EMPTY_FORMS = {
   money: {
@@ -70,11 +55,16 @@ const EMPTY_FORMS = {
   },
 };
 
-// Sample campaign names offered by this prototype form; like mosque names they
-// are content, not interface text.
 const ACTIVE_CAMPAIGNS = [
   "Roof Renovation Project",
   "Flood Victim Relief Packages",
+];
+
+const PICKUP_DELIVERY_METHOD = "Request pickup from my location";
+
+const VOLUNTEER_AVAILABILITY = [
+  { label: "Weekend", slots: ["Morning", "Afternoon", "Evening"] },
+  { label: "Weekday", slots: ["Morning", "Afternoon", "Evening"] },
 ];
 
 function getInitialValues(type, user, initialData) {
@@ -95,12 +85,10 @@ function FieldError({ children }) {
 }
 
 function ActionButtons({ label, onCancel }) {
-  const { t } = useLocale();
-
   return (
     <div className="mc-support-form__actions">
       <button type="button" className="btn btn-outline-mc" onClick={onCancel}>
-        {t("common.cancel")}
+        Cancel
       </button>
       <button type="submit" className="btn btn-mc">
         {label} <ArrowRight size={16} aria-hidden="true" />
@@ -109,13 +97,7 @@ function ActionButtons({ label, onCancel }) {
   );
 }
 
-// <option>s for a list of { value, labelKey } choices.
-function Options({ options, t }) {
-  return options.map((option) => <option key={option.value} value={option.value}>{t(option.labelKey)}</option>);
-}
-
 export default function SupportForm({ category, initialData, onCancel, onSubmit }) {
-  const { t } = useLocale();
   const { user } = useAuth();
   const [values, setValues] = useState(() => getInitialValues(category.key, user, initialData));
   const [validated, setValidated] = useState(false);
@@ -123,7 +105,7 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
   const [availabilityGroup, setAvailabilityGroup] = useState(null);
   const availabilityPickerRef = useRef(null);
   const editingAttachment = Boolean(initialData?.attachmentName);
-  const activeAvailabilityGroup = VOLUNTEER_AVAILABILITY.find((group) => group.key === availabilityGroup);
+  const activeAvailabilityGroup = VOLUNTEER_AVAILABILITY.find((group) => group.label === availabilityGroup);
 
   useEffect(() => {
     const closeAvailabilityPicker = (event) => {
@@ -149,8 +131,8 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
     }));
   };
 
-  const toggleAvailability = (groupKey, slotKey) => () => {
-    const value = availabilityValue(groupKey, slotKey);
+  const toggleAvailability = (group, slot) => () => {
+    const value = `${group} — ${slot}`;
 
     setAvailabilityError(false);
     setValues((current) => {
@@ -200,58 +182,61 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
         <>
           <div className="row g-3">
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("mosque")}>{t("support.form.selectMosque")}</label>
+              <label className="form-label" htmlFor={fieldId("mosque")}>Select mosque</label>
               <select id={fieldId("mosque")} className="form-select" value={values.mosque} onChange={setValue("mosque")} required>
-                <option value="">{t("support.form.chooseMosque")}</option>
+                <option value="">Choose a mosque</option>
                 {MOSQUES.map((mosque) => <option key={mosque.id} value={mosque.name}>{mosque.name}</option>)}
               </select>
-              <FieldError>{t("support.errors.mosque")}</FieldError>
+              <FieldError>Please select a mosque.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("campaign")}>{t("support.form.selectCampaign")}</label>
+              <label className="form-label" htmlFor={fieldId("campaign")}>Select campaign</label>
               <select id={fieldId("campaign")} className="form-select" value={values.campaign} onChange={setValue("campaign")} required>
-                <option value="">{t("support.form.chooseCampaign")}</option>
+                <option value="">Choose a campaign</option>
                 {ACTIVE_CAMPAIGNS.map((campaign) => <option key={campaign} value={campaign}>{campaign}</option>)}
               </select>
-              <FieldError>{t("support.errors.campaign")}</FieldError>
+              <FieldError>Please select a campaign.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("amount")}>{t("support.fields.amount")}</label>
-              <input id={fieldId("amount")} type="number" min="1" step="1" className="form-control" placeholder={t("support.form.amountPlaceholder")} value={values.amount} onChange={setValue("amount")} required />
-              <FieldError>{t("support.errors.amount")}</FieldError>
+              <label className="form-label" htmlFor={fieldId("amount")}>Amount</label>
+              <input id={fieldId("amount")} type="number" min="1" step="1" className="form-control" placeholder="Enter amount" value={values.amount} onChange={setValue("amount")} required />
+              <FieldError>Please enter a donation amount.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("purpose")}>{t("support.fields.purpose")}</label>
+              <label className="form-label" htmlFor={fieldId("purpose")}>Purpose</label>
               <select id={fieldId("purpose")} className="form-select" value={values.purpose} onChange={setValue("purpose")} required>
-                <option value="">{t("support.form.choosePurpose")}</option>
-                <Options options={MONEY_PURPOSES} t={t} />
+                <option value="">Choose a purpose</option>
+                {["Zakat", "Charity", "Construction", "Maintenance", "Others"].map((purpose) => <option key={purpose} value={purpose}>{purpose}</option>)}
               </select>
-              <FieldError>{t("support.errors.purpose")}</FieldError>
+              <FieldError>Please choose a purpose.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("donorName")}>{t("support.fields.donorName")}</label>
+              <label className="form-label" htmlFor={fieldId("donorName")}>Donor name</label>
               <input id={fieldId("donorName")} type="text" className="form-control" value={values.donorName} onChange={setValue("donorName")} required />
-              <FieldError>{t("support.errors.name")}</FieldError>
+              <FieldError>Please enter your name.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("contact")}>{t("support.fields.contact")}</label>
-              <input id={fieldId("contact")} type="text" className="form-control" placeholder={t("support.form.contactPlaceholder")} value={values.contact} onChange={setValue("contact")} required />
-              <FieldError>{t("support.errors.contact")}</FieldError>
+              <label className="form-label" htmlFor={fieldId("contact")}>Phone or email</label>
+              <input id={fieldId("contact")} type="text" className="form-control" placeholder="Phone number or email address" value={values.contact} onChange={setValue("contact")} required />
+              <FieldError>Please provide a phone number or email address.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("paymentMethod")}>{t("support.fields.paymentMethod")}</label>
+              <label className="form-label" htmlFor={fieldId("paymentMethod")}>Payment method</label>
               <select id={fieldId("paymentMethod")} className="form-select" value={values.paymentMethod} onChange={setValue("paymentMethod")} required>
-                <option value="">{t("support.form.choosePayment")}</option>
-                <Options options={PAYMENT_METHODS} t={t} />
+                <option value="">Choose a payment method</option>
+                <option value="bKash">bKash</option>
+                <option value="Nagad">Nagad</option>
+                <option value="Card">Card</option>
+                <option value="Bank Transfer">Bank Transfer</option>
               </select>
-              <FieldError>{t("support.errors.payment")}</FieldError>
+              <FieldError>Please choose a payment method.</FieldError>
             </div>
           </div>
           <div className="form-check mt-3">
             <input id={fieldId("anonymous")} type="checkbox" className="form-check-input" checked={values.anonymous} onChange={setValue("anonymous")} />
-            <label className="form-check-label" htmlFor={fieldId("anonymous")}>{t("support.form.anonymousCheck")}</label>
+            <label className="form-check-label" htmlFor={fieldId("anonymous")}>Make this an anonymous donation</label>
           </div>
-          <p className="form-text mb-0">{t("support.form.moneyNote")}</p>
+          <p className="form-text mb-0">You will review these details before any payment step. No payment is taken yet.</p>
         </>
       )}
 
@@ -259,56 +244,59 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
         <>
           <div className="row g-3">
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("name")}>{t("support.fields.name")}</label>
+              <label className="form-label" htmlFor={fieldId("name")}>Name</label>
               <input id={fieldId("name")} type="text" className="form-control" value={values.name} onChange={setValue("name")} required />
-              <FieldError>{t("support.errors.name")}</FieldError>
+              <FieldError>Please enter your name.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("bloodGroup")}>{t("support.fields.bloodGroup")}</label>
+              <label className="form-label" htmlFor={fieldId("bloodGroup")}>Blood group</label>
               <select id={fieldId("bloodGroup")} className="form-select" value={values.bloodGroup} onChange={setValue("bloodGroup")} required>
-                <option value="">{t("support.form.selectBloodGroup")}</option>
-                {BLOOD_GROUPS.map((group) => <option key={group} value={group}>{group}</option>)}
+                <option value="">Select blood group</option>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((group) => <option key={group} value={group}>{group}</option>)}
               </select>
-              <FieldError>{t("support.errors.bloodGroup")}</FieldError>
+              <FieldError>Please select your blood group.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("location")}>{t("support.fields.location")}</label>
-              <input id={fieldId("location")} type="text" className="form-control" placeholder={t("support.form.locationPlaceholder")} value={values.location} onChange={setValue("location")} required />
-              <FieldError>{t("support.errors.location")}</FieldError>
+              <label className="form-label" htmlFor={fieldId("location")}>Location</label>
+              <input id={fieldId("location")} type="text" className="form-control" placeholder="Your area or city" value={values.location} onChange={setValue("location")} required />
+              <FieldError>Please enter your location.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("phone")}>{t("support.fields.phone")}</label>
+              <label className="form-label" htmlFor={fieldId("phone")}>Phone</label>
               <input id={fieldId("phone")} type="tel" className="form-control" value={values.phone} onChange={setValue("phone")} required />
-              <FieldError>{t("support.errors.phone")}</FieldError>
+              <FieldError>Please enter your phone number.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("email")}>{t("support.fields.email")}</label>
+              <label className="form-label" htmlFor={fieldId("email")}>Email</label>
               <input id={fieldId("email")} type="email" className="form-control" value={values.email} onChange={setValue("email")} required />
-              <FieldError>{t("support.errors.email")}</FieldError>
+              <FieldError>Please enter a valid email address.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("availability")}>{t("support.fields.availability")}</label>
+              <label className="form-label" htmlFor={fieldId("availability")}>Availability</label>
               <select id={fieldId("availability")} className="form-select" value={values.availability} onChange={setValue("availability")} required>
-                <option value="">{t("support.form.selectAvailability")}</option>
-                <Options options={BLOOD_AVAILABILITY} t={t} />
+                <option value="">Select availability</option>
+                <option value="Available now">Available now</option>
+                <option value="Available this week">Available this week</option>
+                <option value="Available later">Available later</option>
               </select>
-              <FieldError>{t("support.errors.availability")}</FieldError>
+              <FieldError>Please select your availability.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("lastDonationDate")}>{t("support.fields.lastDonationDate")}</label>
+              <label className="form-label" htmlFor={fieldId("lastDonationDate")}>Last donation date</label>
               <input id={fieldId("lastDonationDate")} type="date" className="form-control" value={values.lastDonationDate} onChange={setValue("lastDonationDate")} required />
-              <FieldError>{t("support.errors.lastDonationDate")}</FieldError>
+              <FieldError>Please select your last donation date.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("preferredContact")}>{t("support.fields.preferredContact")}</label>
+              <label className="form-label" htmlFor={fieldId("preferredContact")}>Preferred contact method</label>
               <select id={fieldId("preferredContact")} className="form-select" value={values.preferredContact} onChange={setValue("preferredContact")} required>
-                <option value="">{t("support.form.chooseContact")}</option>
-                <Options options={CONTACT_METHODS} t={t} />
+                <option value="">Choose a contact method</option>
+                <option value="Phone">Phone</option>
+                <option value="Email">Email</option>
               </select>
-              <FieldError>{t("support.errors.preferredContact")}</FieldError>
+              <FieldError>Please choose a preferred contact method.</FieldError>
             </div>
           </div>
-          <p className="form-text mb-0">{t("support.form.bloodNote")}</p>
+          <p className="form-text mb-0">No donor registration is submitted from this prototype.</p>
         </>
       )}
 
@@ -316,22 +304,22 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
         <>
           <div className="row g-3">
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("name")}>{t("support.fields.name")}</label>
+              <label className="form-label" htmlFor={fieldId("name")}>Name</label>
               <input id={fieldId("name")} type="text" className="form-control" value={values.name} onChange={setValue("name")} required />
-              <FieldError>{t("support.errors.name")}</FieldError>
+              <FieldError>Please enter your name.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("phone")}>{t("support.fields.phoneNumber")}</label>
+              <label className="form-label" htmlFor={fieldId("phone")}>Phone number</label>
               <input id={fieldId("phone")} type="tel" className="form-control" value={values.phone} onChange={setValue("phone")} required />
-              <FieldError>{t("support.errors.phone")}</FieldError>
+              <FieldError>Please enter your phone number.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("email")}>{t("support.fields.email")}</label>
+              <label className="form-label" htmlFor={fieldId("email")}>Email</label>
               <input id={fieldId("email")} type="email" className="form-control" value={values.email} onChange={setValue("email")} required />
-              <FieldError>{t("support.errors.email")}</FieldError>
+              <FieldError>Please enter a valid email address.</FieldError>
             </div>
             <div className="col-md-6 mc-support-availability-field" role="group" aria-labelledby={fieldId("preferredAvailability-label")} aria-invalid={availabilityError}>
-              <label id={fieldId("preferredAvailability-label")} className="form-label">{t("support.fields.preferredAvailability")}</label>
+              <label id={fieldId("preferredAvailability-label")} className="form-label">Preferred availability</label>
               <details
                 ref={availabilityPickerRef}
                 className="mc-support-availability"
@@ -339,20 +327,20 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
               >
                 <summary className="form-select mc-support-availability__toggle">
                   {values.preferredAvailability.length
-                    ? t("support.form.slotsSelected", { count: values.preferredAvailability.length })
-                    : t("support.form.selectAvailability")}
+                    ? `${values.preferredAvailability.length} time slot${values.preferredAvailability.length === 1 ? "" : "s"} selected`
+                    : "Select availability"}
                 </summary>
                 <div className="mc-support-availability__menu">
                 {!activeAvailabilityGroup ? (
                   VOLUNTEER_AVAILABILITY.map((group) => (
                     <button
-                      id={fieldId(`preferredAvailability-${group.key}`)}
+                      id={fieldId(`preferredAvailability-${group.label.toLowerCase()}`)}
                       className="mc-support-availability__group-option"
                       type="button"
-                      key={group.key}
-                      onClick={() => setAvailabilityGroup(group.key)}
+                      key={group.label}
+                      onClick={() => setAvailabilityGroup(group.label)}
                     >
-                      {t(group.labelKey)} <ChevronRight size={16} aria-hidden="true" />
+                      {group.label} <ChevronRight size={16} aria-hidden="true" />
                     </button>
                   ))
                 ) : (
@@ -362,13 +350,14 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
                       type="button"
                       onClick={() => setAvailabilityGroup(null)}
                     >
-                      <ChevronLeft size={15} aria-hidden="true" /> {t("support.form.allAvailability")}
+                      <ChevronLeft size={15} aria-hidden="true" /> All availability
                     </button>
-                    <div className="mc-support-availability__group">
-                      <p className="mc-support-availability__group-title">{t(activeAvailabilityGroup.labelKey)}</p>
-                      {activeAvailabilityGroup.slots.map((slot) => {
-                        const value = availabilityValue(activeAvailabilityGroup.key, slot.key);
-                        const id = fieldId(`preferredAvailability-${activeAvailabilityGroup.key}-${slot.key}`);
+                    {VOLUNTEER_AVAILABILITY.filter((group) => group.label === activeAvailabilityGroup.label).map((group) => (
+                  <div className="mc-support-availability__group" key={group.label}>
+                      <p className="mc-support-availability__group-title">{group.label}</p>
+                      {group.slots.map((slot) => {
+                        const value = `${group.label} — ${slot}`;
+                        const id = fieldId(`preferredAvailability-${group.label.toLowerCase()}-${slot.toLowerCase()}`);
 
                         return (
                           <div className="form-check" key={value}>
@@ -377,35 +366,36 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
                               className="form-check-input"
                               type="checkbox"
                               checked={values.preferredAvailability.includes(value)}
-                              onChange={toggleAvailability(activeAvailabilityGroup.key, slot.key)}
+                              onChange={toggleAvailability(group.label, slot)}
                             />
-                            <label className="form-check-label" htmlFor={id}>{t(slot.labelKey)}</label>
+                            <label className="form-check-label" htmlFor={id}>{slot}</label>
                           </div>
                         );
                       })}
-                    </div>
+                  </div>
+                    ))}
                   </>
                 )}
                 </div>
               </details>
-              {availabilityError && <p className="invalid-feedback d-block mb-0">{t("support.errors.availabilitySlot")}</p>}
+              {availabilityError && <p className="invalid-feedback d-block mb-0">Select at least one available time slot.</p>}
             </div>
             <div className="col-12">
-              <label className="form-label" htmlFor={fieldId("relevantSkill")}>{t("support.fields.relevantSkill")}</label>
+              <label className="form-label" htmlFor={fieldId("relevantSkill")}>Relevant skill</label>
               <input id={fieldId("relevantSkill")} type="text" className="form-control" value={values.relevantSkill} onChange={setValue("relevantSkill")} required />
-              <FieldError>{t("support.errors.skill")}</FieldError>
+              <FieldError>Please enter a relevant skill.</FieldError>
             </div>
             <div className="col-12">
-              <label className="form-label" htmlFor={fieldId("previousExperience")}>{t("support.fields.previousExperience")}</label>
+              <label className="form-label" htmlFor={fieldId("previousExperience")}>Previous experience</label>
               <textarea id={fieldId("previousExperience")} className="form-control" rows="3" value={values.previousExperience} onChange={setValue("previousExperience")} required />
-              <FieldError>{t("support.errors.experience")}</FieldError>
+              <FieldError>Please share your previous experience.</FieldError>
             </div>
             <div className="col-12">
-              <label className="form-label" htmlFor={fieldId("additionalNote")}>{t("support.fields.additionalNote")} <span className="text-muted">{t("common.optional")}</span></label>
+              <label className="form-label" htmlFor={fieldId("additionalNote")}>Additional note <span className="text-muted">(optional)</span></label>
               <textarea id={fieldId("additionalNote")} className="form-control" rows="2" value={values.additionalNote} onChange={setValue("additionalNote")} />
             </div>
           </div>
-          <p className="form-text mb-0">{t("support.form.volunteerNote")}</p>
+          <p className="form-text mb-0">This step prepares your application details only; it does not submit an application.</p>
         </>
       )}
 
@@ -413,61 +403,65 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
         <>
           <div className="row g-3">
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("itemName")}>{t("support.fields.itemName")}</label>
+              <label className="form-label" htmlFor={fieldId("itemName")}>Item name</label>
               <input id={fieldId("itemName")} type="text" className="form-control" value={values.itemName} onChange={setValue("itemName")} required />
-              <FieldError>{t("support.errors.itemName")}</FieldError>
+              <FieldError>Please enter the item name.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("quantity")}>{t("support.fields.quantity")}</label>
+              <label className="form-label" htmlFor={fieldId("quantity")}>Quantity</label>
               <input id={fieldId("quantity")} type="number" min="1" step="1" className="form-control" value={values.quantity} onChange={setValue("quantity")} required />
-              <FieldError>{t("support.errors.quantity")}</FieldError>
+              <FieldError>Please enter a quantity of at least one.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("condition")}>{t("support.fields.condition")}</label>
+              <label className="form-label" htmlFor={fieldId("condition")}>Item condition</label>
               <select id={fieldId("condition")} className="form-select" value={values.condition} onChange={setValue("condition")} required>
-                <option value="">{t("support.form.chooseCondition")}</option>
-                <Options options={GOODS_CONDITIONS} t={t} />
+                <option value="">Choose item condition</option>
+                <option value="New">New</option>
+                <option value="Gently Used">Gently Used</option>
+                <option value="Used">Used</option>
               </select>
-              <FieldError>{t("support.errors.condition")}</FieldError>
+              <FieldError>Please select the item condition.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("deliveryDate")}>{t("support.fields.deliveryDate")}</label>
+              <label className="form-label" htmlFor={fieldId("deliveryDate")}>Expected delivery date</label>
               <input id={fieldId("deliveryDate")} type="date" className="form-control" value={values.deliveryDate} onChange={setValue("deliveryDate")} required />
-              <FieldError>{t("support.errors.deliveryDate")}</FieldError>
+              <FieldError>Please select an expected delivery date.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("deliveryMethod")}>{t("support.fields.deliveryMethod")}</label>
+              <label className="form-label" htmlFor={fieldId("deliveryMethod")}>Delivery method</label>
               <select id={fieldId("deliveryMethod")} className="form-select" value={values.deliveryMethod} onChange={setValue("deliveryMethod")} required>
-                <option value="">{t("support.form.chooseDelivery")}</option>
-                <Options options={DELIVERY_METHODS} t={t} />
+                <option value="">Choose a delivery method</option>
+                <option value="I will deliver to the mosque">I will deliver to the mosque</option>
+                <option value={PICKUP_DELIVERY_METHOD}>{PICKUP_DELIVERY_METHOD}</option>
+                <option value="Need to discuss with the mosque">Need to discuss with the mosque</option>
               </select>
-              <FieldError>{t("support.errors.deliveryMethod")}</FieldError>
+              <FieldError>Please choose a delivery method.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("phone")}>{t("support.fields.phoneNumber")}</label>
+              <label className="form-label" htmlFor={fieldId("phone")}>Phone number</label>
               <input id={fieldId("phone")} type="tel" className="form-control" value={values.phone} onChange={setValue("phone")} required />
-              <FieldError>{t("support.errors.phone")}</FieldError>
+              <FieldError>Please enter your phone number.</FieldError>
             </div>
             {values.deliveryMethod === PICKUP_DELIVERY_METHOD && (
               <>
                 <div className="col-md-7">
-                  <label className="form-label" htmlFor={fieldId("pickupAddress")}>{t("support.fields.pickupAddress")}</label>
-                  <textarea id={fieldId("pickupAddress")} className="form-control" rows="2" placeholder={t("support.form.pickupAddressPlaceholder")} value={values.pickupAddress} onChange={setValue("pickupAddress")} required />
-                  <FieldError>{t("support.errors.pickupAddress")}</FieldError>
+                  <label className="form-label" htmlFor={fieldId("pickupAddress")}>Pickup address</label>
+                  <textarea id={fieldId("pickupAddress")} className="form-control" rows="2" placeholder="Enter the pickup location" value={values.pickupAddress} onChange={setValue("pickupAddress")} required />
+                  <FieldError>Please enter a pickup address.</FieldError>
                 </div>
                 <div className="col-md-5">
-                  <label className="form-label" htmlFor={fieldId("pickupContact")}>{t("support.fields.pickupContact")}</label>
-                  <input id={fieldId("pickupContact")} type="tel" className="form-control" placeholder={t("support.form.pickupContactPlaceholder")} value={values.pickupContact} onChange={setValue("pickupContact")} required />
-                  <FieldError>{t("support.errors.pickupContact")}</FieldError>
+                  <label className="form-label" htmlFor={fieldId("pickupContact")}>Pickup contact</label>
+                  <input id={fieldId("pickupContact")} type="tel" className="form-control" placeholder="Name or phone number" value={values.pickupContact} onChange={setValue("pickupContact")} required />
+                  <FieldError>Please enter a pickup contact.</FieldError>
                 </div>
               </>
             )}
             <div className="col-12">
-              <label className="form-label" htmlFor={fieldId("additionalNote")}>{t("support.fields.additionalNote")} <span className="text-muted">{t("common.optional")}</span></label>
+              <label className="form-label" htmlFor={fieldId("additionalNote")}>Additional note <span className="text-muted">(optional)</span></label>
               <textarea id={fieldId("additionalNote")} className="form-control" rows="2" value={values.additionalNote} onChange={setValue("additionalNote")} />
             </div>
           </div>
-          <p className="form-text mb-0">{t("support.form.goodsNote")}</p>
+          <p className="form-text mb-0">A mosque administrator would confirm item receipt in the future. No donation is recorded yet.</p>
         </>
       )}
 
@@ -475,54 +469,62 @@ export default function SupportForm({ category, initialData, onCancel, onSubmit 
         <>
           <div className="row g-3">
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("supportType")}>{t("support.fields.supportType")}</label>
+              <label className="form-label" htmlFor={fieldId("supportType")}>Support type</label>
               <select id={fieldId("supportType")} className="form-select" value={values.supportType} onChange={setValue("supportType")} required>
-                <option value="">{t("support.form.chooseSupportType")}</option>
-                <Options options={CUSTOM_SUPPORT_TYPES} t={t} />
+                <option value="">Choose support type</option>
+                {[
+                  "Sponsor an event",
+                  "Sponsor an Islamic class",
+                  "Support an orphan program",
+                  "Provide a professional service",
+                  "Donate equipment",
+                  "Provide transportation",
+                  "Others",
+                ].map((supportType) => <option key={supportType} value={supportType}>{supportType}</option>)}
               </select>
-              <FieldError>{t("support.errors.supportType")}</FieldError>
+              <FieldError>Please choose a support type.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("mosqueOrCommunity")}>{t("support.form.selectedMosqueOrCommunity")}</label>
+              <label className="form-label" htmlFor={fieldId("mosqueOrCommunity")}>Selected mosque or community</label>
               <select id={fieldId("mosqueOrCommunity")} className="form-select" value={values.mosqueOrCommunity} onChange={setValue("mosqueOrCommunity")} required>
-                <option value="">{t("support.form.chooseMosqueOrCommunity")}</option>
-                <option value={WIDER_COMMUNITY}>{t("support.options.widerCommunity")}</option>
+                <option value="">Choose a mosque or community</option>
+                <option value="Wider MosqueConnect community">Wider MosqueConnect community</option>
                 {MOSQUES.map((mosque) => <option key={mosque.id} value={mosque.name}>{mosque.name}</option>)}
               </select>
-              <FieldError>{t("support.errors.mosqueOrCommunity")}</FieldError>
+              <FieldError>Please choose a mosque or community.</FieldError>
             </div>
             <div className="col-12">
-              <label className="form-label" htmlFor={fieldId("supportTitle")}>{t("support.fields.supportTitle")}</label>
+              <label className="form-label" htmlFor={fieldId("supportTitle")}>Support title</label>
               <input id={fieldId("supportTitle")} type="text" className="form-control" value={values.supportTitle} onChange={setValue("supportTitle")} required />
-              <FieldError>{t("support.errors.supportTitle")}</FieldError>
+              <FieldError>Please enter a support title.</FieldError>
             </div>
             <div className="col-12">
-              <label className="form-label" htmlFor={fieldId("description")}>{t("support.fields.description")}</label>
+              <label className="form-label" htmlFor={fieldId("description")}>Description</label>
               <textarea id={fieldId("description")} className="form-control" rows="3" value={values.description} onChange={setValue("description")} required />
-              <FieldError>{t("support.errors.description")}</FieldError>
+              <FieldError>Please describe the support you would like to offer.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("availabilityDate")}>{t("support.fields.availabilityDate")}</label>
+              <label className="form-label" htmlFor={fieldId("availabilityDate")}>Availability or preferred date</label>
               <input id={fieldId("availabilityDate")} type="date" className="form-control" value={values.availabilityDate} onChange={setValue("availabilityDate")} required />
-              <FieldError>{t("support.errors.availabilityDate")}</FieldError>
+              <FieldError>Please select an availability or preferred date.</FieldError>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor={fieldId("contactDetails")}>{t("support.fields.contactDetails")}</label>
-              <input id={fieldId("contactDetails")} type="text" className="form-control" placeholder={t("support.form.contactPlaceholder")} value={values.contactDetails} onChange={setValue("contactDetails")} required />
-              <FieldError>{t("support.errors.contactDetails")}</FieldError>
+              <label className="form-label" htmlFor={fieldId("contactDetails")}>Contact details</label>
+              <input id={fieldId("contactDetails")} type="text" className="form-control" placeholder="Phone number or email address" value={values.contactDetails} onChange={setValue("contactDetails")} required />
+              <FieldError>Please enter your contact details.</FieldError>
             </div>
             <div className="col-12">
-              <label className="form-label" htmlFor={fieldId("attachment")}>{t("support.fields.attachment")}</label>
+              <label className="form-label" htmlFor={fieldId("attachment")}>Attachment</label>
               <input id={fieldId("attachment")} type="file" className="form-control" onChange={handleAttachment} required={!editingAttachment} />
-              {editingAttachment && <p className="form-text mb-0">{t("support.form.previouslySelected", { name: values.attachmentName })}</p>}
-              <FieldError>{t("support.errors.attachFile")}</FieldError>
+              {editingAttachment && <p className="form-text mb-0">Previously selected: {values.attachmentName}. Choose another file only to replace it.</p>}
+              <FieldError>Please attach a file.</FieldError>
             </div>
           </div>
-          <p className="form-text mb-0">{t("support.form.customNote")}</p>
+          <p className="form-text mb-0">The attachment name is kept only for this frontend review and is not uploaded.</p>
         </>
       )}
 
-      <ActionButtons label={t(category.actionLabelKey)} onCancel={onCancel} />
+      <ActionButtons label={category.actionLabel} onCancel={onCancel} />
     </form>
   );
 }
