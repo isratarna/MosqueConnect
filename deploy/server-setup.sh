@@ -67,7 +67,7 @@ if [ "$HTTPS" = 1 ]; then
   echo "== certs"
   mkdir -p ~/ssl_certs
   sudo /usr/bin/cp ~/ssl/live/$DOMAIN/{fullchain,privkey}.pem ~/ssl_certs/
-  sudo /usr/bin/chown -R $USER_NAME:$USER_NAME ~/ssl_certs
+  sudo /usr/bin/chown -R $USER_NAME:$(id -gn) ~/ssl_certs
   sudo /usr/bin/chmod 600 ~/ssl_certs/privkey.pem
   sudo /usr/bin/chmod 644 ~/ssl_certs/fullchain.pem
 fi
