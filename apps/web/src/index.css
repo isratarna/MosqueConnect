@@ -5938,3 +5938,50 @@ main {
 .mc-lost-found-detail__photo { max-height: 420px; object-fit: cover; }
 .mc-line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .mc-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+/* Journey planner (#194): Home card, /journey page, timeline */
+.mc-journey-cards {
+  padding: 1.5rem 0 0.5rem;
+}
+
+.mc-journey-card {
+  border-radius: 0.8rem;
+  border-color: #dfe8e4;
+}
+
+.mc-journey-card--entry {
+  background: var(--mc-soft);
+}
+
+.mc-journey-map {
+  height: 360px;
+  border-radius: 0.8rem;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+.mc-journey-timeline__row {
+  border-left: 4px solid var(--mc-prayer-color, var(--mc-green));
+  padding: 0.25rem 0 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.mc-journey-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.6rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.mc-journey-option.is-selected {
+  border-color: var(--mc-prayer-color, var(--mc-green));
+  box-shadow: 0 0 0 1px var(--mc-prayer-color, var(--mc-green));
+}
+
+.mc-place-autocomplete gmp-place-autocomplete {
+  width: 100%;
+}
