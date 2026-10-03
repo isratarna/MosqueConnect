@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Car, Clock3, Footprints, LoaderCircle, LocateFixed, Navigation, Route } from "lucide-react";
-import { requestGeolocation } from "../../hooks/useGeolocation";
+import { hasLocation as originHasLocation, requestGeolocation } from "../../hooks/useGeolocation";
 import { useNow } from "../../hooks/useNow";
 import { fetchCatchable, formatMinutes, formatTime, minutesUntil } from "../../utils/journeyApi";
 import { directionsUrl } from "../../utils/mosqueDiscovery";
@@ -15,7 +15,7 @@ export default function CatchableJamaatCard({ origin }) {
   const [mode, setMode] = useState("walk");
   const [state, setState] = useState({ status: "idle", data: [], next: null, error: null });
   const now = useNow(60_000);
-  const hasLocation = origin.status === "success";
+  const hasLocation = originHasLocation(origin);
 
   // Location, mode ba minute bodlale abar API call (useNow proti minute e "now" bodlay).
   const minuteKey = Math.floor(now.getTime() / 60_000);

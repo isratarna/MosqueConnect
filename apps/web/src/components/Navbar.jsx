@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, ShieldCheck, UserRound } from "lucide-react";
+import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, Search, ShieldCheck, UserRound } from "lucide-react";
+import GlobalSearch from "./GlobalSearch";
 import NotificationList from "./notifications/NotificationList";
 import ThemeSwitcher from "./ThemeSwitcher";
 import { useAuth } from "../context/AuthContext";
@@ -17,6 +18,24 @@ export default function Navbar() {
   const [open, setOpen] = useState(false); // mobile collapse
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef(null);
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
+
+  // "/" focuses the navbar search only (searchRef is its instance, never the hero's), unless the user is already typing somewhere.
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target;
+      const typing = target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+      if (typing) return;
+      event.preventDefault(); // keep the "/" out of the box
+      setSearchOpen(true);
+      searchRef.current?.focus(); // already open: focus it; otherwise autoFocus does it on mount
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const close = () => setOpen(false);
   const closeDropdowns = () => setActiveDropdown(null);
@@ -57,6 +76,18 @@ export default function Navbar() {
             Mosque<span className="mc-brand-accent">Connect</span>
           </span>
         </Link>
+        <button
+          type="button"
+          className={"mc-nav-search-toggle ms-auto ms-lg-2 order-lg-last" + (searchOpen ? " is-active" : "")}
+          aria-label="Search"
+          aria-expanded={searchOpen}
+          aria-keyshortcuts="/"
+          title="Search (/)"
+          onClick={() => setSearchOpen((value) => !value)}
+        >
+          <Search size={18} aria-hidden="true" />
+        </button>
+
         <button
           className="navbar-toggler ms-2 ms-lg-0"
           type="button"
@@ -129,6 +160,13 @@ export default function Navbar() {
           </ul>
         </div>
       </div>
+      {searchOpen && (
+        <div className="mc-nav-search-row">
+          <div className="container px-3 px-lg-0">
+            <GlobalSearch ref={searchRef} id="navbar-search" variant="nav" autoFocus onDismiss={closeSearch} />
+          </div>
+        </div>
+      )}
       <span className="mc-navbar__progress" aria-hidden="true" />
     </nav>
   );

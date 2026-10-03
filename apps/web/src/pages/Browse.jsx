@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { List as ListIcon, LoaderCircle, Map as MapIcon, MapPin, RefreshCw, Search, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
 import { FACILITY_META } from "../data/mosques";
@@ -14,7 +15,10 @@ export default function Browse() {
   const discovery = useMosqueDiscovery(origin);
   const all = discovery.mosques;
 
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlSearch = searchParams.get("search") ?? "";
+
+  const [search, setSearch] = useState(urlSearch);
   const [facilities, setFacilities] = useState(() => new Set());
   const [maxDistance, setMaxDistance] = useState(null);
   const [sort, setSort] = useState("distance");
@@ -59,8 +63,18 @@ export default function Browse() {
     });
   };
 
+  // Pick up ?search= changes (e.g. arriving from the home page hero search).
+  useEffect(() => {
+    setSearch(urlSearch);
+  }, [urlSearch]);
+
   const clearFilters = () => {
     setSearch("");
+    if (searchParams.has("search")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("search");
+      setSearchParams(next, { replace: true });
+    }
     setFacilities(new Set());
     setMaxDistance(null);
     setSort("distance");

@@ -7,7 +7,38 @@ import { DEFAULT_CENTER } from "../config";
 
 // Event-based small location service so components can request location on demand
 const EVENT = "mc:location:update";
-let currentOrigin = { ...DEFAULT_CENTER, fallback: true, loading: false, status: "idle" };
+const loadManualLocation = () => {
+  try {
+    const saved = localStorage.getItem("mc_manual_location");
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    // Ignore parse errors
+  }
+  return null;
+};
+
+const savedLoc = loadManualLocation();
+let currentOrigin = savedLoc
+  ? { lat: savedLoc.lat, lng: savedLoc.lng, areaName: savedLoc.areaName, fallback: false, loading: false, status: "manual" }
+  : { ...DEFAULT_CENTER, fallback: true, loading: false, status: "idle" };
+
+export function setManualLocation(lat, lng, areaName) {
+  try {
+    localStorage.setItem("mc_manual_location", JSON.stringify({ lat, lng, areaName }));
+  } catch (e) {
+    // Ignore storage errors
+  }
+  dispatch({
+    lat,
+    lng,
+    areaName,
+    fallback: false,
+    loading: false,
+    status: "manual",
+    message: null,
+    errorCode: null,
+  });
+}
 let pendingRequest = null;
 
 function dispatch(detail) {
@@ -17,7 +48,8 @@ function dispatch(detail) {
 
 export function requestGeolocation({ force = false } = {}) {
   if (pendingRequest) return pendingRequest;
-  if (!force && (currentOrigin.status === "success" || currentOrigin.status === "failure")) {
+  // A manually chosen location is kept until the user explicitly asks for GPS (force).
+  if (!force && ["success", "failure", "manual"].includes(currentOrigin.status)) {
     return Promise.resolve(currentOrigin);
   }
 
@@ -89,6 +121,9 @@ export function requestGeolocation({ force = false } = {}) {
 
   return pendingRequest;
 }
+
+/** True once we have usable coordinates (GPS or manually chosen). */
+export const hasLocation = (origin) => origin.status === "success" || origin.status === "manual";
 
 export function useGeolocation() {
   const [origin, setOrigin] = useState(currentOrigin);

@@ -27,6 +27,7 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
 const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
 const Eid = lazy(() => import("./pages/Eid"));
+const Search = lazy(() => import("./pages/Search"));
 const Journey = lazy(() => import("./pages/Journey"));
 
 function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
@@ -68,6 +69,7 @@ export default function App() {
           <Routes location={location}>
           <Route path="/" element={<Home />} />
           <Route path="/browse" element={<Browse />} />
+          <Route path="/search" element={<Search />} />
           <Route path="/eid" element={<Eid />} />
           <Route path="/journey" element={<Journey />} />
           <Route path="/journey/:id" element={<Journey />} />
