@@ -5938,3 +5938,65 @@ main {
 .mc-lost-found-detail__photo { max-height: 420px; object-fit: cover; }
 .mc-line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .mc-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+/* Home hero: date chips */
+.mc-hero__dates { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.9rem; }
+.mc-date-chip {
+  align-items: center;
+  background: rgba(255, 254, 252, 0.94);
+  border: 1px solid var(--mc-glass-line, rgba(125, 105, 85, 0.22));
+  border-radius: 999px;
+  color: var(--mc-ink);
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 500;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+}
+.mc-date-chip svg { color: var(--mc-rust); flex-shrink: 0; }
+.mc-date-chip__approx { color: var(--mc-muted); font-size: 0.7rem; }
+
+/* Home hero: real search input */
+.mc-hero__search-field { cursor: text; }
+.mc-hero__search-field input {
+  background: transparent;
+  border: 0;
+  color: var(--mc-ink);
+  font: inherit;
+  min-width: 0;
+  outline: none;
+  width: 100%;
+}
+.mc-hero__search-field input::placeholder { color: var(--mc-muted); opacity: 1; }
+.mc-hero__search-field:focus-within { border-color: var(--mc-rust); box-shadow: var(--mc-ring); }
+.mc-hero__search-input.mc-hero__search-field button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--mc-line);
+  color: var(--mc-rust);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 0 0 0 0.65rem;
+}
+.mc-hero__search-input.mc-hero__search-field button svg { border: 0; padding: 0; width: 18px; }
+
+/* Home: upcoming events row */
+.mc-upcoming-events { padding: 3rem 0; }
+.mc-event-card--skeleton { display: grid; gap: 0.75rem; min-height: 190px; padding: 1.1rem; }
+.mc-skeleton-line {
+  animation: mc-skeleton-sheen 1.4s ease-in-out infinite;
+  background: linear-gradient(100deg, rgba(125, 105, 85, 0.1) 25%, rgba(125, 105, 85, 0.2) 45%, rgba(125, 105, 85, 0.1) 65%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  display: block;
+  height: 0.8rem;
+  width: 100%;
+}
+.mc-skeleton-line--sm { width: 30%; }
+.mc-skeleton-line--lg { height: 1.2rem; width: 70%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-skeleton-line { animation: none; }
+}
+
