@@ -86,6 +86,7 @@ export function DailyPrayersForm({ mosqueId }) {
         </>
       )}
     </form>
+    {/* [Urmee · VIVA] Default timetable er niche ei component boshano (ager form ta PrayerTimesGrid use kore). */}
     {/* [Urmee · F4] Dated periods (winter timetable, Ramadan) sit under the default timetable. */}
     <SchedulePeriodsManager mosqueId={mosqueId} />
     </>

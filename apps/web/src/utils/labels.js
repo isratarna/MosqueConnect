@@ -8,6 +8,7 @@
  * test checks that every entry has both an English and a Bangla translation.
  */
 
+// [Urmee · VIVA] API pathay stable code (pending, verified...). Code ke key dhore translate kori. Test check kore shobar en+bn translation ache.
 export const STATUS_VALUES = [
   "draft", "published", "active", "closed", "completed", "cancelled", "expired", "past",
   "pending", "approved", "rejected", "confirmed", "ai_reviewed", "under_human_review",

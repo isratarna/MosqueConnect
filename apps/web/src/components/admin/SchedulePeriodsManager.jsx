@@ -12,12 +12,14 @@ import RamadanTimingsEditor from "./RamadanTimingsEditor";
 const EMPTY_FORM = { id: null, name: "", starts_on: "", ends_on: "", is_ramadan: false };
 
 /** Daily prayer times for one period (same grid as the default timetable). */
+// [Urmee · VIVA] Ekta period er 5 namaz er time editor (PrayerTimesGrid use kore) + "Copy default timetable" button.
 function PeriodTimes({ mosqueId, period, onSaved }) {
   const { t, locale } = useLocale();
   const [times, setTimes] = useState(() => timesFromRows(period.prayer_times));
   const [notice, setNotice] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  // [Urmee · VIVA] Default timetable theke time gulo ene ei period e boshay, jate prothom theke na likhte hoy.
   const copyDefault = async () => {
     setNotice(null);
     try {
@@ -63,6 +65,7 @@ function PeriodTimes({ mosqueId, period, onSaved }) {
  * the date it is about), and opens each period's own prayer times — plus the Sehri / Iftar / Taraweeh
  * month grid for Ramadan periods. Outside every period the default timetable above still applies.
  */
+// [Urmee · VIVA] Admin er "Schedule periods" section: list, add, edit, delete. Overlap hole API error dey, seta tarikh field er niche dekhai.
 export default function SchedulePeriodsManager({ mosqueId }) {
   const { t, locale } = useLocale();
   const [state, setState] = useState({ status: "loading", periods: [], error: "" });
@@ -73,6 +76,7 @@ export default function SchedulePeriodsManager({ mosqueId }) {
   const [openId, setOpenId] = useState(null);
   const [confirm, setConfirm] = useState(null);
 
+  // [Urmee · VIVA] API theke period list ene state e rakhe. Add/edit/delete er por abar call hoy.
   const load = useCallback(async (signal) => {
     try {
       const periods = await fetchSchedulePeriods(mosqueId, { signal });
@@ -89,6 +93,7 @@ export default function SchedulePeriodsManager({ mosqueId }) {
     return () => controller.abort();
   }, [load]);
 
+  // [Urmee · VIVA] Period save (notun hole POST, edit hole PUT). Error e.errors thakle (jemon overlap) field er niche dekhai.
   const submit = async (event) => {
     event.preventDefault();
     setSaving(true);
@@ -109,6 +114,7 @@ export default function SchedulePeriodsManager({ mosqueId }) {
     }
   };
 
+  // [Urmee · VIVA] Ekta field er API error message dekhanor chhoto helper.
   const fieldError = (field) => fieldErrors[field] && <div className="invalid-feedback d-block">{fieldErrors[field][0]}</div>;
   const setField = (field) => (event) => setForm((current) => ({ ...current, [field]: field === "is_ramadan" ? event.target.checked : event.target.value }));
 

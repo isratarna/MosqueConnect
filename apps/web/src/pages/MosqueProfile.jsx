@@ -102,6 +102,7 @@ function AnnouncementItem({ announcement }) {
   const detailsPath = getAnnouncementDetailsPath(announcement.id);
   const pinned = Boolean(announcement.pinned || announcement.is_pinned);
   // [Urmee · F9] Janazah notices get calm, distinct styling (no alarm colours) instead of the urgency colours.
+  // [Urmee · VIVA] F9: janazah category hole calm styling (alarm color na), ar niche image ar pin icon ao ei item e dekhai.
   const janazah = announcement.category === "janazah";
 
   return (
@@ -377,6 +378,7 @@ export default function MosqueProfile() {
 
       <div className="row g-4">
         <div className="col-lg-8">
+          {/* [Urmee · VIVA] Ramadan card shudhu tokhoni jokhon mosque.period.is_ramadan true (API mosque response e period pathay). */}
           {/* [Urmee · F4] Ramadan card first while the mosque is in a Ramadan period; nothing Ramadan-specific otherwise. */}
           {mosque.period?.is_ramadan && <RamadanCard mosqueId={mosque.id} />}
 
@@ -401,6 +403,7 @@ export default function MosqueProfile() {
                 <h5 className="fw-bold mb-0"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.prayerTimes")}</h5>
                 <SuggestLink onClick={() => setSuggestField("prayer_time")} label={t("mosque.suggestTime")} />
               </div>
+              {/* [Urmee · VIVA] Prayer timeline er upore period er naam: "Winter timetable · until 28 Feb". */}
               {mosque.period && (
                 <p className="small text-muted mb-2" data-testid="period-label">{t("mosque.periodLabel", { name: mosque.period.name, date: formatApiDate(mosque.period.ends_on, locale) })}</p>
               )}

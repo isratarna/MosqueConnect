@@ -12,6 +12,7 @@ export const DEFAULT_LOCALE = INTL_LOCALES.en;
 
 // Maps any language or locale tag ("bn", "bn-BD", "en-US", undefined) to one of
 // the two languages the interface supports.
+// [Urmee · VIVA] Je kono tag (bn, bn-BD, en-US) ke "bn" ba "en" e ane.
 export function languageOf(value) {
   return String(value || "").toLowerCase().startsWith("bn") ? "bn" : "en";
 }
@@ -20,6 +21,7 @@ export function intlLocale(language) {
   return INTL_LOCALES[languageOf(language)];
 }
 
+// [Urmee · VIVA] Bangla hole 25 -> ২৫. Intl.NumberFormat diye.
 export function formatNumber(value, locale = DEFAULT_LOCALE, options) {
   const number = Number(value);
   if (value === null || value === undefined || value === "" || !Number.isFinite(number)) {
@@ -39,6 +41,7 @@ export function formatDate(date, locale = DEFAULT_LOCALE, options = { day: "nume
 
 // Bangla names the part of the day ("১:৩০ দুপুর", "৪:৫০ ভোর") instead of the
 // Latin AM/PM that English uses.
+// [Urmee · VIVA] Bangla te AM/PM er bodole bhor/dupur/shondhya dekhai.
 export function timeOptions(locale = DEFAULT_LOCALE) {
   return {
     hour: "numeric",
@@ -48,6 +51,7 @@ export function timeOptions(locale = DEFAULT_LOCALE) {
 }
 
 // "৫ সেপ, ২০২৬, ৭:৫৫ সন্ধ্যা" / "Sep 5, 2026, 7:55 PM"
+// [Urmee · VIVA] Tarikh+shomoy: Bangla te Bangla digit, English e "Sep 5, 2026, 7:55 PM".
 export function formatDateTime(value, locale = DEFAULT_LOCALE) {
   if (!value) return "";
   const date = value instanceof Date ? value : new Date(value);
