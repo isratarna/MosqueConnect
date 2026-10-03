@@ -6,6 +6,7 @@ import {
   Clock3,
   MapPin,
   Phone,
+  Pin,
   TriangleAlert,
   UserRound,
 } from "lucide-react";
@@ -81,12 +82,16 @@ export default function AnnouncementDetails() {
         </nav>
 
         <div className="mc-announcement-details__layout mc-motion-stagger">
-          <article className="mc-announcement-details__content mc-card">
+          {/* [Urmee · F9] Janazah notices use the calm janazah styling. */}
+          <article className={`mc-announcement-details__content mc-card ${announcement.kind === "janazah" ? "mc-announcement--janazah" : ""}`}>
+            {/* [Urmee · F9] Image from the editor; the alt text is built from the title. */}
+            {announcement.imageUrl && <img src={announcement.imageUrl} alt={t("announcement.imageAlt", { title: announcement.title })} className="mc-announcement-image mc-announcement-image--hero mb-3" />}
             <div className="mc-announcement-details__meta">
               <span className="mc-community-card__category">
                 <CommunityCategoryIcon category={announcement.category} size={16} />
-                {t("announcement.type")}
+                {announcement.kind && announcement.kind !== "general" ? t(`announcement.categories.${announcement.kind}`) : t("announcement.type")}
               </span>
+              {announcement.isPinned && <span className="badge text-bg-secondary"><Pin size={12} aria-hidden="true" /> {t("announcement.pinned")}</span>}
               <span className={`mc-announcement-details__urgency is-${announcement.urgency.tone}`}>
                 {t(announcement.urgency.labelKey)}
               </span>
