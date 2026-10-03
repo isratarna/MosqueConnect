@@ -154,7 +154,7 @@ export default function Navbar() {
             <div className="d-none d-lg-flex align-items-center gap-2">
               <ThemeSwitcher />
               <Link className="btn btn-outline-mc btn-sm" to="/login">{t('nav.login')}</Link>
-              <Link className="btn btn-warning btn-sm text-dark fw-semibold" to="/register">{t('nav.register')}</Link>
+              <Link className="btn btn-mc btn-sm fw-semibold" to="/register">{t('nav.register')}</Link>
             </div>
           )}
 
@@ -213,7 +213,7 @@ export default function Navbar() {
           ) : (
             <div className="mc-mobile-menu__account mc-mobile-menu__auth">
               <Link className="btn btn-outline-mc" to="/login" onClick={close}>{t("nav.login")}</Link>
-              <Link className="btn btn-warning text-dark fw-semibold" to="/register" onClick={close}>{t("nav.register")}</Link>
+              <Link className="btn btn-mc fw-semibold" to="/register" onClick={close}>{t("nav.register")}</Link>
             </div>
           )}
         </div>

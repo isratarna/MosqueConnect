@@ -42,9 +42,11 @@ import {
   updateSystemSettings,
 } from "../../utils/systemAdminApi";
 import { useLocale } from "../../hooks/useLocale";
+import { formatDateTime, formatNumber } from "../../utils/intl";
 import { enumLabel, humanize as labelize, statusLabel } from "../../utils/labels";
 import { aiScoreBadge, broadcastAudienceLabel, cleanFilters, describeContent, isSafeBroadcastLink } from "../../utils/adminConsole";
 import ConfirmDialog from "../ConfirmDialog";
+import { TotalsChart, TrendChart } from "./StatCharts";
 
 // Value sets the panels translate. They mirror the backend enums.
 const ROLES = ["normal_user", "mosque_admin", "super_admin"];
@@ -487,6 +489,28 @@ export function StatisticsPanel() {
       <PanelHeader title={t("superAdmin.statistics.title")} description={t("superAdmin.statistics.description")} onRefresh={state.refresh} />
       <PanelState loading={state.loading} error={state.error} onRetry={state.refresh}>
         <div className="row g-3 mb-4">{Object.entries(state.data?.content || {}).map(([label, count]) => <div className="col-md-4" key={label}><div className="card border-0 shadow-sm p-4"><div className="text-muted small">{enumLabel(t, "superAdmin.statistics.content", STAT_CONTENT, label)}</div><div className="fs-2 fw-bold">{formatNumber(count, locale)}</div></div></div>)}</div>
+        <div className="row g-3 mb-4">
+          <div className="col-lg-7">
+            <TrendChart
+              title={t("superAdmin.statistics.trendTitle")}
+              data={state.data?.monthly || []}
+              locale={locale}
+              series={[
+                { key: "users", label: t("superAdmin.statistics.newUsers"), color: "var(--mc-chart-1)" },
+                { key: "mosques", label: t("superAdmin.statistics.newMosques"), color: "var(--mc-chart-2)" },
+                { key: "claims", label: t("superAdmin.statistics.claims"), color: "var(--mc-chart-3)" },
+                { key: "reports", label: t("superAdmin.statistics.reports"), color: "var(--mc-chart-4)" },
+              ]}
+            />
+          </div>
+          <div className="col-lg-5">
+            <TotalsChart
+              title={t("superAdmin.statistics.totalsTitle")}
+              locale={locale}
+              data={Object.entries(state.data?.content || {}).map(([key, value]) => ({ label: enumLabel(t, "superAdmin.statistics.content", STAT_CONTENT, key), value: Number(value) }))}
+            />
+          </div>
+        </div>
         <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table mb-0"><thead className="table-light"><tr><th>{t("superAdmin.statistics.month")}</th><th>{t("superAdmin.statistics.newUsers")}</th><th>{t("superAdmin.statistics.newMosques")}</th><th>{t("superAdmin.statistics.claims")}</th><th>{t("superAdmin.statistics.reports")}</th></tr></thead><tbody>{state.data?.monthly?.map((month) => <tr key={month.key}><th>{month.label}</th><td>{formatNumber(month.users, locale)}</td><td>{formatNumber(month.mosques, locale)}</td><td>{formatNumber(month.claims, locale)}</td><td>{formatNumber(month.reports, locale)}</td></tr>)}</tbody></table></div></div>
       </PanelState>
     </>

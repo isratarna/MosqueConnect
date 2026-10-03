@@ -1288,7 +1288,9 @@
       "newUsers": "New users",
       "newMosques": "New mosques",
       "claims": "Claims",
-      "reports": "Reports"
+      "reports": "Reports",
+      "trendTitle": "Monthly activity",
+      "totalsTitle": "Content totals"
     },
     "audit": {
       "title": "Administrative audit log",

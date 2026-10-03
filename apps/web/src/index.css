@@ -6495,3 +6495,83 @@ body:lang(bn) {
   .mc-nav-links { margin-left: 0.25rem; }
   .mc-nav-link, .mc-nav-more__trigger { font-size: 0.82rem; padding: 0.4rem 0.45rem; }
 }
+
+/* Status and urgency chips: translucent tints with a lighter label, so they sit on dark surfaces instead of glowing as pastel blocks. */
+:root[data-bs-theme="dark"] .mc-community-card__urgency.is-urgent,
+:root[data-bs-theme="dark"] .mc-announcement-details__urgency.is-urgent,
+:root[data-bs-theme="dark"] .mc-event-status.is-cancelled,
+:root[data-bs-theme="dark"] .mc-campaign-status.is-cancelled {
+  background: rgba(226,106,72,.2);
+  color: #f4a58a;
+}
+
+:root[data-bs-theme="dark"] .mc-community-card__urgency.is-important,
+:root[data-bs-theme="dark"] .mc-announcement-details__urgency.is-important,
+:root[data-bs-theme="dark"] .mc-campaign-status.is-expired {
+  background: rgba(224,160,60,.18);
+  color: #ebc16f;
+}
+
+:root[data-bs-theme="dark"] .mc-announcement-details__urgency.is-normal,
+:root[data-bs-theme="dark"] .mc-event-status.is-published,
+:root[data-bs-theme="dark"] .mc-campaign-status.is-active {
+  background: rgba(70,184,110,.18);
+  color: #7fd49b;
+}
+
+:root[data-bs-theme="dark"] .mc-campaign-status.is-completed {
+  background: rgba(90,150,230,.2);
+  color: #9cc4f2;
+}
+
+:root[data-bs-theme="dark"] .mc-event-status.is-completed {
+  background: rgba(130,140,220,.2);
+  color: #b2b9ee;
+}
+
+:root[data-bs-theme="dark"] .mc-event-status.is-draft,
+:root[data-bs-theme="dark"] .mc-event-status.is-past,
+:root[data-bs-theme="dark"] .mc-campaign-status.is-draft {
+  background: rgba(160,152,140,.18);
+  color: #c4bbae;
+}
+
+:root[data-bs-theme="dark"] :is(.mc-estimated, .mc-trusted-badge, .mc-maintenance-banner, .mc-notif-menu__error) {
+  background: rgba(224, 160, 60, 0.14);
+  border-color: rgba(224, 160, 60, 0.35);
+  color: #ebc16f;
+}
+
+:root[data-bs-theme="dark"] :is(.mc-dash-card__error, .mc-suggestion__before) {
+  background: rgba(226, 106, 72, 0.14);
+  color: #f4a58a;
+}
+
+:root[data-bs-theme="dark"] .mc-suggestion__after {
+  background: rgba(70, 184, 110, 0.14);
+  color: #7fd49b;
+}
+
+/* Super-admin charts. Series colours are tokens so the dark theme can lift them. */
+.mc-chart {
+  --mc-chart-1: #2a78d6;
+  --mc-chart-2: #c4551f;
+  --mc-chart-3: #168a62;
+  --mc-chart-4: #8a5cc9;
+}
+
+:root[data-bs-theme="dark"] .mc-chart {
+  --mc-chart-1: #6aa8f0;
+  --mc-chart-2: #f08a5a;
+  --mc-chart-3: #4fcf9f;
+  --mc-chart-4: #b79af0;
+}
+
+.mc-chart .recharts-surface:focus,
+.mc-chart .recharts-wrapper:focus { outline: none; }
+
+/* Bootstrap cards default to the page colour in dark mode, which flattens them into the background. */
+:root[data-bs-theme="dark"] .card {
+  --bs-card-bg: var(--mc-surface);
+  --bs-card-cap-bg: var(--mc-surface-raised);
+}
