@@ -52,6 +52,8 @@ export function isEstimatedPrayer(sources, label) {
  * ([{ label, jamaat_time }]); after the last one, tomorrow's first jamat.
  * Returns { label, time, tomorrow } or null when no times are set.
  */
+// [Urmee · F1 Part 3] The next jamat still to come today; after the last one, tomorrow's first. Fixes
+// cards that always showed Dhuhr.
 export function nextJamaat(schedule, now = new Date()) {
   const entries = (Array.isArray(schedule) ? schedule : [])
     .map((entry) => ({ label: entry.label || entry.prayer, time: entry.jamaat_time, at: parseClockTime(entry.jamaat_time, now) }))
@@ -66,6 +68,7 @@ export function nextJamaat(schedule, now = new Date()) {
  * The next jamat from a mosque's `prayer` summary ({ Fajr: "05:00", ... }) as
  * { prayer: "Asr", text: "Asr 4:30 PM", tomorrow }, or null when no times are set.
  */
+// [Urmee · F1 Part 3] Same, from a mosque's `prayer` summary ({ Fajr: "05:00", … }).
 export function nextJamaatLabel(prayer, now = new Date()) {
   const entries = Object.entries(prayer || {}).map(([label, time]) => ({ label, jamaat_time: time }));
   const next = nextJamaat(entries, now);

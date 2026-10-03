@@ -6,6 +6,8 @@ import GlobalSearch from "../components/GlobalSearch";
 import { searchGlobal } from "../utils/searchApi";
 import { isSearchable, MIN_QUERY_LENGTH, SEARCH_GROUPS } from "../utils/searchGroups";
 
+// [Urmee · F5 Part 2] /search?q= results page: one tab + count per type, "See all" links to the
+// filtered list pages.
 export default function Search() {
   const [searchParams] = useSearchParams();
   const query = (searchParams.get("q") || "").trim();

@@ -10,6 +10,8 @@ import FacilityIcon from "../components/FacilityIcon";
 import MosqueCard from "../components/MosqueCard";
 import { MosqueCardSkeleton, SkeletonRegion } from "../components/skeletons";
 
+// [Urmee · F1 Part 1] Fixed batch of 12: replaces the "Results per page" dropdown and numbered
+// pagination.
 const BATCH_SIZE = 12;
 const SKELETON_COUNT = 6;
 
@@ -29,6 +31,8 @@ export default function Browse() {
   const [selectedDistrict, setSelectedDistrict] = useState(() => searchParams.get("district") || "");
   const [selectedArea, setSelectedArea] = useState(() => searchParams.get("area") || "");
   // "Search this area" results; null means the usual nearby mosques.
+  // [Urmee · F2 Part 2] "Search this area" results replace the nearby list while active; null = normal
+  // nearby mosques.
   const [areaState, setAreaState] = useState({ mosques: null, loading: false, error: "" });
   const all = areaState.mosques ?? nearbyMosques;
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
@@ -76,6 +80,8 @@ export default function Browse() {
     setSearch(urlSearch);
   }, [urlSearch]);
 
+  // [Urmee · F2 Part 2] ?search=&facilities=&district=&area=&view=map so a filtered map view can be
+  // shared.
   // Keep the shareable parts of the view in the URL: ?search=&facilities=a,b&district=&area=&view=map
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
@@ -90,6 +96,8 @@ export default function Browse() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, facilities, selectedDistrict, selectedArea, view]);
 
+  // [Urmee · F2 Part 2] Calls GET /api/mosques?bounds=south,west,north,east for the visible map
+  // rectangle.
   const searchArea = async (bounds) => {
     setAreaState((current) => ({ ...current, loading: true, error: "" }));
     try {
@@ -140,6 +148,8 @@ export default function Browse() {
   const paginatedResults = useMemo(() => results.slice(0, visibleCount), [results, visibleCount]);
   const hasMore = visibleCount < totalResults;
 
+  // [Urmee · F1 Part 1] Appends the next batch. Only the button moves keyboard focus to the first new
+  // card; the auto-load on scroll must not steal focus.
   const loadMore = (moveFocus) => {
     if (moveFocus) focusIndexRef.current = paginatedResults.length;
     setVisibleCount((count) => count + BATCH_SIZE);
@@ -153,6 +163,7 @@ export default function Browse() {
     gridRef.current?.querySelector(`[data-card-index="${index}"] a`)?.focus();
   }, [visibleCount]);
 
+  // [Urmee · F1 Part 1] IntersectionObserver auto-load; the button stays as the keyboard/fallback path.
   // Nice to have: load the next batch as the button scrolls into view (the button stays for keyboard users).
   useEffect(() => {
     const node = sentinelRef.current;
@@ -169,6 +180,8 @@ export default function Browse() {
     setSelectedMosqueId((current) => (current != null && results.some((mosque) => String(mosque.id) === String(current)) ? current : null));
   }, [results]);
 
+  // [Urmee · F2 Part 2] Changing this key makes the map fit all pins (first load, filter change). null
+  // while viewing "this area" so we don't fight the user's own panning.
   const fitKey = areaState.mosques
     ? null
     : [search, [...facilities].sort().join(","), selectedDistrict, selectedArea, maxDistance, nearbyMosques.length ? "ready" : "wait"].join("|");

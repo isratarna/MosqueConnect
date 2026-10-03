@@ -302,6 +302,8 @@ const BOUNDS_MAX_PAGES = 4;
  * GET /api/mosques?bounds=south,west,north,east, normalised like nearby results
  * (distances are measured from `origin`).
  */
+// [Urmee · F2 Part 2] All mosques inside a map rectangle via GET /api/mosques?bounds=… (up to 4 pages
+// of 50), normalised like nearby results.
 export async function fetchMosquesInBounds(bounds, origin, { signal } = {}) {
   const value = ["south", "west", "north", "east"].map((side) => finiteNumber(bounds?.[side]));
   if (value.some((part) => part === null)) throw new Error("A valid map area is required.");

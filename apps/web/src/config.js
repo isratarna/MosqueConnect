@@ -10,6 +10,8 @@ export const GOOGLE_MAPS_API_KEY = import.meta.env?.VITE_DISABLE_GOOGLE_MAPS ===
   : import.meta.env?.VITE_GOOGLE_MAPS_API_KEY || "";
 
 // Public contact address; leave VITE_CONTACT_EMAIL unset to show only the contact form.
+// [Urmee · F5 Part 5] Public contact address comes from VITE_CONTACT_EMAIL; unset means no placeholder
+// email is shown.
 export const CONTACT_EMAIL = import.meta.env?.VITE_CONTACT_EMAIL || "";
 export const API_BASE_URL = (import.meta.env?.VITE_API_URL || "http://localhost:8000").replace(/\/+$/, "");
 

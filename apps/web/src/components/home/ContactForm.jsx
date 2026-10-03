@@ -17,6 +17,8 @@ export default function ContactForm() {
     setValues((current) => ({ ...current, name: current.name || user.name || "", email: current.email || user.email || "" }));
   }, [user]);
 
+  // [Urmee · F5 Part 4] Controlled inputs with real <label>s (accessibility); 422 field errors are shown
+  // next to each input.
   const bind = (field) => ({
     id: `contact-${field}`,
     name: field,
@@ -40,6 +42,7 @@ export default function ContactForm() {
         setErrors(error.errors || {});
         setNotice({ ok: false, text: "Please fix the highlighted fields." });
       } else if (error.status === 429) {
+        // [Urmee · F5 Part 4] The API throttles contact messages (3 per 10 min), so 429 gets its own message.
         setNotice({ ok: false, text: "Too many messages, please try again later." });
       } else {
         setNotice({ ok: false, text: error.message });

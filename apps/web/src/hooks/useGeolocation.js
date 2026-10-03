@@ -22,6 +22,9 @@ let currentOrigin = savedLoc
   ? { lat: savedLoc.lat, lng: savedLoc.lng, areaName: savedLoc.areaName, fallback: false, loading: false, status: "manual" }
   : { ...DEFAULT_CENTER, fallback: true, loading: false, status: "idle" };
 
+// [Urmee · F5 Part 1] Saves a hand-picked location: stored in localStorage (in try/catch, storage can
+// be blocked) and pushed into the shared store with status "manual", so Home, Browse and the jamat
+// card all use it.
 export function setManualLocation(lat, lng, areaName) {
   try {
     localStorage.setItem("mc_manual_location", JSON.stringify({ lat, lng, areaName }));
@@ -123,6 +126,8 @@ export function requestGeolocation({ force = false } = {}) {
 }
 
 /** True once we have usable coordinates (GPS or manually chosen). */
+// [Urmee · F5 Part 1] "manual" is as good as GPS "success"; every "do we have coordinates?" check goes
+// through this helper.
 export const hasLocation = (origin) => origin.status === "success" || origin.status === "manual";
 
 export function useGeolocation() {

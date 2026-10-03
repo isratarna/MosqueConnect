@@ -10,6 +10,8 @@ const FEED_LIMIT = 5;
 const BLOOD_LIMIT = 2;
 
 /** Run `load(signal)` once and return { status, data }; failures resolve to an empty "error" state. */
+// [Urmee · F5 Part 1] Tiny data hook: runs a loader once, aborts on unmount, ignores AbortError.
+// Failures become an "error" state so a section just hides.
 function useLoad(load) {
   const [state, setState] = useState({ status: "loading", data: null });
   useEffect(() => {
@@ -26,6 +28,8 @@ function useLoad(load) {
 }
 
 // Followed mosques plus the next jamat for each (one schedule request per mosque shown).
+// [Urmee · F5 Part 1] Followed mosques + the next jamat of each: one prayer-schedule request per
+// mosque shown (max 4).
 const loadMyMosques = async (signal) => {
   const mosques = (await fetchFollowedMosques()).slice(0, MY_MOSQUES_LIMIT);
   return Promise.all(mosques.map(async (mosque) => {
@@ -40,12 +44,15 @@ const loadMyMosques = async (signal) => {
 
 // Latest announcements from followed mosques. GET /api/me/feed doesn't exist yet,
 // so this filters the public announcement feed (newest first) by the followed ids.
+// [Urmee · F5 Part 1] GET /api/me/feed doesn't exist yet (#243), so we filter the public announcement
+// feed by the followed mosque ids. Swap this loader when the endpoint lands.
 const loadMyFeed = async (signal) => {
   const [followed, feed] = await Promise.all([fetchFollowedMosques(), apiRequest("/api/announcements", { signal })]);
   const ids = new Set(followed.map((mosque) => String(mosque.id)));
   return (feed.data || []).filter((item) => ids.has(String(item.mosque_id))).slice(0, FEED_LIMIT);
 };
 
+// [Urmee · F5 Part 1] Only high/critical blood requests are "urgent"; critical sorts first.
 const URGENT = { critical: 0, high: 1 };
 const loadUrgentBlood = async (signal) => {
   const { data } = await apiRequest("/api/blood-requests", { signal });

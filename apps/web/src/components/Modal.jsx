@@ -17,6 +17,8 @@ export default function Modal({ title, onClose, children, footer, size = "", bus
     const first = dialogRef.current?.querySelector("input, select, textarea, button:not(.btn-close-modal)");
     (first || dialogRef.current)?.focus();
     const onKey = (event) => {
+      // [Urmee · F1 Part 6] Focus trap: Tab/Shift+Tab cycle inside the top-most dialog instead of leaking to
+      // the page behind.
       if (event.key === "Tab") {
         // Only the top-most dialog traps focus.
         const open = document.querySelectorAll(".modal[aria-modal='true']");

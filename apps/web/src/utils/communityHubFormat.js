@@ -56,6 +56,8 @@ export function lostFoundQuery(filters = {}) {
 }
 
 /** Turn GET /api/stats/public into the home page's four impact tiles (numbers; the component formats them). */
+// [Urmee · F5 Part 4] Maps GET /api/stats/public to four numeric tiles; the component does the
+// formatting (compact, ৳).
 export function impactStatsFrom(stats) {
   if (!stats) return [];
   return [

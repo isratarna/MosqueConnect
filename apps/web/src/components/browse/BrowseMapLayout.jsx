@@ -18,6 +18,7 @@ const scrollBehavior = () => (window.matchMedia?.("(prefers-reduced-motion: redu
  * mosques in the visible rectangle. On phones the map fills the screen and a floating
  * button switches to the list.
  */
+// [Urmee · F2 Part 2] Browse "Map" view: list panel + map, synced both ways.
 export default function BrowseMapLayout({
   mosques,
   origin,
@@ -41,6 +42,8 @@ export default function BrowseMapLayout({
   const [mobilePane, setMobilePane] = useState("map");
   const [moved, setMoved] = useState(false);
 
+  // [Urmee · F2 Part 2] Pin click -> highlight its row and scroll it into view (smooth unless reduced
+  // motion).
   // Pin click (or any selection) scrolls the matching row into view.
   useEffect(() => {
     if (selectedMosqueId == null) return;
@@ -58,6 +61,7 @@ export default function BrowseMapLayout({
   // Reset the "moved" hint once new area results arrive.
   useEffect(() => { if (!area.loading) setMoved(false); }, [area.loading, area.active]);
 
+  // [Urmee · F2 Part 2] Row click -> select, pan the map to at least zoom 15 and open the info window.
   const selectRow = (mosque) => {
     onSelect(mosque.id);
     controlRef.current?.panTo(coordinatesOf(mosque), 15);

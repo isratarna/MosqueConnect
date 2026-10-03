@@ -9,6 +9,7 @@ export const SEARCH_GROUPS = [
   { key: "volunteer_opportunities", label: "Volunteering", seeAll: () => "/volunteers" },
 ];
 
+// [Urmee · F5 Part 2] The API rejects queries shorter than 2 characters, so the UI doesn't send them.
 export const MIN_QUERY_LENGTH = 2; // the API rejects anything shorter
 
 export const searchPath = (query) => `/search?q=${encodeURIComponent(query.trim())}`;

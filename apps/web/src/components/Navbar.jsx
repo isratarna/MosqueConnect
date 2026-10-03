@@ -66,6 +66,7 @@ export default function Navbar() {
   };
 
   const navLinkClass = ({ isActive }) => "nav-link" + (isActive ? " active" : "");
+  // [Urmee · F5 Part 5] One open dropdown at a time (shared with the notification and profile menus).
   const toggleDropdown = (id) => setActiveDropdown((current) => (current === id ? null : id));
 
   return (
@@ -195,6 +196,8 @@ export default function Navbar() {
 }
 
 /** A top-level nav item with a small menu; closes on Escape (handled by Navbar), outside click and navigation. */
+// [Urmee · F5 Part 5] Top-level item with a small menu (Prayer Times, Community, Donate); closes on
+// outside click, Escape (handled by Navbar) and navigation.
 function NavDropdown({ label, id, items, isOpen, onToggle, onClose, onNavigate }) {
   const ref = useRef(null);
   const { pathname, search } = useLocation();
@@ -281,6 +284,7 @@ function NotificationBell({ isOpen, onToggle, onClose, onNavigate }) {
     const controller = new AbortController();
     loadNotifications(controller.signal);
     // Opening the bell is a good moment to re-sync the badge with the server.
+    // [Urmee · F1 Part 4] Opening the bell re-syncs the unread badge with the server.
     refreshUnreadCount({ signal: controller.signal, silent: true }).catch(() => {});
     return () => controller.abort();
   }, [isOpen, loadNotifications, refreshUnreadCount, reloadKey]);

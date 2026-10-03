@@ -55,7 +55,7 @@ export default function ImpactStats() {
     return () => controller.abort();
   }, []);
 
-  // Real numbers only: if they can't load, hide the section instead of showing zeros.
+  // [Urmee · F5 Part 4] If the stats can't load, hide the section rather than show zeros.
   if (state.status === "error") return null;
 
   return (

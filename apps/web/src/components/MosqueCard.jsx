@@ -12,6 +12,7 @@ import VerifiedBadge from "./VerifiedBadge";
 export default function MosqueCard({ mosque }) {
   const { isFollowing: following, toggleFollow } = useFollow(mosque?.id);
   const directions = directionsUrl(mosque);
+  // [Urmee · F1 Part 3] useNow() re-renders each minute so "Next jamat" moves on by itself.
   const nextJamaat = nextJamaatLabel(mosque.prayer, useNow());
 
   return (

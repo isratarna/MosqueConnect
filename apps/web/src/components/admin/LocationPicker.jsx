@@ -12,6 +12,8 @@ const MAP_OPTIONS = {
   fullscreenControl: false,
   clickableIcons: false,
 };
+// [Urmee · F2 Part 1] Reverse geocoding waits 400 ms after the last pin move to save Geocoder quota
+// while dragging.
 const GEOCODE_DEBOUNCE_MS = 400;
 
 function round(value) {
@@ -54,6 +56,8 @@ export default function LocationPicker({ value, onChange, center, idPrefix = "lo
   useEffect(() => () => clearTimeout(geocodeTimer.current), []);
 
   // Move the pin now; fill in address, district and area shortly after (saves geocoder quota while dragging).
+  // [Urmee · F2 Part 1] Moves the pin immediately, then fills address, district
+  // (administrative_area_level_2) and area (sublocality/locality) after the debounce.
   const moveTo = useCallback((lat, lng) => {
     const next = { lat: round(lat), lng: round(lng) };
     onChangeRef.current(next);
@@ -96,6 +100,8 @@ export default function LocationPicker({ value, onChange, center, idPrefix = "lo
     onChange({ ...current, [field]: raw === "" ? "" : Number(raw) });
   };
 
+  // [Urmee · F2 Part 1] No key / maps off: fall back to plain latitude/longitude inputs so the form
+  // still works.
   if (!mapsReady) {
     return (
       <div>
@@ -150,6 +156,8 @@ export default function LocationPicker({ value, onChange, center, idPrefix = "lo
 }
 
 /** Place Autocomplete (new) web component, limited to Bangladesh. */
+// [Urmee · F2 Part 1] Uses the NEW Place Autocomplete web component (Places API New), limited to
+// Bangladesh. Not the legacy Autocomplete, which new Cloud projects can't enable.
 function PlaceSearch({ id, onSelect }) {
   const hostRef = useRef(null);
   const onSelectRef = useRef(onSelect);

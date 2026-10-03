@@ -32,6 +32,8 @@ export default function Qibla() {
     };
   }, [sensor]);
 
+  // [Urmee · F2 Part 3] iOS only allows motion sensors after a user tap (requestPermission), so the
+  // compass starts from a button.
   const enableCompass = async () => {
     if (typeof window.DeviceOrientationEvent === "undefined") {
       setSensor("unavailable");
@@ -52,6 +54,8 @@ export default function Qibla() {
   };
 
   // The dial rotates opposite to the phone so north stays north; the needle sits at the Qibla bearing.
+  // [Urmee · F2 Part 3] The dial turns opposite to the phone so north stays north; the needle sits at
+  // the Qibla bearing, so it points to the top mark when you face Qibla.
   const dialRotation = heading === null ? 0 : -heading;
   const facingQibla = heading !== null && bearing !== null && Math.abs(((bearing - heading + 540) % 360) - 180) < 5;
 

@@ -16,6 +16,8 @@ export async function apiRequest(path, { body, headers, ...options } = {}) {
   if (!response.ok) {
     const error = new Error(Object.values(data.errors || {}).flat().join(" ") || data.message || "Unable to complete the request. Please try again.");
     error.status = response.status;
+    // [Urmee · F5 Part 4] Expose Laravel's per-field 422 errors so forms can show them next to the right
+    // input.
     error.errors = data.errors || {};
     throw error;
   }

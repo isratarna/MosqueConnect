@@ -88,6 +88,8 @@ export function ProfileForm({ mosque, onSaved }) {
   const input = (key) => ({ id: `mosque-${key}`, name: key, value: values[key] ?? "", onChange: (e) => setValues((v) => ({ ...v, [key]: e.target.value })) });
 
   // The picker also reports address, district and area for the pin; copy whatever it found into the form.
+  // [Urmee · F2 Part 1] The picker reports address, district and area for the pin; copy whatever it
+  // found into the form fields.
   const onLocation = ({ lat, lng, address, district, area }) => {
     setPoint({ lat, lng });
     setValues((current) => ({

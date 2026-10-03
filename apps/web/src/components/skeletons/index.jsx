@@ -21,6 +21,8 @@ export function SkeletonText({ lines = 3 }) {
  * With `delay` (ms, default 150) nothing renders until loading has lasted that long.
  * Usage: <SkeletonRegion label="Loading mosques…" loading={loading}>…skeletons…</SkeletonRegion>
  */
+// [Urmee · F1 Part 2] Accessibility wrapper: role="status" + aria-busy and a hidden label are
+// announced once; the grey shapes are aria-hidden. Waits 150 ms before showing them.
 export function SkeletonRegion({ label = "Loading…", loading = true, delay = 150, className = "", children }) {
   const visible = useDelayedFlag(loading, delay);
   if (!loading) return null;
@@ -33,6 +35,7 @@ export function SkeletonRegion({ label = "Loading…", loading = true, delay = 1
 }
 
 // Same outer markup as the real cards so nothing shifts when data arrives.
+// [Urmee · F1 Part 2] Same outer markup/size as the real card so nothing shifts when data arrives.
 export function MosqueCardSkeleton() {
   return (
     <div className="card mc-card h-100">

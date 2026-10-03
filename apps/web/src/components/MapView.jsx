@@ -26,6 +26,7 @@ const MAP_OPTIONS = {
 const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 // Teardrop pin used in enhanced mode so a hovered or selected pin can grow.
+// [Urmee · F2 Part 2] Teardrop SVG pin used in enhanced mode so hovered/selected pins can grow.
 const pinIcon = (color, width) => {
   const height = Math.round(width * 1.35);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 24 32"><path d="M12 0C5.4 0 0 5.2 0 11.7 0 20.5 12 32 12 32s12-11.5 12-20.3C24 5.2 18.6 0 12 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="11.5" r="4.5" fill="#fff"/></svg>`;
@@ -154,9 +155,12 @@ export default function MapView({
 }
 
 function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId, onMosqueSelect, enhanced, hoveredMosqueId, fitKey, onUserMove, controlRef }) {
+  // [Urmee · F1 Part 3] Must live here (inside MapInner): the popup that uses it renders in this component.
   const now = useNow();
   const mapRef = useRef(null);
   // Moves we make ourselves (panTo, fitBounds) must not count as the user moving the map.
+  // [Urmee · F2 Part 2] Moves we make ourselves (panTo, fitBounds) must not count as the user moving the
+  // map, or "Search this area" would appear on its own.
   const programmaticUntil = useRef(0);
   const onUserMoveRef = useRef(onUserMove);
   onUserMoveRef.current = onUserMove;
@@ -203,6 +207,8 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
     if (Date.now() > programmaticUntil.current) onUserMoveRef.current?.();
   };
 
+  // [Urmee · F2 Part 2] Lets the parent drive the map: panTo(position, minZoom) and getBounds() for
+  // "Search this area".
   useImperativeHandle(controlRef, () => ({
     panTo(position, minZoom = 15) {
       const map = mapRef.current;
@@ -221,6 +227,7 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
     },
   }), []);
 
+  // [Urmee · F2 Part 2] fitBounds to all pins plus the user's position whenever fitKey changes.
   // Fit to every pin (plus the user's position) when fitKey changes, e.g. on first load and when filters change.
   useEffect(() => {
     const map = mapRef.current;
@@ -239,6 +246,8 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enhanced, mapReady, fitKey]);
 
+  // [Urmee · F2 Part 2] In enhanced mode markers are wrapped in MarkerClustererF so crowded areas show a
+  // cluster.
   const renderMarkers = (clusterer) => mappedMosques.map(({ mosque, position }) => {
           const isActive = String(mosque.id) === String(activeId);
           const isHovered = enhanced && String(mosque.id) === String(hoveredMosqueId);

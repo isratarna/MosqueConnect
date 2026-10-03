@@ -6,6 +6,7 @@ import { clearRecent, readRecent, saveRecent } from "../utils/recentSearches";
 import { searchGlobal } from "../utils/searchApi";
 import { isSearchable, MIN_QUERY_LENGTH, nonEmptyGroups, searchPath } from "../utils/searchGroups";
 
+// [Urmee · F5 Part 2] Wait 300 ms after the last keystroke before calling GET /api/search.
 const DEBOUNCE_MS = 300;
 
 const TYPE_ICONS = {

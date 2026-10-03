@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../utils/api";
 
 // Mirrors ContentReport::CATEGORIES on the API.
+// [Urmee · F1 Part 5] Mirrors ContentReport::CATEGORIES on the API (POST /api/reports).
 const CATEGORIES = [
   ["inaccurate", "Inaccurate or outdated"],
   ["inappropriate", "Inappropriate content"],
@@ -30,6 +31,7 @@ export default function ReportButton({ type, id, className = "btn btn-sm btn-out
   const [error, setError] = useState("");
   const [sent, setSent] = useState("");
 
+  // [Urmee · F1 Part 5] Reporting needs an account; logged-out visitors go to Login and come back.
   if (!user) {
     return (
       <Link to="/login" state={{ from: location.pathname + location.search }} className={className}>
