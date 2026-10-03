@@ -1,3 +1,5 @@
+// [Urmee · F5 Part 4] New optional { compact } gives "৳2.1M" for the impact tiles; narrowSymbol makes
+// Intl print ৳ instead of "BDT".
 export function formatCampaignMoney(amount, currency = "BDT", { compact = false } = {}) {
   return new Intl.NumberFormat("en-BD", {
     style: "currency",

@@ -38,6 +38,8 @@ export default function Community() {
   const activeCategory = isCommunityCategory(requestedCategory) ? requestedCategory : "all";
   const { user } = useAuth();
   // Every filter lives in the URL, so a refresh or a shared link reproduces the same view.
+  // [Urmee · F5 Part 3] Every filter lives in the URL (useSearchParams) so a refresh or a shared link
+  // reproduces the same view. Empty values are removed to keep URLs short.
   const search = searchParams.get("search") || "";
   const mosque = searchParams.get("mosque") || "";
   const area = searchParams.get("area") || "";
@@ -133,6 +135,8 @@ export default function Community() {
     || activeCategory !== "all");
 
   // An empty value (or false) removes the key, keeping shared URLs short.
+  // [Urmee · F5 Part 3] Single writer for URL filters; replace:true so typing doesn't fill the browser
+  // history.
   const setParam = useCallback((key, value) => {
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
@@ -154,6 +158,8 @@ export default function Community() {
   const clearFilters = () => setSearchParams({}, { replace: true });
 
   useEffect(() => {
+    // [Urmee · F5 Part 3] Area filter options come from the API (real districts/areas) instead of
+    // free-text venue names.
     apiRequest("/api/mosques/filters")
       .then(({ data }) => setAreaOptions([...new Set((data || []).flatMap((group) => group.areas || []))].sort()))
       .catch(() => {});
@@ -183,6 +189,7 @@ export default function Community() {
       const matchesCategory = activeCategory === "all" || item.category === activeCategory;
       const matchesMosque = !mosque || item.mosqueName === mosque;
       const matchesArea = !area || sameText(item.area, area);
+      // [Urmee · F5 Part 3] "From mosques I follow": keep only items whose mosque is in the followed set.
       const matchesFollowing = !followingOnly || followedIds?.has(String(item.mosqueId));
       const matchesDate = !dateGroup || item.dateGroup === dateGroup;
       const matchesUrgency = !urgentOnly || item.urgency === "urgent" || item.urgency === "important";

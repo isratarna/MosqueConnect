@@ -454,6 +454,8 @@ export function ReportsPanel() {
 const CONTACT_STATUSES = ["new", "read", "replied", "archived"];
 const CONTACT_ACTIONS = [["read", "Mark read"], ["replied", "Mark replied"], ["archived", "Archive"]];
 
+// [Urmee · F5 Part 4] Super-admin panel for messages sent from the home page: status filter, mark
+// read/replied/archived, mailto: reply.
 export function ContactMessagesPanel() {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);

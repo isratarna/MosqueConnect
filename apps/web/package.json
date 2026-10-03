@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "test:theme": "node --test src/utils/theme.test.js",
-    "test": "node --test src/utils/campaignFormat.test.js src/utils/dashboardFormat.test.js src/utils/eidCalendar.test.js src/utils/eventFilters.test.js src/utils/mosqueDiscovery.test.js src/utils/notificationUtils.test.js src/utils/prayerTime.test.js src/utils/suggestionFormat.test.js src/utils/teamRoles.test.js src/utils/adminConsole.test.js src/utils/communityHubApi.test.js src/utils/recentSearches.test.js src/utils/phone.test.js src/utils/routeGeometry.test.js",
+    "test": "node --test src/utils/campaignFormat.test.js src/utils/dashboardFormat.test.js src/utils/eidCalendar.test.js src/utils/eventFilters.test.js src/utils/mosqueDiscovery.test.js src/utils/notificationUtils.test.js src/utils/prayerTime.test.js src/utils/suggestionFormat.test.js src/utils/teamRoles.test.js src/utils/adminConsole.test.js src/utils/communityHubApi.test.js src/utils/recentSearches.test.js src/utils/phone.test.js src/utils/qibla.test.js src/utils/routeGeometry.test.js",
     "test:e2e": "playwright test",
     "preview": "vite preview"
   },

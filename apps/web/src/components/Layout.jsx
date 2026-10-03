@@ -37,6 +37,8 @@ export default function Layout({ children }) {
     }
     window.scrollTo(0, 0);
     // Screen readers and keyboard users start at the top of the new page.
+    // [Urmee · F1 Part 6] After navigation, focus moves to <main> so keyboard and screen-reader users
+    // start at the top of the new page.
     pageRef.current?.focus({ preventScroll: true });
   }, [pathname, hash]);
 

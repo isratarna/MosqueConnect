@@ -293,3 +293,33 @@ export async function fetchFollowedMosques() {
     : [];
 }
 
+
+const BOUNDS_PAGE_SIZE = 50;
+const BOUNDS_MAX_PAGES = 4;
+
+/**
+ * Every mosque inside a map rectangle ({ south, west, north, east }) via
+ * GET /api/mosques?bounds=south,west,north,east, normalised like nearby results
+ * (distances are measured from `origin`).
+ */
+// [Urmee · F2 Part 2] All mosques inside a map rectangle via GET /api/mosques?bounds=… (up to 4 pages
+// of 50), normalised like nearby results.
+export async function fetchMosquesInBounds(bounds, origin, { signal } = {}) {
+  const value = ["south", "west", "north", "east"].map((side) => finiteNumber(bounds?.[side]));
+  if (value.some((part) => part === null)) throw new Error("A valid map area is required.");
+
+  const records = [];
+  for (let page = 1; page <= BOUNDS_MAX_PAGES; page += 1) {
+    const query = new URLSearchParams({ bounds: value.join(","), per_page: String(BOUNDS_PAGE_SIZE), page: String(page) });
+    const response = await fetch(apiUrl(`/api/mosques?${query}`), { headers: { Accept: "application/json" }, signal });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || "Mosques in this area could not be loaded.");
+    records.push(...(Array.isArray(payload.data) ? payload.data : []));
+    if (page >= (payload.meta?.last_page ?? 1)) break;
+  }
+
+  return records
+    .map((record) => normalizeMosque(record, origin))
+    .filter(Boolean)
+    .sort((first, second) => first.distance - second.distance);
+}

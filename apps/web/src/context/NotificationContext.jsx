@@ -10,6 +10,7 @@ import {
 const NotificationContext = createContext(null);
 
 // How often the badge re-checks while the tab is visible.
+// [Urmee · F1 Part 4] How often the unread badge re-checks while the tab is visible.
 const UNREAD_POLL_MS = 60_000;
 
 export function NotificationProvider({ children }) {
@@ -65,6 +66,8 @@ export function NotificationProvider({ children }) {
     refreshUnreadCount({ signal: controller.signal }).catch(() => {});
 
     // Keep the badge current: poll while the tab is visible, and check again when the user comes back to it.
+    // [Urmee · F1 Part 4] Background refresh: also runs when the tab regains focus or the network comes
+    // back. "silent" avoids loading/error flicker.
     const refreshQuietly = () => {
       if (document.visibilityState === "visible") refreshUnreadCount({ signal: controller.signal, silent: true }).catch(() => {});
     };

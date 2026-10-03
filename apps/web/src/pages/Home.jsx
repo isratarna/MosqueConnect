@@ -43,6 +43,7 @@ import { EventCardSkeleton, SkeletonRegion } from "../components/skeletons";
 const MIN_CARD_WIDTH = 240;
 const CARD_GAP = 16;
 // Auto-advance delay for the nearby mosques carousel (WCAG: slow enough to read).
+// [Urmee · F5 Part 1] 5.5 s per slide (was 1.6 s, too fast to read).
 const CAROUSEL_INTERVAL_MS = 5500;
 const UPCOMING_EVENTS_COUNT = 3;
 
@@ -261,6 +262,8 @@ function MapFeedback({ icon, title, message, children }) {
 }
 
 /** Today's Gregorian date plus the approximate (Umm al-Qura) Hijri date. */
+// [Urmee · F5 Part 1] Hijri date uses Intl's islamic-umalqura calendar. Moon sighting in Bangladesh
+// can differ by a day, hence the "(approx.)" label.
 function HeroDates() {
   const { gregorian, hijri } = useMemo(() => {
     const now = new Date();
@@ -377,6 +380,8 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
 
   // Auto-advance stops on hover, on keyboard focus within the carousel, via the
   // pause button, and entirely when the user prefers reduced motion.
+  // [Urmee · F5 Part 1] Auto-advance stops on hover, keyboard focus, the pause button and
+  // prefers-reduced-motion.
   const autoAdvanceStopped = isPaused || isHovered || isFocused || reducedMotion;
 
   useEffect(() => {

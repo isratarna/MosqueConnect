@@ -14,6 +14,7 @@ import { returnPath } from "../utils/api";
 import { bangladeshLocalNumber, bangladeshPhone, isBangladeshMobile } from "../utils/phone";
 
 /** Inline SVG, because Windows does not draw flag emoji (it shows the letters BD). */
+// [Urmee · F1 Part 1] Inline SVG because Windows doesn't draw flag emoji (it shows the letters BD).
 function BangladeshFlag() {
   return (
     <svg className="me-2" width="22" height="13" viewBox="0 0 10 6" role="img" aria-label="Bangladesh flag">
@@ -40,6 +41,7 @@ export default function Login({ registering = false }) {
     setError("");
     setMessage("");
 
+    // [Urmee · F1 Part 1] Only valid Bangladeshi mobile numbers (01[3-9] + 8 digits) are accepted.
     if (!isBangladeshMobile(phone)) {
       setError("Please enter a valid Bangladeshi mobile number, e.g. 01712345678.");
       return;

@@ -4,6 +4,8 @@ import PlaceInput from "../journey/PlaceInput";
 import { setManualLocation } from "../../hooks/useGeolocation";
 
 /** Lets someone without GPS say where they are (Places search or a preset city); remembered in localStorage. */
+// [Urmee · F5 Part 1] "Enter location manually": reuses PlaceInput (Google Places search or a preset
+// city) for users who deny GPS, so "nearby" is no longer stuck on central Dhaka.
 export default function ManualLocationDialog({ onClose }) {
   const [place, setPlace] = useState(null);
   const save = () => {

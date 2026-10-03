@@ -6,6 +6,8 @@ import { CONTACT_EMAIL } from "../config";
  * Wording is a first draft: the project owner supplies the final text.
  */
 
+// [Urmee · F5 Part 5] Shared layout for About, FAQ, Privacy, Terms and the mosque-admin guide. Wording
+// is a first draft for the owner to replace.
 function InfoPage({ kicker, title, intro, updated, children }) {
   return (
     <section className="mc-community-page mc-info-page mc-atmospheric-section">
