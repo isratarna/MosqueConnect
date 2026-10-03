@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Bell, CheckCheck, Heart, Landmark, LogOut, Menu, ShieldCheck, UserRound } from "lucide-react";
 import NotificationList from "./notifications/NotificationList";
+import ThemeSwitcher from "./ThemeSwitcher";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { fetchNotifications } from "../utils/notificationApi";
@@ -91,6 +92,10 @@ export default function Navbar() {
             </li>
             <li className="nav-item">
               <NavLink className={navLinkClass} to="/volunteers" onClick={close}>Volunteers</NavLink>
+            </li>
+
+            <li className="nav-item mc-navbar__appearance mt-1 mt-lg-0">
+              <ThemeSwitcher />
             </li>
 
             {!user ? (

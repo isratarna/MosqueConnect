@@ -11,6 +11,9 @@ import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { FollowProvider } from "./context/FollowContext";
 import { GoogleMapsProvider } from "./components/GoogleMapsProvider";
+import { initTheme } from "./hooks/useTheme";
+
+initTheme();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
