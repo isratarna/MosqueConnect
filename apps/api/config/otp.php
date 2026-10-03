@@ -6,6 +6,8 @@ return [
 
     'sms' => [
         'driver' => env('OTP_SMS_DRIVER', 'log'),
+        // Lets the log driver run outside local/testing (no real SMS provider exists yet).
+        'allow_log_in_production' => (bool) env('OTP_ALLOW_LOG_DRIVER', false),
     ],
 
     'throttle' => [
