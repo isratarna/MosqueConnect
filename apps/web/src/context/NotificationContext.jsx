@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
+import { translate } from "../i18n/translate";
 import {
   fetchUnreadNotificationCount,
   markAllNotificationsAsRead,
@@ -47,7 +48,7 @@ export function NotificationProvider({ children }) {
     } catch (error) {
       if (error.name === "AbortError") throw error;
       handleRequestError(error);
-      if (!silent) setUnreadError(error.message || "Unread notifications could not be loaded.");
+      if (!silent) setUnreadError(error.message || translate("notification.unreadLoadError"));
       throw error;
     } finally {
       if (!silent && !signal?.aborted) setUnreadLoading(false);

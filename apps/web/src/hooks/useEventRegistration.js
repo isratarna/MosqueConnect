@@ -27,7 +27,9 @@ export default function useEventRegistration() {
       })
       .catch((error) => {
         if (error.name !== "AbortError") {
-          setFeedback({ type: "danger", message: error.message || "Your event registrations could not be loaded." });
+          setFeedback(error.message
+            ? { type: "danger", message: error.message }
+            : { type: "danger", key: "event.feedback.loadRegistrations" });
         }
       });
 
@@ -46,11 +48,11 @@ export default function useEventRegistration() {
   const register = useCallback(async (event) => {
     if (inFlightEventIds.current.has(event.id)) return;
     if (!user) {
-      setFeedback({ type: "warning", message: "Please log in to register for this event.", loginRequired: true });
+      setFeedback({ type: "warning", key: "event.feedback.loginRequired", loginRequired: true });
       return;
     }
     if (!EVENT_REGISTRATION_ENABLED) {
-      setFeedback({ type: "warning", message: "Online registration is not available for this event yet." });
+      setFeedback({ type: "warning", key: "event.feedback.notAvailable" });
       return;
     }
 
@@ -59,20 +61,22 @@ export default function useEventRegistration() {
     setFeedback(null);
 
     try {
-      const payload = await registerForEvent(event.id);
+      await registerForEvent(event.id);
       setRegisteredEventIds((current) => new Set(current).add(event.id));
-      setFeedback({ type: "success", message: payload.message || "You are registered for this event." });
+      setFeedback({ type: "success", key: "event.feedback.registered" });
     } catch (error) {
-      const message = error.message || "Registration could not be completed.";
+      const message = error.message || "";
       if (error.status === 401 || error.status === 403) {
-        setFeedback({ type: "warning", message: "Please log in to register for this event.", loginRequired: true });
+        setFeedback({ type: "warning", key: "event.feedback.loginRequired", loginRequired: true });
       } else if (error.status === 409 && /already.+register/i.test(message)) {
         setRegisteredEventIds((current) => new Set(current).add(event.id));
-        setFeedback({ type: "info", message: "You are already registered for this event." });
+        setFeedback({ type: "info", key: "event.feedback.alreadyRegistered" });
       } else {
         // Capacity, closed-registration, and cancellation responses retain the
         // backend's authoritative message rather than inferring missing fields.
-        setFeedback({ type: "danger", message });
+        setFeedback(message
+          ? { type: "danger", message }
+          : { type: "danger", key: "event.feedback.registerFailed" });
       }
     } finally {
       inFlightEventIds.current.delete(event.id);
@@ -88,15 +92,17 @@ export default function useEventRegistration() {
     setFeedback(null);
 
     try {
-      const payload = await unregisterFromEvent(event.id);
+      await unregisterFromEvent(event.id);
       setRegisteredEventIds((current) => {
         const next = new Set(current);
         next.delete(event.id);
         return next;
       });
-      setFeedback({ type: "success", message: payload.message || "Your registration was cancelled." });
+      setFeedback({ type: "success", key: "event.feedback.unregistered" });
     } catch (error) {
-      setFeedback({ type: "danger", message: error.message || "Registration could not be cancelled." });
+      setFeedback(error.message
+        ? { type: "danger", message: error.message }
+        : { type: "danger", key: "event.feedback.unregisterFailed" });
     } finally {
       inFlightEventIds.current.delete(event.id);
       setLoading(event.id, false);

@@ -55,6 +55,19 @@ export function lostFoundQuery(filters = {}) {
   return query ? `?${query}` : "";
 }
 
+/**
+ * The same figures as numbers plus translation keys, so the home page can format
+ * them for the active language (Bangla digits, "২১ লাখ") and animate them.
+ */
+export function impactTilesFrom(stats) {
+  if (!stats) return [];
+  return [
+    { key: "mosques", value: Number(stats.mosques_count) || 0, compact: true, labelKey: "home.impact.mosques" },
+    { key: "members", value: Number(stats.members_count) || 0, compact: true, labelKey: "home.impact.members" },
+    { key: "donations", value: Number(stats.donations_confirmed_total) || 0, prefix: "৳", compact: true, labelKey: "home.impact.donations" },
+    { key: "volunteers", value: Number(stats.volunteer_signups_count) || 0, compact: true, labelKey: "home.impact.volunteers" },
+  ];
+}
 /** Turn GET /api/stats/public into the home page's four impact tiles (numbers; the component formats them). */
 // [Urmee · F5 Part 4] Maps GET /api/stats/public to four numeric tiles; the component does the
 // formatting (compact, ৳).

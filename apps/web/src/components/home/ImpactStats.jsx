@@ -1,20 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart, HandHeart, Landmark, UsersRound } from "lucide-react";
-import { fetchPublicStats, impactStatsFrom } from "../../utils/communityHubApi";
-import { formatCampaignMoney } from "../../utils/campaignFormat";
+import { useLocale } from "../../hooks/useLocale";
+import { formatNumber } from "../../utils/intl";
+import { fetchPublicStats } from "../../utils/communityHubApi";
+import { impactTilesFrom } from "../../utils/communityHubFormat";
 
 const ICONS = { mosques: Landmark, members: UsersRound, donations: Heart, volunteers: HandHeart };
-const compact = (value) => new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
-const formatTile = (tile, value) => (tile.money ? formatCampaignMoney(value, "BDT", { compact: true }) : compact(value));
+
+// Figures are stored as numbers and formatted for the active language (Bangla digits;
+// "২১ লাখ" in place of "2.1M"), so they animate in either one.
+// [Urmee · i18n restore] Impact numbers are formatted per language (Bangla digits and "লাখ" for large
+// values).
+function formatStat(stat, current, locale) {
+  const options = stat.compact
+    ? { notation: "compact", compactDisplay: locale.startsWith("bn") ? "long" : "short", maximumFractionDigits: 1 }
+    : undefined;
+  return `${stat.prefix ?? ""}${formatNumber(current, locale, options)}${stat.suffix ?? ""}`;
+}
 
 /** Counts up from 0 when scrolled into view (instantly under reduced motion). */
-function AnimatedStat({ tile }) {
+function AnimatedStat({ stat }) {
+  const { locale } = useLocale();
   const nodeRef = useRef(null);
-  const [value, setValue] = useState(tile.value);
+  const [current, setCurrent] = useState(stat.value);
 
   useEffect(() => {
-    setValue(tile.value);
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !tile.value) return undefined;
+    setCurrent(stat.value);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !stat.value) return undefined;
     let frame;
     const observer = new IntersectionObserver(([entry]) => {
       cancelAnimationFrame(frame);
@@ -22,16 +34,16 @@ function AnimatedStat({ tile }) {
       const start = performance.now();
       const tick = (now) => {
         const progress = Math.min((now - start) / 800, 1);
-        setValue(tile.value * (1 - (1 - progress) ** 3));
+        setCurrent(stat.value * (1 - (1 - progress) ** 3));
         if (progress < 1) frame = requestAnimationFrame(tick);
       };
       frame = requestAnimationFrame(tick);
     }, { threshold: 0.65 });
     if (nodeRef.current instanceof Element) observer.observe(nodeRef.current);
     return () => { observer.disconnect(); cancelAnimationFrame(frame); };
-  }, [tile]);
+  }, [stat.value]);
 
-  return <span ref={nodeRef}>{formatTile(tile, tile.money ? value : Math.round(value))}</span>;
+  return <span ref={nodeRef}>{formatStat(stat, current, locale)}</span>;
 }
 
 function StatCardSkeleton() {
@@ -45,12 +57,13 @@ function StatCardSkeleton() {
 }
 
 export default function ImpactStats() {
+  const { t } = useLocale();
   const [state, setState] = useState({ status: "loading", tiles: [] });
 
   useEffect(() => {
     const controller = new AbortController();
     fetchPublicStats({ signal: controller.signal })
-      .then(({ data }) => setState({ status: "success", tiles: impactStatsFrom(data) }))
+      .then(({ data }) => setState({ status: "success", tiles: impactTilesFrom(data) }))
       .catch((error) => { if (error?.name !== "AbortError") setState({ status: "error", tiles: [] }); });
     return () => controller.abort();
   }, []);
@@ -62,8 +75,8 @@ export default function ImpactStats() {
     <section id="impact" className="mc-impact mc-motion-section mc-atmospheric-section" data-mc-parallax="0.18" aria-busy={state.status === "loading"}>
       <div className="container">
         <div className="mc-impact__headline">
-          <h2>Stronger together, for a better community</h2>
-          <p>Your connection helps build stronger, more vibrant communities.</p>
+          <h2>{t("home.impact.title")}</h2>
+          <p>{t("home.impact.copy")}</p>
         </div>
         <div className="row text-center g-0 mc-impact__stats">
           {state.status === "loading"
@@ -73,8 +86,8 @@ export default function ImpactStats() {
               return (
                 <div className="col-6 col-lg-3" key={tile.key}>
                   <Icon size={22} strokeWidth={1.5} aria-hidden="true" />
-                  <div className="mc-stat-value"><AnimatedStat tile={tile} /></div>
-                  <div>{tile.label}</div>
+                  <div className="mc-stat-value"><AnimatedStat stat={tile} /></div>
+                  <div>{t(tile.labelKey)}</div>
                 </div>
               );
             })}

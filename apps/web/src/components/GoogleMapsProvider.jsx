@@ -1,6 +1,8 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import { useJsApiLoader } from "@react-google-maps/api";
+import { useTranslation } from "react-i18next";
 import { GOOGLE_MAPS_API_KEY } from "../config";
+import { languageOf } from "../utils/intl";
 
 // Libraries ekbar-i load hoy, tai array ta component-er baire (stable reference).
 // "places" PlaceAutocompleteElement er jonno, "geometry" route polyline decode er jonno.
@@ -13,10 +15,14 @@ const GoogleMapsContext = createContext({
 });
 
 function GoogleMapsLoader({ children }) {
+  const { i18n } = useTranslation();
+  const [language] = useState(() => languageOf(i18n.resolvedLanguage || i18n.language));
   const { isLoaded, loadError } = useJsApiLoader({
     id: "mc-google-maps",
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
+    language,
+    region: "BD",
   });
 
   return (

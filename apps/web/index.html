@@ -4,7 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <!-- Apply the saved theme before the first paint. Keep the key in sync with utils/theme.js. -->
+
+    <!--
+      Sets the colour theme before the page paints, so a dark-mode visitor never
+      sees a white flash. It must stay a plain blocking script in <head>. The
+      key and values mirror src/utils/theme.js. Anything other than "light" or
+      "dark" means "follow the system".
+    -->
     <script>
       (function () {
         var theme = "light";
@@ -21,10 +27,16 @@
       })();
     </script>
     <style>
+      /* Before the stylesheet arrives, the page background already matches. */
       html[data-bs-theme="dark"] { background-color: #16130f; }
     </style>
     <title>MosqueConnect — Find mosques around you</title>
     <link rel="icon" type="image/png" href="/src/assets/Logo.png" />
+    
+    <!-- Google Fonts for Bangla (Hind Siliguri) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>

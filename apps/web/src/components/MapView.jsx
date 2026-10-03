@@ -8,6 +8,8 @@ import { Component, useCallback, useEffect, useImperativeHandle, useMemo, useRef
 import { GoogleMap, MarkerClustererF, MarkerF, InfoWindowF } from "@react-google-maps/api";
 import { Link } from "react-router-dom";
 import { Map, TriangleAlert } from "lucide-react";
+import { Trans } from "react-i18next";
+import { useLocale } from "../hooks/useLocale";
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from "../config";
 import { coordinatesOf } from "../utils/mosqueDiscovery";
 import { nextJamaatLabel } from "../utils/prayerTime";
@@ -94,6 +96,7 @@ export default function MapView({
   onUserMove,
   controlRef,
 }) {
+  const { t } = useLocale();
   const { disabled, isLoaded, loadError } = useGoogleMapsLoader();
 
   if (disabled) {
@@ -101,8 +104,8 @@ export default function MapView({
       <MapPlaceholder
         className={className}
         icon={<Map size={46} aria-hidden="true" />}
-        title="Interactive map ready"
-        message={<>Add your Google Maps API key to <code>.env</code> to enable it.</>}
+        title={t("map.placeholderTitle")}
+        message={<Trans i18nKey="map.apiKeyHint" components={{ code: <code /> }} />}
       />
     );
   }
@@ -112,14 +115,14 @@ export default function MapView({
       <MapPlaceholder
         className={className}
         icon={<TriangleAlert size={42} aria-hidden="true" />}
-        message="Could not load Google Maps. Check your API key."
+        message={t("map.loadError")}
       />
     );
   }
 
   if (!isLoaded) {
     return (
-      <SkeletonRegion label="Loading map…" delay={0}>
+      <SkeletonRegion label={t("map.loading")} delay={0}>
         <div className={`${className} mc-map--loading`}><Skeleton height="100%" radius="12px" /></div>
       </SkeletonRegion>
     );
@@ -132,7 +135,7 @@ export default function MapView({
         <MapPlaceholder
           className={className}
           icon={<TriangleAlert size={42} aria-hidden="true" />}
-          message="The map could not be displayed. Other page content is still available."
+          message={t("map.displayError")}
         />
       }
     >
@@ -155,6 +158,8 @@ export default function MapView({
 }
 
 function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId, onMosqueSelect, enhanced, hoveredMosqueId, fitKey, onUserMove, controlRef }) {
+  // [Urmee · i18n restore] Map popups follow the language too (next jamat text, "View profile").
+  const { t, locale } = useLocale();
   // [Urmee · F1 Part 3] Must live here (inside MapInner): the popup that uses it renders in this component.
   const now = useNow();
   const mapRef = useRef(null);
@@ -278,19 +283,19 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
                       {(mosque.verified || mosque.verification_status === "verified") && <VerifiedBadge />}
                     </div>
                     <span style={{ color: "#666", fontSize: 12 }}>{mosque.address}</span>
-                    {(mosque.distance !== undefined || mosque.distance_km !== undefined) && (
-                      <><br /><span style={{ fontSize: 12 }}>{mosque.distance ?? mosque.distance_km} km away</span></>
+                    {(mosque.distance ?? mosque.distance_km) != null && (
+                      <><br /><span style={{ fontSize: 12 }}>{t("home.carousel.kmAway", { distance: mosque.distance ?? mosque.distance_km })}</span></>
                     )}
                     {mosque.verification_status && (
-                      <><br /><span style={{ fontSize: 12, textTransform: "capitalize" }}>{mosque.verification_status}</span></>
+                      <><br /><span style={{ fontSize: 12, textTransform: "capitalize" }}>{t(`verification.${mosque.verification_status}`, { defaultValue: mosque.verification_status })}</span></>
                     )}
                     {(() => {
-                      const next = nextJamaatLabel(mosque.prayer, now);
-                      return next && <><br /><span style={{ fontSize: 12 }}>Next Jamat: {next.text}{mosque.prayer_sources?.[next.prayer] === "calculated" ? " (estimated)" : ""}</span></>;
+                      const next = nextJamaatLabel(mosque.prayer, now, { locale, t });
+                      return next && <><br /><span style={{ fontSize: 12 }}>{t("home.carousel.nextJamat")}: {next.text}{mosque.prayer_sources?.[next.prayer] === "calculated" ? ` (${t("prayer.estimatedShort")})` : ""}</span></>;
                     })()}
                     <br />
                     <Link to={mosque.profile_path || `/mosque/${mosque.id}`} style={{ fontSize: 13 }}>
-                      View profile →
+                      {t("home.carousel.viewProfile")} →
                     </Link>
                   </div>
                 </InfoWindowF>
@@ -314,7 +319,7 @@ function MapInner({ center, zoom, mosques, userPos, className, selectedMosqueId,
         {mapReady && safeUserPosition && window.google?.maps?.SymbolPath && (
           <MarkerF
             position={safeUserPosition}
-            title="You are here"
+            title={t("map.youAreHere")}
             icon={{
               path: window.google.maps.SymbolPath.CIRCLE,
               scale: 8,

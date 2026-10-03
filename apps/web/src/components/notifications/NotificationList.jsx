@@ -11,9 +11,10 @@ import {
   PencilLine,
   UsersRound,
 } from "lucide-react";
+import { useLocale } from "../../hooks/useLocale";
 import {
   formatNotificationTime,
-  getNotificationTypeLabel,
+  getNotificationTypeKey,
   isNotificationRead,
 } from "../../utils/notificationUtils";
 import { ListRowsSkeleton, SkeletonRegion } from "../skeletons";
@@ -42,9 +43,11 @@ export default function NotificationList({
   onSelect,
   compact = false,
 }) {
+  const { t, locale } = useLocale();
+
   if (loading) {
     return (
-      <SkeletonRegion label="Loading notifications…" className={compact ? "p-2" : ""}>
+      <SkeletonRegion label={t("notification.listLoading")} className={compact ? "p-2" : ""}>
         <ListRowsSkeleton rows={compact ? 3 : 4} />
       </SkeletonRegion>
     );
@@ -54,9 +57,9 @@ export default function NotificationList({
     return (
       <div className={`mc-notification-state is-error${compact ? " is-compact" : ""}`} role="alert">
         <CircleAlert size={24} aria-hidden="true" />
-        <strong>Notifications could not be loaded</strong>
+        <strong>{t("notification.listErrorTitle")}</strong>
         <span>{error}</span>
-        {onRetry && <button type="button" className="btn btn-outline-mc btn-sm" onClick={onRetry}>Try again</button>}
+        {onRetry && <button type="button" className="btn btn-outline-mc btn-sm" onClick={onRetry}>{t("common.tryAgain")}</button>}
       </div>
     );
   }
@@ -65,8 +68,8 @@ export default function NotificationList({
     return (
       <div className={`mc-notification-state${compact ? " is-compact" : ""}`}>
         <BellOff size={26} aria-hidden="true" />
-        <strong>You are all caught up</strong>
-        <span>New updates from your mosques will appear here.</span>
+        <strong>{t("notification.caughtUp")}</strong>
+        <span>{t("notification.caughtUpCopy")}</span>
       </div>
     );
   }
@@ -88,14 +91,14 @@ export default function NotificationList({
             </span>
             <span className="mc-notification-item__content">
               <span className="mc-notification-item__meta">
-                <span>{getNotificationTypeLabel(notification.type)}</span>
-                {!isRead && <span className="mc-notification-item__dot"><span className="visually-hidden">Unread</span></span>}
+                <span>{t(getNotificationTypeKey(notification.type))}</span>
+                {!isRead && <span className="mc-notification-item__dot"><span className="visually-hidden">{t("notification.unread")}</span></span>}
               </span>
               <strong>{notification.title}</strong>
               {notification.message && <span className="mc-notification-item__message">{notification.message}</span>}
               <span className="mc-notification-item__details">
                 {notification.mosque?.name && <span><Building2 size={13} aria-hidden="true" />{notification.mosque.name}</span>}
-                <time dateTime={notification.created_at}>{formatNotificationTime(notification.created_at)}</time>
+                <time dateTime={notification.created_at}>{formatNotificationTime(notification.created_at, new Date(), { locale, justNow: t("notification.justNow") })}</time>
               </span>
             </span>
           </button>

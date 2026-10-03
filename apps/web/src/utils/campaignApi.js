@@ -1,5 +1,7 @@
 import { apiUrl } from "../config";
 import { getAuthHeaders } from "./authApi";
+import { translate } from "../i18n/translate.js";
+import { networkFetch } from "./network.js";
 
 export const CAMPAIGN_CATEGORIES = [
   "Mosque Development",
@@ -22,14 +24,14 @@ export class CampaignApiError extends Error {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(apiUrl(path), {
+  const response = await networkFetch(apiUrl(path), {
     ...options,
     headers: { Accept: "application/json", ...options.headers },
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new CampaignApiError(
-      payload.message || (payload.errors && Object.values(payload.errors).flat().join(" ")) || "The campaign request could not be completed.",
+      payload.message || (payload.errors && Object.values(payload.errors).flat().join(" ")) || translate("campaign.requestFailed"),
       response.status,
       payload,
     );

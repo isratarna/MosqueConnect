@@ -1,6 +1,8 @@
 import { apiUrl } from "../config";
 import { getAuthHeaders } from "./authApi";
 import { normalizeNotification } from "./notificationUtils";
+import { translate } from "../i18n/translate.js";
+import { networkFetch } from "./network.js";
 
 export class NotificationApiError extends Error {
   constructor(message, status, payload = {}) {
@@ -12,7 +14,7 @@ export class NotificationApiError extends Error {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(apiUrl(path), {
+  const response = await networkFetch(apiUrl(path), {
     ...options,
     headers: {
       ...getAuthHeaders(),
@@ -24,7 +26,7 @@ async function request(path, options = {}) {
   if (!response.ok) {
     const message = payload.message
       || (payload.errors && Object.values(payload.errors).flat().join(" "))
-      || "Notifications could not be loaded.";
+      || translate("notification.loadError");
 
     throw new NotificationApiError(message, response.status, payload);
   }

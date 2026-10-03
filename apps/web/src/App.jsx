@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Compass } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import Layout from "./components/Layout";
 import RouteErrorBoundary from "./components/RouteErrorBoundary";
 import { useAuth } from "./context/AuthContext";
@@ -40,12 +41,13 @@ const MosqueAdminHelp = lazy(() => import("./pages/InfoPages").then((m) => ({ de
 const Journey = lazy(() => import("./pages/Journey"));
 
 function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return (
-      <PageSkeleton label="Checking your session…" />
+      <PageSkeleton label={t("common.loading")} />
     );
   }
 
@@ -176,17 +178,21 @@ function DashboardSectionRedirect({ section }) {
 }
 
 function PageLoading() {
+  const { t } = useTranslation();
+
   return (
-    <PageSkeleton label="Loading page…" />
+    <PageSkeleton label={t("common.loadingPage")} />
   );
 }
 
 function NotFound() {
+  const { t } = useTranslation();
+
   return (
     <div className="container py-5 text-center">
       <Compass size={42} className="text-mc" aria-hidden="true" />
-      <h3 className="mt-3">Page not found</h3>
-      <Link to="/" className="btn btn-mc mt-2">Back home</Link>
+      <h3 className="mt-3">{t("error.pageNotFound")}</h3>
+      <Link to="/" className="btn btn-mc mt-2">{t("common.backHome")}</Link>
     </div>
   );
 }
