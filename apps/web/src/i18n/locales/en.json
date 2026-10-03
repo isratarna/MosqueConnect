@@ -373,6 +373,17 @@
       "loading": "Loading upcoming events…",
       "loadError": "Could not load upcoming events.",
       "empty": "No upcoming events yet. Check back soon."
+    },
+    "personal": {
+      "myMosques": "My mosques",
+      "browse": "Browse",
+      "noFollows": "You don't follow any mosque yet. <browse>Browse mosques</browse> and follow the ones you pray at.",
+      "nextJamat": "Next jamat:",
+      "notPublished": "not published",
+      "fromYourMosques": "From your mosques",
+      "seeAll": "See all",
+      "urgentBlood": "Urgent blood requests",
+      "bloodDetail": "{{count, number}} unit(s) · needed by {{date}}"
     }
   },
   "browse": {
