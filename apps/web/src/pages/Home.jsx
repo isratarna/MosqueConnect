@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
+import GlobalSearch from "../components/GlobalSearch";
 import {
   BookOpen,
   CalendarDays,
@@ -16,8 +17,6 @@ import {
   Play,
   RefreshCw,
   ShieldCheck,
-  SlidersHorizontal,
-  Search,
   TriangleAlert,
   UsersRound,
 } from "lucide-react";
@@ -210,11 +209,7 @@ function Hero({ origin, nearby, nearest, onRequestLocation }) {
             Discover mosques near you and stay connected to your faith and community.
           </p>
           <div className="mc-hero__search">
-            <Link to="/browse" className="mc-hero__search-input" aria-label="Browse mosques">
-              <Search size={17} aria-hidden="true" />
-              <span>Search by mosque name, area, or city</span>
-              <SlidersHorizontal size={17} aria-hidden="true" />
-            </Link>
+            <GlobalSearch id="hero-search" variant="hero" placeholder="Search mosques, events, campaigns…" />
             <a href="#map" className="mc-hero__nearby" title="Find nearby" aria-label="Find nearby">
               <LocateFixed size={17} aria-hidden="true" />
             </a>

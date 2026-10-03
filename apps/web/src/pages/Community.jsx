@@ -32,7 +32,7 @@ export default function Community() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedCategory = searchParams.get("category");
   const activeCategory = isCommunityCategory(requestedCategory) ? requestedCategory : "all";
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("search") || "");
   const [mosque, setMosque] = useState("");
   const [area, setArea] = useState("");
   const [dateGroup, setDateGroup] = useState("");
