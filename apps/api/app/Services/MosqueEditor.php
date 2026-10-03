@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Mosque;
 use App\Models\MosqueFacility;
+use App\Models\Notification;
 use App\Models\PrayerTime;
+use App\Jobs\NotifyMosqueFollowers;
 use App\Support\ClockTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -16,8 +18,6 @@ use Illuminate\Validation\Rule;
  */
 class MosqueEditor
 {
-    public function __construct(private readonly NotificationService $notifications) {}
-
     /**
      * @return array<string, mixed>
      */
@@ -131,11 +131,14 @@ class MosqueEditor
         if ($changes !== []) {
             // Each saved revision gets its own reference, so a later change
             // notifies followers again while a retried request does not.
-            $this->notifications->notifyPrayerScheduleChanged(
-                $mosque,
-                (int) now()->getPreciseTimestamp(3),
-                implode(', ', $changes),
-            );
+            $summary = implode(', ', $changes);
+            dispatch(new NotifyMosqueFollowers(
+                $mosque->id,
+                Notification::TYPE_PRAYER_SCHEDULE,
+                'Prayer Schedule Updated',
+                "{$mosque->name} updated its prayer schedule: ".rtrim(trim($summary), '.').'.',
+                ['type' => Notification::REFERENCE_PRAYER_SCHEDULE, 'id' => (int) now()->getPreciseTimestamp(3)],
+            ))->afterCommit();
         }
 
         return $changes;

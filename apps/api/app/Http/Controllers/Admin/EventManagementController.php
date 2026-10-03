@@ -7,9 +7,10 @@ use App\Http\Requests\EventIndexRequest;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Http\Resources\EventResource;
+use App\Jobs\NotifyMosqueFollowers;
 use App\Models\Event;
+use App\Models\Notification;
 use App\Models\Mosque;
-use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
@@ -17,8 +18,6 @@ use Illuminate\Validation\ValidationException;
 
 class EventManagementController extends Controller
 {
-    public function __construct(private readonly NotificationService $notifications) {}
-
     public function index(EventIndexRequest $request, Mosque $mosque): AnonymousResourceCollection
     {
         Gate::authorize('manageContent', $mosque);
@@ -47,7 +46,7 @@ class EventManagementController extends Controller
         ]);
 
         if ($event->status === Event::STATUS_PUBLISHED) {
-            $this->notifications->notifyEventPublished($event);
+            $this->dispatchPublished($event);
         }
 
         return (new EventResource($event->load(['mosque', 'creator'])->loadCount('registrations')))
@@ -78,7 +77,7 @@ class EventManagementController extends Controller
         $event->save();
 
         if ($event->wasChanged('status') && $event->status === Event::STATUS_PUBLISHED) {
-            $this->notifications->notifyEventPublished($event);
+            $this->dispatchPublished($event);
         }
 
         return (new EventResource($event->refresh()->load(['mosque', 'creator'])->loadCount('registrations')))
@@ -120,10 +119,22 @@ class EventManagementController extends Controller
         $event->save();
 
         if ($event->wasChanged('status') && $event->status === Event::STATUS_PUBLISHED) {
-            $this->notifications->notifyEventPublished($event);
+            $this->dispatchPublished($event);
         }
 
         return (new EventResource($event->refresh()->load(['mosque', 'creator'])->loadCount('registrations')))
             ->additional(['message' => $message]);
+    }
+
+    private function dispatchPublished(Event $event): void
+    {
+        $event->loadMissing('mosque');
+        dispatch(new NotifyMosqueFollowers(
+            $event->mosque_id,
+            Notification::TYPE_EVENT,
+            "New Event: {$event->title}",
+            "{$event->mosque->name} published a new event: {$event->title}.",
+            ['type' => Notification::REFERENCE_EVENT, 'id' => $event->id],
+        ))->afterCommit();
     }
 }

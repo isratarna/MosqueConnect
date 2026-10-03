@@ -6,6 +6,7 @@ use App\Models\EidJamaat;
 use App\Models\Event;
 use App\Models\Mosque;
 use App\Models\Notification;
+use App\Models\NotificationPreference;
 use App\Models\PrayerSchedulePeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -199,17 +200,30 @@ class NotificationService
             $now = now();
 
             $followers = $mosque->followers()
-                ->select(['id', 'user_id']);
+                ->leftJoin('notification_preferences', 'notification_preferences.user_id', '=', 'followers.user_id')
+                ->select(['followers.id', 'followers.user_id']);
+
+            if ($validated['type'] !== Notification::TYPE_SYSTEM) {
+                $followers->where('followers.notifications_muted', false);
+
+                $preferenceColumn = NotificationPreference::COLUMN_BY_TYPE[$validated['type']] ?? null;
+                if ($preferenceColumn !== null) {
+                    $followers->where(function ($query) use ($preferenceColumn): void {
+                        $query->whereNull('notification_preferences.user_id')
+                            ->orWhere('notification_preferences.'.$preferenceColumn, true);
+                    });
+                }
+            }
 
             if (isset($validated['reference_type'], $validated['reference_id'])) {
                 $alreadyNotifiedUsers = Notification::query()
-                    ->select('user_id')
+                    ->select('notifications.user_id')
                     ->where('mosque_id', $mosque->id)
                     ->where('type', $validated['type'])
                     ->where('reference_type', $validated['reference_type'])
                     ->where('reference_id', $validated['reference_id']);
 
-                $followers->whereNotIn('user_id', $alreadyNotifiedUsers);
+                $followers->whereNotIn('followers.user_id', $alreadyNotifiedUsers);
             }
 
             $followers
@@ -228,7 +242,7 @@ class NotificationService
                     ])->all();
 
                     $created += Notification::query()->insertOrIgnore($notifications);
-                });
+                }, 'followers.id', 'id');
 
             return $created;
         });

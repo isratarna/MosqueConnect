@@ -44,6 +44,8 @@ class Notification extends Model
 
     public const TYPE_GOODS_DONATION = 'goods_donation';
 
+    public const TYPE_BLOOD = 'blood';
+
     public const REFERENCE_EVENT = 'event';
 
     public const REFERENCE_ANNOUNCEMENT = 'announcement';
@@ -75,6 +77,7 @@ class Notification extends Model
         self::TYPE_SUGGESTION,
         self::TYPE_COMPLAINT,
         self::TYPE_GOODS_DONATION,
+        self::TYPE_BLOOD,
     ];
 
     /**

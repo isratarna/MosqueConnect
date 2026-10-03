@@ -32,6 +32,7 @@ export default function Login({ registering = false }) {
   const [step, setStep] = useState("phone"); // "phone" | "otp"
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -71,11 +72,15 @@ export default function Login({ registering = false }) {
       setError("Please enter the 6-digit verification code.");
       return;
     }
+    if (registering && !termsAccepted) {
+      setError("Please accept the Terms of Use and Privacy Policy to create your account.");
+      return;
+    }
 
     const fullPhone = bangladeshPhone(phone);
 
     setLoading(true);
-    const res = await verifyOtp(fullPhone, trimmedOtp);
+    const res = await verifyOtp(fullPhone, trimmedOtp, { acceptTerms: registering && termsAccepted });
     setLoading(false);
 
     if (!res.ok) {
@@ -100,9 +105,9 @@ export default function Login({ registering = false }) {
   const handleResendOtp = async () => {
     if (loading) return;
     setError("");
-    
+
     const fullPhone = bangladeshPhone(phone);
-    
+
     setLoading(true);
     const res = await sendOtp(fullPhone);
     setLoading(false);
@@ -241,10 +246,26 @@ export default function Login({ registering = false }) {
                     </div>
                   </div>
 
+                  {registering && (
+                    <div className="form-check mb-3">
+                      <input
+                        id="login-accept-terms"
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(event) => setTermsAccepted(event.target.checked)}
+                        disabled={loading}
+                      />
+                      <label className="form-check-label small" htmlFor="login-accept-terms">
+                        I agree to the <Link to="/terms" target="_blank" className="text-mc">Terms of Use</Link> and <Link to="/privacy" target="_blank" className="text-mc">Privacy Policy</Link>.
+                      </label>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
                     className="btn btn-mc w-100 btn-lg mb-3 d-flex align-items-center justify-content-center gap-2"
-                    disabled={loading || !otp.trim()}
+                    disabled={loading || !otp.trim() || (registering && !termsAccepted)}
                   >
                     {loading ? (
                       <>

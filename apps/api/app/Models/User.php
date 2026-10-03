@@ -6,6 +6,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -70,7 +71,13 @@ class User extends Authenticatable
     public function followedMosques(): BelongsToMany
     {
         return $this->belongsToMany(Mosque::class, 'followers')
+            ->withPivot('notifications_muted')
             ->withTimestamps();
+    }
+
+    public function notificationPreferences(): HasOne
+    {
+        return $this->hasOne(NotificationPreference::class);
     }
 
     /**
@@ -226,6 +233,7 @@ class User extends Authenticatable
     {
         return [
             'suspended_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'accepted_suggestions_count' => 'integer',
         ];
     }

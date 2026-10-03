@@ -3,8 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Models\Announcement;
-use App\Services\NotificationService;
+use App\Models\Notification;
+use App\Jobs\NotifyMosqueFollowers;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 
 class PublishScheduledAnnouncements extends Command
 {
@@ -12,7 +14,7 @@ class PublishScheduledAnnouncements extends Command
 
     protected $description = 'Publish due announcements and notify mosque followers';
 
-    public function handle(NotificationService $notifications): int
+    public function handle(): int
     {
         Announcement::query()
             ->where('status', Announcement::STATUS_SCHEDULED)
@@ -23,19 +25,24 @@ class PublishScheduledAnnouncements extends Command
             ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->with('mosque:id,name')
             ->orderBy('id')
-            ->chunkById(100, function ($announcements) use ($notifications): void {
+            ->chunkById(100, function ($announcements): void {
                 foreach ($announcements as $announcement) {
                     $announcement->status = Announcement::STATUS_PUBLISHED;
                     $announcement->published_at = $announcement->publish_at;
                     $announcement->save();
 
                     if ($announcement->moderation_status === Announcement::MODERATION_APPROVED) {
-                        $notifications->notifyAnnouncementPublished(
-                            $announcement->mosque,
-                            $announcement->id,
-                            $announcement->title,
-                            $announcement->category,
-                        );
+                        $title = $announcement->category === Announcement::CATEGORY_JANAZAH
+                            ? 'Janazah: '.$announcement->title
+                            : $announcement->title;
+
+                        dispatch(new NotifyMosqueFollowers(
+                            $announcement->mosque_id,
+                            Notification::TYPE_ANNOUNCEMENT,
+                            Str::limit("New Announcement: {$title}", 255, ''),
+                            Str::limit("{$announcement->mosque->name} published a new announcement: {$title}.", 10000, ''),
+                            ['type' => Notification::REFERENCE_ANNOUNCEMENT, 'id' => $announcement->id],
+                        ))->afterCommit();
                     }
                 }
             });
