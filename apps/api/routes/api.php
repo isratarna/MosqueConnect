@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ContactMessageManagementController;
 use App\Http\Controllers\Admin\ContentModerationController;
 use App\Http\Controllers\Admin\EidJamaatManagementController;
 use App\Http\Controllers\Admin\EventManagementController;
+use App\Http\Controllers\Admin\EventRegistrationManagementController;
 use App\Http\Controllers\Admin\GoodsDonationManagementController;
 use App\Http\Controllers\Admin\MosqueDashboardController;
 use App\Http\Controllers\Admin\MosqueInsightsController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Admin\MosquePhotoManagementController;
 use App\Http\Controllers\Admin\MosqueSuggestionManagementController;
 use App\Http\Controllers\Admin\MosqueSystemManagementController;
 use App\Http\Controllers\Admin\MosqueTeamController;
+use App\Http\Controllers\Admin\PrayerSchedulePeriodController;
 use App\Http\Controllers\Admin\ReportManagementController;
 use App\Http\Controllers\Admin\SuggestionReviewController;
 use App\Http\Controllers\Admin\SuperAdminDashboardController;
@@ -24,6 +26,7 @@ use App\Http\Controllers\Admin\SystemAdminController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VerificationRequestManagementController;
+use App\Http\Controllers\Admin\VolunteerRegistrationManagementController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\PhoneOtpController;
 use App\Http\Controllers\BloodRequestController;
@@ -35,6 +38,7 @@ use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\EidJamaatController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventRegistrationController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GoodsDonationController;
 use App\Http\Controllers\JourneyController;
 use App\Http\Controllers\LostFoundController;
@@ -57,8 +61,12 @@ use App\Http\Controllers\VolunteerRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
+    // CI writes the deployed commit SHA into REVISION when packing the release.
+    $revision = base_path('REVISION');
+
     return response()->json([
         'status' => 'ok',
+        'commit' => is_file($revision) ? trim(file_get_contents($revision)) : null,
     ]);
 });
 
@@ -95,6 +103,7 @@ Route::post('/mosques/{mosque}/track', [MosqueTrackingController::class, 'store'
 Route::get('/volunteer-opportunities', [VolunteerOpportunityController::class, 'index']);
 Route::get('/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'show']);
 Route::get('/mosques/{mosque}/prayer-schedule', [MosqueController::class, 'prayerSchedule']);
+Route::get('/mosques/{mosque}/ramadan', [MosqueController::class, 'ramadan']);
 Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
 Route::get('/announcements', [AnnouncementController::class, 'feed']);
 Route::get('/blood-requests', [BloodRequestController::class, 'index']);
@@ -103,6 +112,8 @@ Route::get('/blood-requests/me', [BloodRequestController::class, 'mine'])
 Route::get('/blood-requests/{bloodRequest}', [BloodRequestController::class, 'show']);
 Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{event}', [EventController::class, 'show']);
+Route::get('/events/{event}/calendar.ics', [EventController::class, 'exportIcs']);
+Route::get('/verify/volunteer/{code}', [VolunteerRegistrationController::class, 'verifyCertificate']);
 Route::get('/campaigns', [CampaignController::class, 'index']);
 Route::get('/campaigns/{campaign}', [CampaignController::class, 'show']);
 Route::get('/search', SearchController::class)->middleware('throttle:60,1');
@@ -121,6 +132,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::get('/me/event-registrations', [EventRegistrationController::class, 'index']);
     Route::get('/me/volunteer-registrations', [VolunteerRegistrationController::class, 'index']);
+    Route::get('/me/volunteer-summary', [VolunteerRegistrationController::class, 'summary']);
+    Route::get('/me/volunteer-registrations/{application}/certificate', [VolunteerRegistrationController::class, 'certificate']);
     Route::get('/me/volunteer-applications', [VolunteerApplicationController::class, 'index']);
     Route::get('/me/volunteer-applications/{application}', [VolunteerApplicationController::class, 'show']);
     Route::patch('/me/volunteer-applications/{application}/cancel', [VolunteerApplicationController::class, 'cancel']);
@@ -144,6 +157,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::put('/mosques/{mosque}/reviews/me', [MosqueReviewController::class, 'upsert']);
     Route::delete('/mosques/{mosque}/reviews/me', [MosqueReviewController::class, 'destroy']);
     Route::get('/me/followed-mosques', [MosqueFollowController::class, 'followed']);
+    Route::get('/me/feed', [FeedController::class, 'index']);
 
     // Invitations to join a mosque's team
     Route::get('/me/mosque-invites', [MosqueInviteController::class, 'index']);
@@ -183,8 +197,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/verification-requests/{verificationRequest}', [VerificationRequestController::class, 'show']);
 
     // Community blood requests
-    Route::post('/blood-requests', [BloodRequestController::class, 'store']);
+    Route::post('/blood-requests', [BloodRequestController::class, 'store'])
+        ->middleware('throttle:blood-requests');
     Route::post('/blood-requests/{bloodRequest}/responses', [BloodRequestController::class, 'storeResponse']);
+    Route::delete('/blood-requests/{bloodRequest}/responses/me', [BloodRequestController::class, 'destroyMyResponse']);
+    Route::patch('/blood-requests/{bloodRequest}', [BloodRequestController::class, 'update']);
     Route::patch('/blood-requests/{bloodRequest}/status', [BloodRequestController::class, 'updateStatus']);
 
     // Mosque admin + super admin
@@ -199,6 +216,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::delete('/mosques/{mosque}/photo', [MosquePhotoController::class, 'destroy']);
             Route::get('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'prayerSchedule']);
             Route::put('/mosques/{mosque}/prayer-schedule', [MosqueManagementController::class, 'updatePrayerSchedule']);
+            Route::get('/mosques/{mosque}/schedule-periods', [PrayerSchedulePeriodController::class, 'index']);
+            Route::post('/mosques/{mosque}/schedule-periods', [PrayerSchedulePeriodController::class, 'store']);
+            Route::get('/mosques/{mosque}/schedule-periods/{period}', [PrayerSchedulePeriodController::class, 'show']);
+            Route::put('/mosques/{mosque}/schedule-periods/{period}', [PrayerSchedulePeriodController::class, 'update']);
+            Route::delete('/mosques/{mosque}/schedule-periods/{period}', [PrayerSchedulePeriodController::class, 'destroy']);
+            Route::put('/mosques/{mosque}/schedule-periods/{period}/prayer-times', [PrayerSchedulePeriodController::class, 'updatePrayerTimes']);
+            Route::put('/mosques/{mosque}/schedule-periods/{period}/ramadan-timings', [PrayerSchedulePeriodController::class, 'updateRamadanTimings']);
 
             Route::get('/mosques/{mosque}/members', [MosqueTeamController::class, 'index']);
             Route::post('/mosques/{mosque}/members', [MosqueTeamController::class, 'store']);
@@ -232,6 +256,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
                 Route::delete('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}', [VolunteerOpportunityController::class, 'destroy']);
                 Route::get('/mosques/{mosque}/volunteer-applications', [VolunteerApplicationController::class, 'listForMosque']);
                 Route::get('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/applications', [VolunteerApplicationController::class, 'listForOpportunity']);
+                Route::get('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/registrations', [VolunteerRegistrationManagementController::class, 'index']);
+                Route::get('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/registrations/export', [VolunteerRegistrationManagementController::class, 'export']);
+                Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/registrations/{application}', [VolunteerRegistrationManagementController::class, 'update']);
+                Route::post('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/message', [VolunteerRegistrationManagementController::class, 'message']);
                 Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/applications/{application}/accept', [VolunteerApplicationController::class, 'accept']);
                 Route::patch('/mosques/{mosque}/volunteer-opportunities/{volunteerOpportunity}/applications/{application}/reject', [VolunteerApplicationController::class, 'reject']);
 
@@ -251,6 +279,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
                 Route::get('/mosques/{mosque}/events', [EventManagementController::class, 'index']);
                 Route::post('/mosques/{mosque}/events', [EventManagementController::class, 'store']);
+                Route::get('/mosques/{mosque}/events/{event}/registrations/export', [EventRegistrationManagementController::class, 'export']);
+                Route::get('/mosques/{mosque}/events/{event}/registrations', [EventRegistrationManagementController::class, 'index']);
+                Route::post('/mosques/{mosque}/events/{event}/check-in', [EventRegistrationManagementController::class, 'checkInByCode']);
+                Route::patch('/mosques/{mosque}/events/{event}/registrations/{registration}/check-in', [EventRegistrationManagementController::class, 'toggleCheckIn']);
                 Route::get('/mosques/{mosque}/events/{event}', [EventManagementController::class, 'show']);
                 Route::patch('/mosques/{mosque}/events/{event}', [EventManagementController::class, 'update']);
                 Route::patch('/mosques/{mosque}/events/{event}/publish', [EventManagementController::class, 'publish']);

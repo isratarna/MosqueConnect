@@ -1,4 +1,4 @@
-import { apiUrl } from "../config.js";
+import { apiUrl, FALLBACK_PHOTO } from "../config.js";
 import { translate } from "../i18n/translate.js";
 import { networkFetch } from "./network.js";
 
@@ -83,7 +83,7 @@ export function normalizeMosque(record, origin, options = {}) {
     description: record.description ? String(record.description) : "",
     distance: distance !== null ? Number(distance.toFixed(3)) : null,
     verified: record.verified === true || record.verification_status === "verified",
-    photo: record.photo || record.photo_url || "/uiRef.jpeg",
+    photo: record.photo || record.photo_url || FALLBACK_PHOTO,
     rating: rating !== null && rating >= 0 ? rating : null,
     facilities,
     announcements,

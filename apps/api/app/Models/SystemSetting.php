@@ -39,7 +39,13 @@ class SystemSetting extends Model
             ->pluck('value', 'key')
             ->all();
 
-        return [...self::DEFAULTS, ...$stored];
+        $values = [...self::DEFAULTS, ...$stored];
+
+        if (is_array($values['eid_season'] ?? null)) {
+            $values['eid_season'] = EidSeason::normalise($values['eid_season']) ?? $values['eid_season'];
+        }
+
+        return $values;
     }
 
     /**

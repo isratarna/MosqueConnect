@@ -88,7 +88,7 @@ test("API client sends the shared radius and normalizes the response", async () 
       longitude: ORIGIN.lng,
       radius: DISCOVERY_RADIUS_KM,
     });
-    const url = new URL(requestedUrl);
+    const url = new URL(requestedUrl, "http://localhost");
     assert.equal(url.searchParams.get("radius"), String(DISCOVERY_RADIUS_KM));
     assert.deepEqual(mosques.map((mosque) => mosque.id), [9]);
   } finally {

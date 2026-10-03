@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\Mosque;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class AnnouncementResource extends JsonResource
 {
@@ -20,9 +21,15 @@ class AnnouncementResource extends JsonResource
             'title' => $this->title,
             'body' => $this->body,
             'urgency' => $this->urgency,
+            'category' => $this->category,
             'status' => $this->status,
+            'is_pinned' => (bool) $this->is_pinned,
             'moderation_status' => $this->moderation_status,
             'published_at' => $this->published_at?->toJSON(),
+            'publish_at' => $this->publish_at?->toJSON(),
+            'expires_at' => $this->expires_at?->toJSON(),
+            'is_expired' => $this->resource->isExpired(),
+            'image_url' => $this->image_path === null ? null : Storage::disk('public')->url($this->image_path),
             'date' => $this->published_at?->toDateString(),
             'mosque' => $this->whenLoaded('mosque', fn (): array => [
                 'id' => $this->mosque->id,

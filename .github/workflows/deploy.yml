@@ -1,0 +1,92 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DEPLOY_USER: s20230204056
+  DEPLOY_HOST: 187.52.122.100
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_mysql, mbstring, xml, ctype, curl, bcmath
+
+      - name: Composer install
+        working-directory: apps/api
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: npm
+
+      - name: Build web
+        env:
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+        run: |
+          set -e
+          npm ci
+          npm run build --workspace=apps/web
+          test -f apps/api/public/app/index.html || { echo "web build did not produce apps/api/public/app/index.html"; exit 1; }
+
+      - name: Pack release
+        run: |
+          set -e
+          mkdir -p apps/api/storage/logs apps/api/storage/framework/{views,cache,sessions} apps/api/bootstrap/cache
+          echo "$GITHUB_SHA" > apps/api/REVISION
+          tar czf release.tar.gz -C apps/api \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude=.env \
+            --exclude='.env.*' \
+            --exclude=./tests \
+            --exclude='./storage/logs/*.log' \
+            --exclude='./bootstrap/cache/*.php' \
+            .
+          tar tzf release.tar.gz > manifest.txt
+          grep -qE '^\./vendor/autoload\.php$' manifest.txt
+          grep -qE '^\./public/app/index\.html$' manifest.txt
+          if grep -E '(^|/)\.env$' manifest.txt; then echo ".env found in archive"; exit 1; fi
+          rm manifest.txt
+
+      - name: Load deploy key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload release
+        run: scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes release.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:~/"
+
+      - name: Deploy on server
+        run: |
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' <<'REMOTE'
+          set -e
+          mkdir -p ~/laravel
+          tar -xzf ~/release.tar.gz -C ~/laravel
+          cd ~/laravel
+          [ -f .env ] || { echo "~/laravel/.env is missing on the server"; exit 1; }
+          mkdir -p storage/framework/{views,cache,sessions} storage/logs bootstrap/cache
+          chmod -R u+rwX storage bootstrap/cache
+          setfacl -m u:www-data:x ~ || true
+          setfacl -m u:www-data:rx ~/laravel || true
+          setfacl -R -m u:www-data:rX ~/laravel/public || true
+          php artisan migrate --force
+          if [ ! -e public/storage ] && [ ! -L public/storage ]; then php artisan storage:link; fi
+          php artisan optimize
+          rm -f ~/release.tar.gz
+          REMOTE

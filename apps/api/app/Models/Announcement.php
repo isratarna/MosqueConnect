@@ -18,6 +18,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'urgency',
     'status',
     'published_at',
+    'publish_at',
+    'expires_at',
+    'is_pinned',
+    'category',
+    'image_path',
     'moderation_status',
     'moderation_note',
 ])]
@@ -42,15 +47,47 @@ class Announcement extends Model
 
     public const STATUS_PUBLISHED = 'published';
 
+    public const STATUS_SCHEDULED = 'scheduled';
+
     public const STATUSES = [
         self::STATUS_DRAFT,
         self::STATUS_PUBLISHED,
+        self::STATUS_SCHEDULED,
     ];
 
     public const INITIAL_STATUSES = [
         self::STATUS_DRAFT,
         self::STATUS_PUBLISHED,
     ];
+
+    public const CATEGORY_GENERAL = 'general';
+
+    public const CATEGORY_JANAZAH = 'janazah';
+
+    public const CATEGORY_JUMUAH = 'jumuah';
+
+    public const CATEGORY_EID = 'eid';
+
+    public const CATEGORY_RAMADAN = 'ramadan';
+
+    public const CATEGORY_DONATION_REQUEST = 'donation_request';
+
+    public const CATEGORY_EVENT = 'event';
+
+    public const CATEGORY_OTHER = 'other';
+
+    public const CATEGORIES = [
+        self::CATEGORY_GENERAL,
+        self::CATEGORY_JANAZAH,
+        self::CATEGORY_JUMUAH,
+        self::CATEGORY_EID,
+        self::CATEGORY_RAMADAN,
+        self::CATEGORY_DONATION_REQUEST,
+        self::CATEGORY_EVENT,
+        self::CATEGORY_OTHER,
+    ];
+
+    public const MAX_PINNED = 3;
 
     public const MODERATION_PENDING = 'pending';
 
@@ -80,13 +117,59 @@ class Announcement extends Model
     }
 
     /**
-     * Limit a query to announcements visible to the public.
+     * Order a public announcement list: pinned notices first, then newest.
+     */
+    public function scopePublicOrder(Builder $query): Builder
+    {
+        return $query->orderByDesc('is_pinned')->orderByDesc('published_at')->orderByDesc('id');
+    }
+
+    /**
+     * Limit a query to announcements visible to the public: published,
+     * moderation-approved, past their publish_at and not yet expired.
      */
     public function scopePublished(Builder $query): Builder
     {
         return $query
             ->where('status', self::STATUS_PUBLISHED)
-            ->where('moderation_status', self::MODERATION_APPROVED);
+            ->where('moderation_status', self::MODERATION_APPROVED)
+            ->where(fn (Builder $query) => $query->whereNull('publish_at')->orWhere('publish_at', '<=', now()))
+            ->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()));
+    }
+
+    /**
+     * Limit a query to announcements whose expiry has already passed.
+     */
+    public function scopeExpired(Builder $query): Builder
+    {
+        return $query->whereNotNull('expires_at')->where('expires_at', '<=', now());
+    }
+
+    /**
+     * Apply the supported public announcement list filters to a query.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when($filters['mosque_id'] ?? null, fn (Builder $query, int $mosqueId): Builder => $query->where('mosque_id', $mosqueId))
+            ->when($filters['urgency'] ?? null, fn (Builder $query, string $urgency): Builder => $query->where('urgency', $urgency))
+            ->when($filters['category'] ?? null, fn (Builder $query, string $category): Builder => $query->where('category', $category))
+            ->when($filters['since'] ?? null, fn (Builder $query, string $since): Builder => $query->whereDate('published_at', '>=', $since))
+            ->when($filters['district'] ?? null, fn (Builder $query, string $district): Builder => $query->whereHas('mosque', fn (Builder $query): Builder => $query->where('district', $district)))
+            ->when($filters['area'] ?? null, fn (Builder $query, string $area): Builder => $query->whereHas('mosque', fn (Builder $query): Builder => $query->where('area', $area)))
+            ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('body', 'like', "%{$search}%");
+                });
+            });
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
     }
 
     /**
@@ -98,6 +181,9 @@ class Announcement extends Model
     {
         return [
             'published_at' => 'datetime',
+            'publish_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'is_pinned' => 'boolean',
         ];
     }
 }
