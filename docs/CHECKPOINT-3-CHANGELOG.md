@@ -789,3 +789,121 @@ Use the demo accounts from Issue 3 (OTP `123456` after `php artisan db:seed --cl
 | `apps/web/package.json` | adds `communityHubApi.test.js` to `npm test` |
 
 **Deploy note:** run the migrations, and make sure the scheduler (`php artisan schedule:run` every minute) runs on Azure so old lost & found items close. Lost & found photos are stored on the `local` disk, like mosque photos.
+
+
+---
+
+## Issue 6 – Journey prayer planner: catch the next jamaat, prayers along a route, live mode (9 pts, #194)
+
+All three milestones are finished. Routing uses **Geoapify** on the backend; the frontend still uses Google Maps and Places with the existing `VITE_GOOGLE_MAPS_API_KEY`.
+
+- **Backend:** 479 of 484 tests pass, including the 27 new ones. The 5 failures are the same date-based tests listed under Issue 1.
+- **Frontend:** all 64 tests pass (7 new), and `npm run build` succeeds.
+- **Manual check:** `GET /api/mosques/catchable` was run against local MySQL with seeded mosques, for both walk and drive. Without a key, `POST /api/journeys/plan` returns a clear 503 message.
+
+### Milestone 1 – "Next jamat you can catch" (3 pts)
+
+**What was asked:** from where you are now, show the soonest jamaat you can still reach on foot or by car.
+
+**What was done:**
+- `ReachabilityService`:
+  - Travel time is the straight-line distance × 1.3 (road factor) ÷ the mode's speed: walk 4.5 km/h, drive 20 km/h (`config/journey.php`).
+  - A jamaat is catchable if you arrive at least 2 minutes before it starts.
+  - The jamaat time is the one the mosque published, or the calculated one if it hasn't published it.
+  - On Fridays, Dhuhr is replaced by the mosque's first Jumuah session. Calculated times are marked `estimated`.
+- `GET /api/mosques/catchable?lat=&lng=&mode=walk|drive` returns the catchable jamaats, sorted by jamaat time and then travel time. When nothing is catchable, it returns the next one instead, e.g. "Next: Maghrib at 5:52 PM in 1h 20m".
+- **Home card:** shows the best option and 2 alternatives, with a walk/drive switch and a Directions link. It refreshes every minute (new `useNow` hook) and asks for your location if it doesn't have it.
+
+### Milestone 2 – Route corridor engine and the planner page (4 pts)
+
+**What was asked:** for a trip such as Dhaka → Chattogram, list every prayer that falls during the trip, with ranked mosque stops along the route and their detour and wait times.
+
+**What was done:**
+- **Route:** the Geoapify Routing API returns the route, distance, travel time and geometry. Its times already include traffic (`traffic=approximated`), which is requested only for drives leaving within 3 hours.
+- **Arrival times:** the route is resampled every 500 m. Each step's time is spread across its points in proportion to distance, so every point has a cumulative distance and an arrival time.
+- **Mosques near the route (the corridor):**
+  - The route is split into windows of about 10 km. Each window's bounding box is widened by the corridor width (0.5–5 km) and queried with `whereBetween` on the indexed latitude and longitude columns.
+  - Duplicates are removed. Each mosque is projected onto the nearest route segment, giving its distance off the route, its distance along it, and the arrival time at that point.
+- **Prayers during the trip (`PrayerWindowResolver`):** each prayer's start time is calculated at the place you'll be at that moment, so times shift along long routes. Trips that cross midnight are handled.
+- **Ranking:**
+  - Each stop gets an approach time (off-route distance × 1.3 ÷ speed, plus 3 minutes to park), an arrival time, a wait, a detour and a delay (how much later you reach your destination).
+  - Stops are ranked by delay, then verified, then requested facilities, then rating.
+  - For the top 3 candidates per prayer, the estimates are replaced with real driving times from two small Geoapify Route Matrix calls.
+- **No reachable mosque:** the prayer is returned as `none_reachable`, with its window ("Asr lasts until about 5:46 PM near …") and the nearest mosques. The planner shows times and options only, with no religious rulings.
+- **`/journey` page:**
+  - Form: "My location", Google `PlaceAutocompleteElement`, preset cities and a lat/lng box (these work without a maps key), departure time, mode, corridor slider, facilities and prayer duration.
+  - Map: the route and stop markers coloured by prayer.
+  - Timeline: choosing an option updates the map and the **Open in Google Maps** link.
+- Home entry card ("Travelling? Plan your prayers on the way") and a navbar link.
+- `GoogleMapsProvider` now loads the `places` and `geometry` libraries.
+
+### Milestone 3 – Live mode, sharing, cost limits (2 pts)
+
+**What was done:**
+- **Live mode:**
+  - "Start trip" uses `watchPosition` and projects each position onto the route in the browser (`utils/routeGeometry.js`, which mirrors the PHP), so progress needs no server calls.
+  - It re-plans from your current position only when you're more than 1 km off the route or more than 10 minutes behind, and at most once every 3 minutes.
+  - It shows a countdown to the next stop, with alerts 20 and 5 minutes before (an in-page banner, plus a notification if allowed), and keeps the screen on with Wake Lock.
+  - The page says to keep it open and that it's for passengers, not drivers.
+- **Sharing and caching:** the new `journey_plans` table gives every plan a shareable `/journey/:id` link and works as a 15-minute cache. The cache key is origin and destination rounded to about 100 m, departure time rounded to 15 minutes, and the plan settings.
+- **Limits:** guests can make 5 plans per hour, logged-in users 20 per day. The routing calls for each plan are logged and stored in `routing_calls`.
+
+### Notes
+
+- **Why Geoapify instead of Google Routes:** the Google Routes API needed a second, server-only Google key with billing. Geoapify has a free plan of 3000 credits a day.
+  - A plan usually costs 1 credit for the route, plus about 18 for each prayer that gets refined (two 3×3 matrices instead of one 6×6, which halves the cost).
+  - The `RoutesClient` interface returns provider-neutral data, so the provider can be swapped without touching the planner.
+- **Not done:**
+  - a two-wheeler mode (Geoapify has `motorcycle`; it can be added in `config/journey.php` once tested)
+  - the optional MySQL spatial index
+  - push alerts (#195)
+  - a recorded real trip; the Dhaka → Comilla fixture is generated along the N1 highway
+
+### Seeing it yourself
+
+1. Sign up at geoapify.com, create a project, and put its key in `apps/api/.env` as `GEOAPIFY_API_KEY=...`. Then run:
+
+   ```powershell
+   cd apps/api
+   php artisan migrate
+   php artisan config:clear
+   ```
+
+2. For the autocomplete, `VITE_GOOGLE_MAPS_API_KEY` needs **Places API (New)** enabled.
+
+| What to check | How |
+|---|---|
+| Catch the next jamaat | Open Home and allow location. The **Next jamat you can catch** card shows the best mosque and 2 alternatives. Switch between **Walk** and **Drive**. |
+| Plan a trip | Home → **Plan a journey**, or **Journey** in the navbar. From = **My location** or "Dhaka (Gulistan)", To = "Chattogram (GEC)". Click **Plan my prayers**. |
+| Choose stops | Pick another mosque under a prayer. The map marker and the **Open in Google Maps** waypoints change. |
+| Share | Click **Share** and open the link in a private window. The same plan loads. |
+| Live mode | Click **Start trip**. In Chrome DevTools → **Sensors**, set a location more than 1 km from the route. The page says it's re-planning. |
+| Limits | As a guest, the 6th plan within an hour is refused with a message. |
+| Tests | `php artisan test tests/Feature/JourneyPlannerTest.php tests/Feature/CatchableJamaatTest.php tests/Unit/Journey`, and `npm test` in `apps/web`. |
+
+### Files
+
+| File | Change |
+|---|---|
+| `apps/api/app/Services/Journey/ReachabilityService.php` | new: catchable jamaats, Friday Jumuah, feasibility |
+| `apps/api/app/Services/Journey/JourneyPlannerService.php` | new: route, corridor, scoring, matrix refinement, Maps link |
+| `apps/api/app/Services/Journey/RouteGeometry.php`, `Polyline.php` | new: resampling, point-to-segment, corridor boxes, polyline encode/decode |
+| `apps/api/app/Services/Journey/PrayerWindowResolver.php` | new: prayer windows along the route |
+| `apps/api/app/Services/Journey/RoutesClient.php`, `GeoapifyRoutingClient.php`, `FakeRoutesClient.php` | new: routing interface, Geoapify implementation, test fake |
+| `apps/api/app/Services/Journey/NoRouteException.php`, `RoutesUnavailableException.php` | new files |
+| `apps/api/app/Http/Controllers/JourneyController.php`, `Http/Requests/PlanJourneyRequest.php` | new files |
+| `apps/api/app/Models/JourneyPlan.php`, `database/migrations/2026_10_07_000000_create_journey_plans_table.php` | new files |
+| `apps/api/config/journey.php` | new: speeds, buffers, corridor, throttle, cache settings |
+| `apps/api/config/services.php`, `.env.example` | `services.geoapify` / `GEOAPIFY_API_KEY` |
+| `apps/api/app/Providers/AppServiceProvider.php` | `RoutesClient` binding and the `journey-plan` rate limiter |
+| `apps/api/routes/api.php` | 3 new routes |
+| `apps/api/tests/Unit/Journey/` (3 files), `tests/Feature/CatchableJamaatTest.php`, `JourneyPlannerTest.php`, `tests/Fixtures/routes/dhaka-comilla.json` | new tests and the stored route |
+| `apps/web/src/pages/Journey.jsx` | new page |
+| `apps/web/src/components/journey/` (5 files) | Home cards, place input, map, timeline, live mode |
+| `apps/web/src/utils/routeGeometry.js`, `journeyFormat.js`, `journeyApi.js` (+ `routeGeometry.test.js`) | new: geometry, formatting, API calls |
+| `apps/web/src/hooks/useNow.js` | new file |
+| `apps/web/src/components/GoogleMapsProvider.jsx` | loads `places` and `geometry` |
+| `apps/web/src/App.jsx`, `components/Navbar.jsx`, `pages/Home.jsx`, `index.css` | routes, nav link, Home cards, styles |
+| `apps/web/package.json` | adds `routeGeometry.test.js` to `npm test` |
+
+**Deploy note:** add `GEOAPIFY_API_KEY` to the Azure app settings and run the migration. Set a daily cap in the Geoapify dashboard so usage can't go over the free plan.

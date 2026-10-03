@@ -2,6 +2,10 @@ import { createContext, useContext } from "react";
 import { useJsApiLoader } from "@react-google-maps/api";
 import { GOOGLE_MAPS_API_KEY } from "../config";
 
+// Libraries ekbar-i load hoy, tai array ta component-er baire (stable reference).
+// "places" PlaceAutocompleteElement er jonno, "geometry" route polyline decode er jonno.
+const LIBRARIES = ["places", "geometry"];
+
 const GoogleMapsContext = createContext({
   disabled: true,
   isLoaded: false,
@@ -12,6 +16,7 @@ function GoogleMapsLoader({ children }) {
   const { isLoaded, loadError } = useJsApiLoader({
     id: "mc-google-maps",
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: LIBRARIES,
   });
 
   return (

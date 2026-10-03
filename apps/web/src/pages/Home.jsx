@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import GlobalSearch from "../components/GlobalSearch";
+import ManualLocationDialog from "../components/home/ManualLocationDialog";
+import { MyFeed, MyMosques, UrgentBloodRequests } from "../components/home/PersonalSections";
 import {
-  BookOpen,
   CalendarDays,
   ChevronRight,
   Clock3,
@@ -17,11 +19,10 @@ import {
   Play,
   RefreshCw,
   ShieldCheck,
-  Search,
   TriangleAlert,
   UsersRound,
 } from "lucide-react";
-import { useGeolocation, requestGeolocation, setManualLocation } from "../hooks/useGeolocation";
+import { useGeolocation, requestGeolocation, hasLocation } from "../hooks/useGeolocation";
 import { fetchPublicStats, impactStatsFrom, sendContactMessage } from "../utils/communityHubApi";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
@@ -34,6 +35,7 @@ import { fetchEventCollection } from "../utils/eventApi";
 import { formatEventDate, formatEventTimeRange, getEventMosqueName, isEventPast } from "../utils/eventFilters";
 import EstimatedBadge from "../components/EstimatedBadge";
 import EidBanner from "../components/EidBanner";
+import CatchableJamaatCard, { JourneyEntryCard } from "../components/journey/CatchableJamaatCard";
 
 const MIN_CARD_WIDTH = 240;
 const CARD_GAP = 16;
@@ -95,13 +97,31 @@ export default function Home() {
       <EidBanner />
       {user ? (
         <div className="mc-auth-experience">
-          <AuthMyMosques />
-          <AuthFeed />
-          <AuthBloodRequests />
+          <MyMosques />
+          <MyFeed />
+          <UrgentBloodRequests />
+          <JourneyCards origin={origin} />
+          <AuthenticatedNearbySection
+            origin={origin}
+            discovery={discovery}
+            selectedMosqueId={selectedMosqueId}
+            onMosqueSelect={setSelectedMosqueId}
+            onManualLocationClick={() => setIsLocationModalOpen(true)}
+          />
+          <NearbySection
+            origin={origin}
+            nearby={nearby}
+            nearest={nearest}
+            showMap={false}
+            selectedMosqueId={selectedMosqueId}
+            onMosqueSelect={setSelectedMosqueId}
+            onManualLocationClick={() => setIsLocationModalOpen(true)}
+          />
         </div>
       ) : (
         <>
-          <Hero origin={origin} nearby={nearby} nearest={nearest} onRequestLocation={() => requestGeolocation({ force: origin.status === "failure" })} onManualLocationClick={() => setIsLocationModalOpen(true)} />
+          <Hero origin={origin} nearby={nearby} nearest={nearest} onRequestLocation={() => requestGeolocation({ force: origin.status === "failure" || origin.status === "manual" })} onManualLocationClick={() => setIsLocationModalOpen(true)} />
+          <JourneyCards origin={origin} />
           <NearbySection
             origin={origin}
             nearby={nearby}
@@ -115,12 +135,30 @@ export default function Home() {
       <ImpactSection />
       <AboutSection />
       <UpcomingEventsSection />
-      {isLocationModalOpen && <LocationPickerModal onClose={() => setIsLocationModalOpen(false)} />}
+      {isLocationModalOpen && <ManualLocationDialog onClose={() => setIsLocationModalOpen(false)} />}
     </>
   );
 }
 
-function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMosqueSelect }) {
+// "Next jamat you can catch" ar journey planner-e jawar card pashapashi.
+function JourneyCards({ origin }) {
+  return (
+    <section className="mc-journey-cards" aria-label="Catch a jamaat">
+      <div className="container">
+        <div className="row g-3">
+          <div className="col-lg-7">
+            <CatchableJamaatCard origin={origin} />
+          </div>
+          <div className="col-lg-5">
+            <JourneyEntryCard />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMosqueSelect, onManualLocationClick }) {
   const { mosques, status: apiStatus, error: apiError, retry: retryApi } = discovery;
 
   useEffect(() => {
@@ -128,7 +166,7 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
   }, []);
 
   const isFindingLocation = ["idle", "requesting", "locating"].includes(origin.status);
-  const isLoadingMosques = origin.status === "success" && ["idle", "loading"].includes(apiStatus);
+  const isLoadingMosques = hasLocation(origin) && ["idle", "loading"].includes(apiStatus);
 
   return (
     <section
@@ -140,7 +178,7 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
         <div className="mc-auth-home-map__map-wrap">
           <MapView
             className="mc-map mc-auth-home-map__map"
-            center={origin.status === "success" ? { lat: origin.lat, lng: origin.lng } : DEFAULT_CENTER}
+            center={hasLocation(origin) ? { lat: origin.lat, lng: origin.lng } : DEFAULT_CENTER}
             zoom={14}
             mosques={mosques}
             userPos={origin.status === "success" ? { lat: origin.lat, lng: origin.lng } : null}
@@ -178,7 +216,7 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
               </MapFeedback>
             )}
 
-            {apiStatus === "error" && origin.status === "success" && (
+            {apiStatus === "error" && hasLocation(origin) && (
               <MapFeedback
                 icon={<TriangleAlert size={21} aria-hidden="true" />}
                 title="Could not load nearby mosques"
@@ -256,15 +294,6 @@ function HeroDates() {
 }
 
 function Hero({ origin, nearby, nearest, onRequestLocation, onManualLocationClick }) {
-  const navigate = useNavigate();
-  const [query, setQuery] = useState("");
-
-  const handleSearch = (event) => {
-    event.preventDefault();
-    const term = query.trim();
-    navigate(term ? `/browse?search=${encodeURIComponent(term)}` : "/browse");
-  };
-
   return (
     <header className="mc-hero mc-home-hero" data-mc-parallax="0.26">
       <div className="container mc-hero__inner">
@@ -274,27 +303,12 @@ function Hero({ origin, nearby, nearest, onRequestLocation, onManualLocationClic
           <p className="mc-hero__copy">
             Discover mosques near you and stay connected to your faith and community.
           </p>
-          <form className="mc-hero__search" role="search" onSubmit={handleSearch}>
-            <div className="mc-hero__search-input mc-hero__search-field">
-              <Search size={17} aria-hidden="true" />
-              <input
-                type="search"
-                name="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by mosque name, area, or city"
-                aria-label="Search mosques by name, area, or city"
-                autoComplete="off"
-                maxLength={100}
-              />
-              <button type="submit" aria-label="Search mosques" title="Search">
-                <ChevronRight size={17} aria-hidden="true" />
-              </button>
-            </div>
+          <div className="mc-hero__search">
+            <GlobalSearch id="hero-search" variant="hero" placeholder="Search mosques, events, campaigns…" />
             <a href="#map" className="mc-hero__nearby" title="Find nearby" aria-label="Find nearby">
               <LocateFixed size={17} aria-hidden="true" />
             </a>
-          </form>
+          </div>
         </div>
         <div className="mc-location-card">
           <div className="mc-location-card__icon"><MapPin size={22} aria-hidden="true" /></div>
@@ -937,150 +951,4 @@ function AnimatedStat({ value }) {
   }, [value]);
 
   return <span ref={nodeRef}>{display}</span>;
-}
-
-function AuthMyMosques() {
-  const dummyMosques = [
-    { id: 1, name: "Gulshan Central Mosque", distance: 1.2, address: "Gulshan 2, Dhaka" },
-    { id: 2, name: "Banani Jame Masjid", distance: 2.5, address: "Banani, Dhaka" }
-  ];
-  return (
-    <section className="py-4 mc-motion-section">
-      <div className="container">
-        <h2 className="mb-4">My mosques</h2>
-        <div className="row g-3">
-          {dummyMosques.map(mosque => (
-            <div className="col-md-6" key={mosque.id}>
-              <div className="card mc-card p-3 d-flex flex-row align-items-center gap-3">
-                <div className="flex-grow-1">
-                  <h5 className="mb-1">{mosque.name}</h5>
-                  <div className="text-muted small mb-2"><MapPin size={14} className="me-1"/>{mosque.address}</div>
-                  <div className="mc-next-prayer small">
-                    <span className="me-2 text-muted">Next Jamat:</span>
-                    <strong>1:30 PM (Dhuhr)</strong>
-                  </div>
-                </div>
-                <Link to={`/mosque/${mosque.id}`} className="btn btn-outline-mc btn-sm">View</Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function AuthFeed() {
-  const feedItems = [
-    { id: 1, type: "announcement", mosque: "Gulshan Central Mosque", title: "Jummah prayer time updated", date: "2 hours ago" },
-    { id: 2, type: "event", mosque: "Banani Jame Masjid", title: "Weekly Tafseer class", date: "5 hours ago" },
-    { id: 3, type: "announcement", mosque: "Gulshan Central Mosque", title: "Fundraising for Madrasa", date: "1 day ago" },
-    { id: 4, type: "event", mosque: "Banani Jame Masjid", title: "Youth Halqa", date: "2 days ago" },
-    { id: 5, type: "announcement", mosque: "Gulshan Central Mosque", title: "Eid prayer timings", date: "3 days ago" },
-  ];
-  return (
-    <section className="py-4 mc-motion-section bg-light">
-      <div className="container">
-        <h2 className="mb-4">From your mosques</h2>
-        <div className="d-flex flex-column gap-3">
-          {feedItems.map(item => (
-            <div className="card mc-card p-3" key={item.id}>
-              <div className="d-flex align-items-center gap-2 mb-2 text-muted small">
-                {item.type === "event" ? <CalendarDays size={14} /> : <BookOpen size={14} />}
-                <span>{item.mosque}</span>
-                <span>•</span>
-                <span>{item.date}</span>
-              </div>
-              <h5 className="mb-0">{item.title}</h5>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function AuthBloodRequests() {
-  const requests = [
-    { id: 1, bloodGroup: "O+", hospital: "United Hospital", area: "Gulshan", urgency: "Urgent" },
-    { id: 2, bloodGroup: "B-", hospital: "Square Hospital", area: "Panthapath", urgency: "Critical" },
-  ];
-  return (
-    <section className="py-4 mc-motion-section">
-      <div className="container">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="mb-0 text-danger d-flex align-items-center gap-2"><Heart size={24} fill="currentColor"/> Urgent blood requests near you</h2>
-          <Link to="/support?type=blood" className="btn btn-outline-danger btn-sm">View all</Link>
-        </div>
-        <div className="row g-3">
-          {requests.map(req => (
-            <div className="col-md-6" key={req.id}>
-              <div className="card mc-card border-danger border-opacity-25 p-3">
-                <div className="d-flex justify-content-between align-items-start">
-                  <div>
-                    <h3 className="text-danger mb-1 h4">{req.bloodGroup}</h3>
-                    <div className="fw-semibold mb-1">{req.hospital}</div>
-                    <div className="text-muted small"><MapPin size={14} className="me-1"/>{req.area}</div>
-                  </div>
-                  <span className="badge bg-danger">{req.urgency}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function LocationPickerModal({ onClose }) {
-  const [area, setArea] = useState("");
-  const areas = [
-    { name: "Gulshan", lat: 23.7925, lng: 90.4078 },
-    { name: "Banani", lat: 23.7940, lng: 90.4043 },
-    { name: "Dhanmondi", lat: 23.7461, lng: 90.3742 },
-    { name: "Uttara", lat: 23.8759, lng: 90.3795 },
-    { name: "Mirpur", lat: 23.8223, lng: 90.3654 },
-  ];
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const selected = areas.find((a) => a.name === area);
-    if (selected) {
-      setManualLocation(selected.lat, selected.lng, selected.name);
-      onClose();
-    }
-  };
-
-  return (
-    <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }} onClick={onClose}>
-      <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">Enter location manually</h5>
-            <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
-          </div>
-          <div className="modal-body">
-            <form onSubmit={handleSubmit} id="manual-location-form">
-              <label htmlFor="area-select" className="form-label">Select your area</label>
-              <select 
-                id="area-select" 
-                className="form-select" 
-                value={area} 
-                onChange={(e) => setArea(e.target.value)}
-                required
-              >
-                <option value="" disabled>Select an area...</option>
-                {areas.map(a => <option key={a.name} value={a.name}>{a.name}</option>)}
-              </select>
-            </form>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" form="manual-location-form" className="btn btn-mc" disabled={!area}>Save Location</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }

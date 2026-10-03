@@ -46,3 +46,18 @@ export function dhuhrJamaatLabel(prayer) {
 export function isEstimatedPrayer(sources, label) {
   return sources?.[label] === "calculated";
 }
+
+/**
+ * The next jamat still to come today from a prayer_schedule list
+ * ([{ label, jamaat_time }]); after the last one, tomorrow's first jamat.
+ * Returns { label, time, tomorrow } or null when no times are set.
+ */
+export function nextJamaat(schedule, now = new Date()) {
+  const entries = (Array.isArray(schedule) ? schedule : [])
+    .map((entry) => ({ label: entry.label || entry.prayer, time: entry.jamaat_time, at: parseClockTime(entry.jamaat_time, now) }))
+    .filter((entry) => entry.label && entry.at)
+    .sort((a, b) => a.at - b.at);
+  const upcoming = entries.find((entry) => entry.at > now);
+  const pick = upcoming ?? entries[0];
+  return pick ? { label: pick.label, time: pick.time, tomorrow: !upcoming } : null;
+}

@@ -9,8 +9,9 @@ export default function Campaigns() {
   const [searchParams] = useSearchParams();
   const mosqueId = searchParams.get("mosque") || "";
   const [campaigns, setCampaigns] = useState([]);
-  const [search, setSearch] = useState("");
-  const [query, setQuery] = useState("");
+  const initialSearch = searchParams.get("search") || "";
+  const [search, setSearch] = useState(initialSearch);
+  const [query, setQuery] = useState(initialSearch);
   const [category, setCategory] = useState("");
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState(null);
