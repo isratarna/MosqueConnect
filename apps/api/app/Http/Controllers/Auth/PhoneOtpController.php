@@ -44,7 +44,9 @@ class PhoneOtpController extends Controller
             'phone' => ['required', 'string', 'regex:/^\+[1-9]\d{7,14}$/'],
             'otp' => ['required', 'string', 'digits:'.$otpLength],
             'name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'accept_terms' => [Rule::requiredIf($isNewUser), 'accepted'],
+            // [Urmee · login fix] `accepted` is an implicit rule: it fails when the field is missing, even when
+            // the field is not required. Existing users never send accept_terms, so only a new user is checked.
+            'accept_terms' => $isNewUser ? ['required', 'accepted'] : ['sometimes', 'nullable', 'boolean'],
         ]);
 
         $user = DB::transaction(function () use ($otps, $validated, $isNewUser): User {
