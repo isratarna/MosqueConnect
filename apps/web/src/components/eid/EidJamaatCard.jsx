@@ -68,7 +68,7 @@ export default function EidJamaatCard({ jamaat, showMosque = false, active = fal
 
         <div className="d-flex flex-wrap gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
           {googleUrl && (
-            <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-mc btn-sm" title="Add to Google Calendar">
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-mc btn-sm" title="Add to Google Calendar" aria-label="Add to Google Calendar (opens in a new tab)">
               <CalendarPlus size={15} aria-hidden="true" /> Google Calendar
             </a>
           )}

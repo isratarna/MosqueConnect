@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { fetchAdminPrayerSchedule, savePrayerSchedule } from "../../utils/dashboardApi";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 const DAILY = [["fajr", "Fajr"], ["dhuhr", "Dhuhr"], ["asr", "Asr"], ["maghrib", "Maghrib"], ["isha", "Isha"]];
 const SESSION_NAMES = ["First Jumuah", "Second Jumuah", "Third Jumuah", "Fourth Jumuah"];
@@ -36,10 +37,7 @@ function Feedback({ loadError, retry, error, message }) {
 
 function LoadingRows({ label, rows }) {
   return (
-    <div className="placeholder-glow" aria-busy="true">
-      <span className="visually-hidden" role="status">{label}</span>
-      {Array.from({ length: rows }, (_, i) => <span key={i} className="placeholder rounded d-block mb-2" style={{ height: 38 }} />)}
-    </div>
+    <SkeletonRegion label={label}><BlockStack heights={Array.from({ length: rows }, () => 38)} /></SkeletonRegion>
   );
 }
 

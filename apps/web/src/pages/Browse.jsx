@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { List as ListIcon, LoaderCircle, Map as MapIcon, MapPin, RefreshCw, Search, SlidersHorizontal, TriangleAlert } from "lucide-react";
+import { List as ListIcon, Map as MapIcon, MapPin, RefreshCw, Search, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { useGeolocation, requestGeolocation } from "../hooks/useGeolocation";
 import { FACILITY_META } from "../data/mosques";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
@@ -8,7 +8,10 @@ import { DISCOVERY_RADIUS_KM, filterMosques } from "../utils/mosqueDiscovery";
 import FacilityIcon from "../components/FacilityIcon";
 import MosqueCard from "../components/MosqueCard";
 import MapView from "../components/MapView";
-import Pagination from "../components/Pagination";
+import { MosqueCardSkeleton, SkeletonRegion } from "../components/skeletons";
+
+const BATCH_SIZE = 12;
+const SKELETON_COUNT = 6;
 
 export default function Browse() {
   const origin = useGeolocation();
@@ -25,8 +28,10 @@ export default function Browse() {
   const [view, setView] = useState("list");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedArea, setSelectedArea] = useState("");
-  const [pageSize, setPageSize] = useState(9);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const gridRef = useRef(null);
+  const focusIndexRef = useRef(null);
+  const sentinelRef = useRef(null);
   const [selectedMosqueId, setSelectedMosqueId] = useState(null);
 
   // Derive unique districts and areas from the mosque data.
@@ -98,19 +103,38 @@ export default function Browse() {
     });
   }, [all, search, facilities, maxDistance, sort, selectedDistrict, selectedArea]);
 
+  // Any change to the search, filters or sort starts again from the first batch.
   useEffect(() => {
-    setCurrentPage(1);
-  }, [search, facilities, maxDistance, sort, selectedDistrict, selectedArea, pageSize]);
+    setVisibleCount(BATCH_SIZE);
+  }, [search, facilities, maxDistance, sort, selectedDistrict, selectedArea]);
 
   const totalResults = results.length;
+  const paginatedResults = useMemo(() => results.slice(0, visibleCount), [results, visibleCount]);
+  const hasMore = visibleCount < totalResults;
 
-  const totalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(totalResults / pageSize));
-  }, [totalResults, pageSize]);
+  const loadMore = (moveFocus) => {
+    if (moveFocus) focusIndexRef.current = paginatedResults.length;
+    setVisibleCount((count) => count + BATCH_SIZE);
+  };
 
-  const paginatedResults = useMemo(() => {
-    return results.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  }, [results, currentPage, pageSize]);
+  // After "Load more", keyboard focus goes to the first new card.
+  useEffect(() => {
+    const index = focusIndexRef.current;
+    if (index === null) return;
+    focusIndexRef.current = null;
+    gridRef.current?.querySelector(`[data-card-index="${index}"] a`)?.focus();
+  }, [visibleCount]);
+
+  // Nice to have: load the next batch as the button scrolls into view (the button stays for keyboard users).
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore || typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) loadMore(false); }, { rootMargin: "200px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+    // loadMore only touches state setters and a ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, visibleCount, view]);
 
   useEffect(() => {
     if (!paginatedResults.length) {
@@ -124,14 +148,6 @@ export default function Browse() {
       return paginatedResults[0].id;
     });
   }, [paginatedResults]);
-
-  const startIndex = useMemo(() => {
-    return totalResults === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  }, [currentPage, pageSize, totalResults]);
-
-  const endIndex = useMemo(() => {
-    return Math.min(currentPage * pageSize, totalResults);
-  }, [currentPage, pageSize, totalResults]);
 
   return (
     <>
@@ -265,34 +281,21 @@ export default function Browse() {
             <div className="col-lg-9 mc-browse-results">
               <div className="mc-browse-results-toolbar">
                 <div className="text-muted mc-browse-results-count">
-                  {totalResults === 0
-                    ? "Showing 0 of 0 mosques"
-                    : `Showing ${startIndex}–${endIndex} of ${totalResults} mosques`}
+                  {`Showing ${paginatedResults.length} of ${totalResults} mosques`}
                 </div>
                 <div className="mc-browse-results-actions">
-                  <div className="mc-browse-page-size">
-                    <span className="text-muted small text-nowrap">Results per page:</span>
-                    <select
-                      className="form-select form-select-sm"
-                      style={{ width: "auto" }}
-                      value={pageSize}
-                      onChange={(e) => setPageSize(Number(e.target.value))}
-                      aria-label="Results per page"
-                    >
-                      <option value={6}>6 results</option>
-                      <option value={9}>9 results</option>
-                      <option value={12}>12 results</option>
-                      <option value={18}>18 results</option>
-                    </select>
-                  </div>
                   <div className="btn-group" role="group" aria-label="View toggle">
                     <button
+                      type="button"
+                      aria-pressed={view === "list"}
                       className={"btn btn-sm " + (view === "list" ? "btn-mc" : "btn-outline-mc")}
                       onClick={() => setView("list")}
                     >
                       <ListIcon size={15} className="me-1" aria-hidden="true" />List
                     </button>
                     <button
+                      type="button"
+                      aria-pressed={view === "map"}
                       className={"btn btn-sm " + (view === "map" ? "btn-mc" : "btn-outline-mc")}
                       onClick={() => setView("map")}
                     >
@@ -304,10 +307,11 @@ export default function Browse() {
 
               <div className="mc-view-panel" key={view}>
                 {discovery.status === "loading" && all.length === 0 ? (
-                  <div className="text-center text-muted py-5" role="status">
-                    <LoaderCircle size={34} className="spin d-block mx-auto mb-2" aria-hidden="true" />
-                    Loading nearby mosques…
-                  </div>
+                  <SkeletonRegion label="Loading nearby mosques…">
+                    <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+                      {Array.from({ length: SKELETON_COUNT }, (_, index) => <div className="col" key={index}><MosqueCardSkeleton /></div>)}
+                    </div>
+                  </SkeletonRegion>
                 ) : discovery.status === "error" ? (
                   <div className="text-center text-muted py-5" role="alert">
                     <TriangleAlert size={38} className="d-block mx-auto mb-2 text-danger" aria-hidden="true" />
@@ -318,9 +322,9 @@ export default function Browse() {
                   </div>
                 ) : view === "list" ? (
                   results.length ? (
-                    <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mc-browse-results-grid mc-motion-stagger">
-                      {paginatedResults.map((m) => (
-                        <div className="col" key={m.id}>
+                    <div ref={gridRef} className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mc-browse-results-grid mc-motion-stagger">
+                      {paginatedResults.map((m, index) => (
+                        <div className="col" key={m.id} data-card-index={index}>
                           <MosqueCard mosque={m} />
                         </div>
                       ))}
@@ -343,12 +347,10 @@ export default function Browse() {
                 )}
               </div>
 
-              {results.length > 0 && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
+              {hasMore && (
+                <div className="text-center mt-4" ref={sentinelRef}>
+                  <button type="button" className="btn btn-outline-mc" onClick={() => loadMore(true)}>Load more mosques</button>
+                </div>
               )}
             </div>
           </div>

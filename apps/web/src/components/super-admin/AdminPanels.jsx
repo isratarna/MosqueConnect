@@ -52,6 +52,7 @@ import MosqueTeamModal from "./MosqueTeamModal";
 import UserDetailModal from "./UserDetailModal";
 import SuggestionReviewList from "../suggestions/SuggestionReviewList";
 import { fetchSystemSuggestions, reviewSystemSuggestion } from "../../utils/teamApi";
+import { SkeletonRegion, TableRowsSkeleton } from "../skeletons";
 
 const dateTime = (value) => value ? new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
@@ -87,7 +88,7 @@ function useRemoteData(loader, dependencies = []) {
 }
 
 function PanelState({ loading, error, empty, onRetry, children }) {
-  if (loading) return <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading administration data…</div>;
+  if (loading) return <SkeletonRegion label="Loading administration data…"><div className="card border-0 shadow-sm"><table className="table mb-0"><tbody><TableRowsSkeleton rows={6} cols={5} /></tbody></table></div></SkeletonRegion>;
   if (error) return <div className="alert alert-danger d-flex justify-content-between align-items-center gap-3"><span>{error}</span><button className="btn btn-sm btn-outline-danger" onClick={onRetry}>Retry</button></div>;
   if (empty) return <div className="py-5 text-center text-muted">No matching records were found.</div>;
   return children;
@@ -222,7 +223,7 @@ export function ClaimsPanel() {
   return (
     <>
       <PanelHeader title="Mosque claims" description="Review applicant proof and control mosque verification." onRefresh={state.refresh}>
-        <input className="form-control form-control-sm" style={{ width: 210 }} placeholder="Search applicant or mosque" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+        <input className="form-control form-control-sm" style={{ width: 210 }} placeholder="Search applicant or mosque" aria-label="Search applicant or mosque" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         <select className="form-select form-select-sm" style={{ width: 175 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">All statuses</option>{["pending", "ai_reviewed", "under_human_review", "approved", "rejected"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select>
       </PanelHeader>
       <PanelState loading={state.loading} error={state.error} empty={!state.data?.data?.length} onRetry={state.refresh}>
@@ -260,7 +261,7 @@ export function UsersPanel({ currentUser }) {
   return (
     <>
       <PanelHeader title="User management" description="Search accounts, assign roles, and suspend abusive users." onRefresh={state.refresh}>
-        <input className="form-control form-control-sm" style={{ width: 190 }} placeholder="Name or phone" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+        <input className="form-control form-control-sm" style={{ width: 190 }} placeholder="Name or phone" aria-label="Name or phone" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         <select className="form-select form-select-sm" style={{ width: 145 }} value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }}><option value="">All roles</option>{["normal_user", "mosque_admin", "super_admin"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select>
         <select className="form-select form-select-sm" style={{ width: 135 }} value={accountStatus} onChange={(e) => { setAccountStatus(e.target.value); setPage(1); }}><option value="">All accounts</option><option value="active">Active</option><option value="suspended">Suspended</option></select>
       </PanelHeader>
@@ -327,7 +328,7 @@ export function MosquesPanel() {
   return (
     <>
       <PanelHeader title="Mosque management" description="Inspect ownership, manage each mosque's team and control platform-wide verification." onRefresh={state.refresh}>
-        <input className="form-control form-control-sm" style={{ width: 210 }} placeholder="Mosque or address" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+        <input className="form-control form-control-sm" style={{ width: 210 }} placeholder="Mosque or address" aria-label="Mosque or address" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         <select className="form-select form-select-sm" style={{ width: 165 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">All statuses</option>{["unverified", "pending", "verified", "rejected"].map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select>
       </PanelHeader>
       {notice && <div className="alert alert-success d-flex justify-content-between align-items-center py-2" role="status"><span>{notice}</span><button type="button" className="btn-close" aria-label="Dismiss" onClick={() => setNotice("")} /></div>}
@@ -371,7 +372,7 @@ export function CorrectionsPanel() {
                 <option value="unclaimed">Mosques without an admin</option>
                 <option value="all">All mosques</option>
               </select>
-              <input className="form-control form-control-sm" style={{ width: 190 }} placeholder="Mosque name" aria-label="Search by mosque name" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input className="form-control form-control-sm" style={{ width: 190 }} placeholder="Mosque name" aria-label="Mosque name" aria-label="Search by mosque name" value={search} onChange={(e) => setSearch(e.target.value)} />
             </>
           )}
         />
@@ -402,7 +403,7 @@ export function ModerationPanel() {
   return (
     <>
       <PanelHeader title="Content moderation" description="Approve or hide announcements, events, campaigns, and reviews across the platform." onRefresh={state.refresh}>
-        <input className="form-control form-control-sm" style={{ width: 180 }} placeholder="Search title" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+        <input className="form-control form-control-sm" style={{ width: 180 }} placeholder="Search title" aria-label="Search title" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         <select className="form-select form-select-sm" style={{ width: 145 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">All statuses</option>{moderationStatuses.map((item) => <option key={item}>{item}</option>)}</select>
       </PanelHeader>
       <div className="nav nav-pills gap-2 mb-3">{["announcement", "event", "campaign", "review"].map((item) => <button className={`nav-link ${type === item ? "active" : ""}`} key={item} onClick={() => { setType(item); setStatus(""); setPage(1); }}>{item === "review" ? "Reviews" : `${labelize(item)}s`}</button>)}</div>

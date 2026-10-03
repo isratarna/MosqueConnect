@@ -14,6 +14,7 @@ import {
 } from "../../utils/eidApi";
 import { coordinatesOf } from "../../utils/mosqueDiscovery";
 import { formatClockTime } from "../../utils/prayerTime";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 const LANGUAGES = ["Bangla", "Arabic", "English", "Urdu"];
 const emptyForm = (date = "") => ({
@@ -150,7 +151,7 @@ export default function EidJamaatManager({ mosqueId, mosque }) {
     if (editingId === jamaat.id) cancelEdit();
   }
 
-  if (loading && !eid) return <p role="status">Loading Eid jamaats…</p>;
+  if (loading && !eid) return <SkeletonRegion label="Loading Eid jamaats…"><BlockStack heights={[48, 160]} /></SkeletonRegion>;
 
   return (
     <section>

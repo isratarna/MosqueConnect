@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, BadgeCheck, Check, PencilLine, X } from "lucide-react";
 import { describeValue } from "../../utils/suggestionFormat";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 const STATUSES = [
   { value: "pending", label: "Waiting for review" },
@@ -88,7 +89,7 @@ export default function SuggestionReviewList({ load, review, showMosque = false,
       {loadError ? (
         <div className="alert alert-danger" role="alert">{loadError} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={reload}>Retry</button></div>
       ) : !result ? (
-        <div className="placeholder-glow" aria-busy="true"><span className="visually-hidden" role="status">Loading suggestions…</span><span className="placeholder rounded d-block mb-2" style={{ height: 90 }} /><span className="placeholder rounded d-block" style={{ height: 90 }} /></div>
+        <SkeletonRegion label="Loading suggestions…"><BlockStack heights={[90, 90]} /></SkeletonRegion>
       ) : items.length === 0 ? (
         <p className="text-muted py-3 mb-0">{status === "pending" ? emptyText : "Nothing here."}</p>
       ) : (

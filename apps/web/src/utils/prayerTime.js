@@ -61,3 +61,14 @@ export function nextJamaat(schedule, now = new Date()) {
   const pick = upcoming ?? entries[0];
   return pick ? { label: pick.label, time: pick.time, tomorrow: !upcoming } : null;
 }
+
+/**
+ * The next jamat from a mosque's `prayer` summary ({ Fajr: "05:00", ... }) as
+ * { prayer: "Asr", text: "Asr 4:30 PM", tomorrow }, or null when no times are set.
+ */
+export function nextJamaatLabel(prayer, now = new Date()) {
+  const entries = Object.entries(prayer || {}).map(([label, time]) => ({ label, jamaat_time: time }));
+  const next = nextJamaat(entries, now);
+  if (!next) return null;
+  return { prayer: next.label, text: `${next.label} ${formatClockTime(next.time)}${next.tomorrow ? " (tomorrow)" : ""}`, tomorrow: next.tomorrow };
+}

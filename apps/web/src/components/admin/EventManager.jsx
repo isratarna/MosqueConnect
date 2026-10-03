@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../utils/api";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 const categories = ["Islamic Lecture", "Quran Program", "Community Gathering", "Charity", "Volunteer Activity", "Youth Program", "Workshop", "Iftar", "Educational Program", "Other"];
 const empty = { title: "", description: "", category: "Other", event_date: "", start_time: "", end_time: "", location: "", capacity: "", registration_required: false };
@@ -65,7 +66,7 @@ export default function EventManager({ mosqueId }) {
       </div>
       <div className="d-flex gap-2 mt-3"><button className="btn btn-mc" disabled={busy}>{busy ? "Saving..." : editingId ? "Save event" : "Create draft"}</button>{editingId && <button type="button" className="btn btn-outline-mc" onClick={() => { setEditingId(null); setForm(empty); }}>Cancel editing</button>}</div>
     </form>
-    {loading ? <p role="status">Loading events...</p> : events.length === 0 ? <p>No events scheduled.</p> : events.map((event) => <article key={event.id} className="border rounded p-3 mb-3">
+    {loading ? <SkeletonRegion label="Loading events…"><BlockStack heights={[96, 96]} /></SkeletonRegion> : events.length === 0 ? <p>No events scheduled.</p> : events.map((event) => <article key={event.id} className="border rounded p-3 mb-3">
       <h3 className="h5">{event.title}</h3><p>{event.event_date} · {event.start_time} · {event.status}</p>
       <p className="small text-muted">{event.registrations_count || 0} registrations</p>
       <div className="d-flex flex-wrap gap-2">

@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import Modal from "../Modal";
 import { changeMemberRole, fetchTeam, inviteMember, leaveMosque, removeMember } from "../../utils/teamApi";
 import { TEAM_ROLES, can, invitableRoles, roleLabel, toInternationalPhone } from "../../utils/teamRoles";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 const dateLabel = (value) => (value ? new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "");
 
@@ -85,7 +86,7 @@ export default function TeamManager({ mosqueId, mosqueName, onLeft }) {
   }
 
   if (!team) {
-    return <div className="placeholder-glow" aria-busy="true"><span className="visually-hidden" role="status">Loading team…</span><span className="placeholder rounded d-block mb-2" style={{ height: 40 }} /><span className="placeholder rounded d-block" style={{ height: 160 }} /></div>;
+    return <SkeletonRegion label="Loading team…"><BlockStack heights={[40, 160]} /></SkeletonRegion>;
   }
 
   return (

@@ -4,6 +4,7 @@ import { Compass } from "lucide-react";
 import Layout from "./components/Layout";
 import RouteErrorBoundary from "./components/RouteErrorBoundary";
 import { useAuth } from "./context/AuthContext";
+import { PageSkeleton } from "./components/skeletons";
 
 const Home = lazy(() => import("./pages/Home"));
 const Browse = lazy(() => import("./pages/Browse"));
@@ -41,11 +42,7 @@ function ProtectedRoute({ children, allowedRoles, allowedStatuses }) {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-border text-mc" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
+      <PageSkeleton label="Checking your session…" />
     );
   }
 
@@ -165,10 +162,7 @@ function DashboardSectionRedirect({ section }) {
 
 function PageLoading() {
   return (
-    <div className="d-flex justify-content-center align-items-center py-5" role="status">
-      <div className="spinner-border text-mc" aria-hidden="true" />
-      <span className="visually-hidden">Loading page...</span>
-    </div>
+    <PageSkeleton label="Loading page…" />
   );
 }
 

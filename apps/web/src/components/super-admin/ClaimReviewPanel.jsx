@@ -4,6 +4,7 @@ import Modal from "../Modal";
 import ConfirmDialog from "../ConfirmDialog";
 import { aiReview, previewKind } from "../../utils/adminConsole";
 import { downloadClaimDocument, fetchClaim, fetchClaimDocumentBlob, reviewClaim } from "../../utils/systemAdminApi";
+import { BlockStack, Skeleton, SkeletonRegion } from "../skeletons";
 
 const dateTime = (value) => value ? new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "—";
 const labelize = (value = "") => value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -76,7 +77,7 @@ export default function ClaimReviewPanel({ claimId, onClose, onChanged }) {
     <>
       <Modal title={detail ? `Claim #${detail.id} · ${detail.mosque?.name || "Mosque"}` : "Mosque claim"} onClose={onClose} size="modal-xl">
         {loadError && <div className="alert alert-danger">{loadError}</div>}
-        {!detail && !loadError && <div className="py-5 text-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading claim…</div>}
+        {!detail && !loadError && <SkeletonRegion label="Loading claim…"><BlockStack heights={[32, 260]} /></SkeletonRegion>}
         {detail && (
           <div className="row g-4">
             <div className="col-lg-7">
@@ -87,7 +88,7 @@ export default function ClaimReviewPanel({ claimId, onClose, onChanged }) {
                 </button>
               </div>
               {docError && <div className="alert alert-warning small">{docError}</div>}
-              {!doc && !docError && <div className="mc-doc-viewer d-flex align-items-center justify-content-center text-muted"><span className="spinner-border spinner-border-sm me-2" />Loading document…</div>}
+              {!doc && !docError && <SkeletonRegion label="Loading document…" delay={0}><div className="mc-doc-viewer"><Skeleton height="100%" radius="8px" /></div></SkeletonRegion>}
               {doc && kind === "pdf" && <iframe className="mc-doc-viewer" src={doc.url} title={`Proof document for claim ${detail.id}`} />}
               {doc && kind === "image" && <img className="mc-doc-viewer-image" src={doc.url} alt={`Proof document for claim ${detail.id}`} />}
               {doc && !kind && <div className="alert alert-secondary small">This file type cannot be previewed. Use Download to open it.</div>}

@@ -6,7 +6,6 @@ import {
   CircleDollarSign,
   Clock3,
   Info,
-  LoaderCircle,
   Megaphone,
   Moon,
   PencilLine,
@@ -17,6 +16,7 @@ import {
   getNotificationTypeLabel,
   isNotificationRead,
 } from "../../utils/notificationUtils";
+import { ListRowsSkeleton, SkeletonRegion } from "../skeletons";
 
 const TYPE_ICONS = {
   event: CalendarDays,
@@ -44,10 +44,9 @@ export default function NotificationList({
 }) {
   if (loading) {
     return (
-      <div className={`mc-notification-state${compact ? " is-compact" : ""}`} role="status">
-        <LoaderCircle className="mc-event-state__spinner" size={24} aria-hidden="true" />
-        <span>Loading notifications...</span>
-      </div>
+      <SkeletonRegion label="Loading notifications…" className={compact ? "p-2" : ""}>
+        <ListRowsSkeleton rows={compact ? 3 : 4} />
+      </SkeletonRegion>
     );
   }
 

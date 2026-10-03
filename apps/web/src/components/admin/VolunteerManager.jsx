@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CalendarDays, MapPin, Plus, Users } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import { formatClockTime } from "../../utils/prayerTime";
+import { BlockStack, SkeletonRegion } from "../skeletons";
 
 const blankForm = { title: "", description: "", opportunity_date: "", start_time: "", end_time: "", location: "", volunteers_required: "", requirements: "" };
 const STATUS_BADGE = { active: "bg-success", closed: "bg-warning text-dark", completed: "bg-secondary", cancelled: "bg-secondary" };
@@ -156,7 +157,7 @@ export default function VolunteerManager({ mosqueId }) {
       {loadError ? (
         <div className="alert alert-danger" role="alert">{loadError} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={() => setAttempt((n) => n + 1)}>Retry</button></div>
       ) : items === null ? (
-        <div className="placeholder-glow d-grid gap-2" aria-busy="true"><span className="visually-hidden" role="status">Loading opportunities…</span>{[1, 2].map((i) => <span key={i} className="placeholder rounded" style={{ height: 90 }} />)}</div>
+        <SkeletonRegion label="Loading opportunities…"><BlockStack heights={[90, 90]} /></SkeletonRegion>
       ) : items.length === 0 ? (
         <p className="text-muted">No volunteer opportunities yet.</p>
       ) : (
@@ -184,7 +185,7 @@ export default function VolunteerManager({ mosqueId }) {
                     {item.status === "closed" && <button type="button" className="btn btn-sm btn-outline-success" onClick={() => changeStatus(item, "active")}>Reopen</button>}
                     {open && <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => changeStatus(item, "completed")}>Mark completed</button>}
                   </div>
-                  {list === "loading" && <p className="small text-muted mt-2 mb-0" role="status">Loading volunteers…</p>}
+                  {list === "loading" && <SkeletonRegion label="Loading volunteers…" className="mt-2"><BlockStack heights={[32, 32]} /></SkeletonRegion>}
                   {typeof list === "string" && list !== "loading" && <p className="small text-danger mt-2 mb-0" role="alert">{list}</p>}
                   {Array.isArray(list) && (
                     list.length ? (

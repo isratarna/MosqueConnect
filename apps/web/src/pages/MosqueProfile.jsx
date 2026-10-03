@@ -8,7 +8,6 @@ import {
   CalendarDays,
   Clock3,
   Heart,
-  LoaderCircle,
   Map as MapIcon,
   Moon,
   MapPin,
@@ -38,6 +37,8 @@ import MosqueLostFoundCard from "../components/community/MosqueLostFoundCard";
 import ComplaintForm from "../components/community/ComplaintForm";
 import GoodsPledgeForm from "../components/community/GoodsPledgeForm";
 import { communityConfirmedLabel } from "../utils/suggestionFormat";
+import { ProfileSkeleton, SkeletonRegion } from "../components/skeletons";
+import ReportButton from "../components/ReportButton";
 
 /** Small "Suggest a correction" link shown on each card with editable details. */
 function SuggestLink({ onClick, label = "Suggest a correction" }) {
@@ -87,10 +88,9 @@ export default function MosqueProfile() {
 
   if (status === "loading") {
     return (
-      <div className="container py-5 text-center" role="status">
-        <LoaderCircle size={36} className="text-mc spin" aria-hidden="true" />
-        <p className="text-muted mt-3 mb-0">Loading mosque profile…</p>
-      </div>
+      <SkeletonRegion label="Loading mosque profile…" delay={0}>
+        <ProfileSkeleton />
+      </SkeletonRegion>
     );
   }
 
@@ -143,6 +143,7 @@ export default function MosqueProfile() {
       </div>
 
       <div className="d-flex flex-wrap gap-2 align-items-center mb-4">
+        <ReportButton type="mosque" id={mosque.id} />
         {mosque.rating !== null && (
           <span className="badge bg-success">
             <Star size={13} className="me-1" fill="currentColor" aria-hidden="true" />

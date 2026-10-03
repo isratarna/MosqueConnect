@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../utils/api";
+import { ListRowsSkeleton, SkeletonRegion } from "../components/skeletons";
 
 export default function VolunteerOpportunities() {
   const { user } = useAuth();
@@ -86,15 +87,7 @@ export default function VolunteerOpportunities() {
 
       {actionError && <div className="alert alert-danger" role="alert">{actionError}</div>}
       {loading ? (
-        <div className="d-flex flex-column gap-3 placeholder-glow">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="card border-0 shadow-sm p-4">
-              <div className="placeholder col-6 bg-secondary rounded mb-3" style={{ height: "24px" }}></div>
-              <div className="placeholder col-4 bg-secondary rounded mb-2 d-block"></div>
-              <div className="placeholder col-3 bg-secondary rounded d-block"></div>
-            </div>
-          ))}
-        </div>
+        <SkeletonRegion label="Loading opportunities…"><ListRowsSkeleton rows={3} /></SkeletonRegion>
       ) : error ? (
         <div className="alert alert-warning text-center py-5 shadow-sm">
           <AlertCircle size={32} className="text-warning mb-3 mx-auto" />

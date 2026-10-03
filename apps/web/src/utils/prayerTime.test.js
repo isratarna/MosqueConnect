@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { dhuhrJamaatLabel, formatClockTime, isEstimatedPrayer, nextJamaat, parseClockTime } from "./prayerTime.js";
+import { dhuhrJamaatLabel, formatClockTime, isEstimatedPrayer, nextJamaat, nextJamaatLabel, parseClockTime } from "./prayerTime.js";
 
 test("24-hour jamaat times parse without the old Fajr-only AM heuristic", () => {
   const dhuhr = parseClockTime("13:30", new Date(2026, 7, 21, 12, 0));
@@ -43,4 +43,12 @@ test("nextJamaat picks the next time today, then tomorrow's first", () => {
   assert.deepEqual(nextJamaat(schedule, new Date(2026, 0, 1, 12, 0)), { label: "Dhuhr", time: "13:15", tomorrow: false });
   assert.deepEqual(nextJamaat(schedule, new Date(2026, 0, 1, 20, 0)), { label: "Fajr", time: "05:00", tomorrow: true });
   assert.equal(nextJamaat([], new Date()), null);
+});
+
+test("nextJamaatLabel follows the clock instead of always showing Dhuhr", () => {
+  const prayer = { Fajr: "05:00", Dhuhr: "13:15", Asr: "16:30", Maghrib: "18:10", Isha: "19:45" };
+  assert.equal(nextJamaatLabel(prayer, new Date(2026, 0, 1, 12, 0)).prayer, "Dhuhr");
+  assert.equal(nextJamaatLabel(prayer, new Date(2026, 0, 1, 15, 0)).prayer, "Asr");
+  assert.equal(nextJamaatLabel(prayer, new Date(2026, 0, 1, 20, 0)).tomorrow, true);
+  assert.equal(nextJamaatLabel({}, new Date()), null);
 });

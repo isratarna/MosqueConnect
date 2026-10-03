@@ -39,6 +39,7 @@ import { ComplaintsInbox, GoodsDonationManager, LostFoundManager } from "../comp
 import SuggestionReviewList from "../components/suggestions/SuggestionReviewList";
 import { fetchMosqueSuggestions, reviewMosqueSuggestion } from "../utils/teamApi";
 import { abilitiesOf, allowedSections, canUseSection, roleLabel } from "../utils/teamRoles";
+import { BlockStack, SkeletonRegion } from "../components/skeletons";
 
 const ICONS = {
   overview: LayoutDashboard,
@@ -131,7 +132,7 @@ export default function AdminDashboard() {
 
   const needsMosque = (render) => {
     if (mosqueError) return <div className="alert alert-danger" role="alert">{mosqueError} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={() => setMosqueAttempt((n) => n + 1)}>Retry</button></div>;
-    if (!mosque) return <div className="placeholder-glow" aria-busy="true"><span className="visually-hidden" role="status">Loading…</span><span className="placeholder rounded d-block mb-2" style={{ height: 40 }} /><span className="placeholder rounded d-block" style={{ height: 160 }} /></div>;
+    if (!mosque) return <SkeletonRegion label="Loading…"><BlockStack heights={[40, 160]} /></SkeletonRegion>;
     return render(mosque);
   };
 
