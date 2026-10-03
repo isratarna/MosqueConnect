@@ -32,9 +32,11 @@ import FacilityBadge from "../components/FacilityBadge";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import PrayerTimeline from "../components/PrayerTimeline";
+import RamadanCard from "../components/RamadanCard";
 import MosqueEventsSection from "../components/events/MosqueEventsSection";
 import MosqueCampaignsSection from "../components/campaigns/MosqueCampaignsSection";
 import { directionsUrl, fetchMosqueById } from "../utils/mosqueDiscovery";
+import { formatApiDate } from "../utils/intl";
 import { formatClockTime } from "../utils/prayerTime";
 import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
@@ -368,6 +370,9 @@ export default function MosqueProfile() {
 
       <div className="row g-4">
         <div className="col-lg-8">
+          {/* [Urmee · F4] Ramadan card first while the mosque is in a Ramadan period; nothing Ramadan-specific otherwise. */}
+          {mosque.period?.is_ramadan && <RamadanCard mosqueId={mosque.id} />}
+
           {eidJamaats.length > 0 && (
             <div className="card mc-card mc-eid-card mb-4" id="eid-jamaat">
               <div className="card-body">
@@ -389,6 +394,9 @@ export default function MosqueProfile() {
                 <h5 className="fw-bold mb-0"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.prayerTimes")}</h5>
                 <SuggestLink onClick={() => setSuggestField("prayer_time")} label={t("mosque.suggestTime")} />
               </div>
+              {mosque.period && (
+                <p className="small text-muted mb-2" data-testid="period-label">{t("mosque.periodLabel", { name: mosque.period.name, date: formatApiDate(mosque.period.ends_on, locale) })}</p>
+              )}
               {hasDailyPrayer ? (
                 <PrayerTimeline prayers={prayer} schedule={prayerSchedule} />
               ) : (
