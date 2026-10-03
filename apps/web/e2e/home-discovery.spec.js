@@ -55,13 +55,38 @@ async function authenticate(page) {
   await page.route("**/api/me/followed-mosques", (route) => route.fulfill({ json: { data: [] } }));
 }
 
-test("location permission denial provides recovery actions", async ({ page, context }) => {
-  await context.clearPermissions();
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Use my location" }).click();
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/events?**", (route) => route.fulfill({ json: { data: [] } }));
+  await page.route("**/api/stats/public", (route) => route.fulfill({ json: { data: null } }));
+  await page.route("**/api/eid-season", (route) => route.fulfill({ json: { data: null } }));
+  await page.route("**/api/mosques/catchable?**", (route) => route.fulfill({ json: { data: [], next: null } }));
+});
 
-  await expect(page.getByText(/Location unavailable/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Enter location manually" })).toBeVisible();
+test("location permission denial recovers through a persisted manual area", async ({ page, context }) => {
+  await context.clearPermissions();
+  await mockNearby(page, { data: mosques });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const locationCard = page.locator(".mc-location-card");
+  await locationCard.getByRole("button", { name: "Use my location" }).click();
+
+  await expect(locationCard.getByText(/Location unavailable/)).toBeVisible();
+  await locationCard.getByRole("button", { name: "Enter location manually" }).click();
+  await expect(page.getByRole("button", { name: "Save Location" })).toBeDisabled();
+  await page.getByLabel("Select your area").selectOption("Gulshan");
+  const nearbyRequest = page.waitForRequest((request) => {
+    const url = new URL(request.url());
+    return url.pathname === "/api/mosques/nearby"
+      && url.searchParams.get("latitude") === "23.7925"
+      && url.searchParams.get("longitude") === "90.4078";
+  });
+  await page.getByRole("button", { name: "Save Location" }).click();
+  await nearbyRequest;
+  await expect(page.getByRole("heading", { name: "Enter location manually" })).toBeHidden();
+  await expect(locationCard.getByText(/Showing mosques near Gulshan/)).toBeVisible();
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(locationCard.getByText(/Showing mosques near Gulshan/)).toBeVisible();
+  await expect(locationCard.getByText(/Location unavailable/)).toBeHidden();
 });
 
 test("geolocation discovery stays consistent when the list selection changes", async ({ page, context }) => {
@@ -69,7 +94,7 @@ test("geolocation discovery stays consistent when the list selection changes", a
   await context.setGeolocation({ latitude: 23.7806, longitude: 90.4074 });
   await mockNearby(page, { data: mosques });
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Use my location" }).click();
+  await page.locator(".mc-location-card").getByRole("button", { name: "Use my location" }).click();
 
   await expect(page.getByText("2 mosques nearby")).toBeVisible();
   const discovery = page.locator("#map");
@@ -88,7 +113,7 @@ test("authenticated home shows nearby API failures and retry", async ({ page, co
 
   await expect(page.getByText("Could not load nearby mosques")).toBeVisible();
   await expect(page.getByText("Discovery temporarily unavailable.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  await expect(page.locator(".mc-auth-home-map").getByRole("button", { name: "Retry" })).toBeVisible();
 });
 
 test("authenticated home renders the empty discovery state", async ({ page, context }) => {
@@ -100,6 +125,22 @@ test("authenticated home renders the empty discovery state", async ({ page, cont
 
   await expect(page.getByText("No nearby mosques found")).toBeVisible();
   await expect(page.getByRole("link", { name: "Browse all mosques" })).toBeVisible();
+});
+
+test("authenticated home keeps Part 1 sections alongside nearby discovery and journey planning", async ({ page, context }) => {
+  await authenticate(page);
+  await context.grantPermissions(["geolocation"], { origin: "http://127.0.0.1:4173" });
+  await context.setGeolocation({ latitude: 23.7806, longitude: 90.4074 });
+  await mockNearby(page, { data: mosques });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("heading", { name: "My mosques", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "From your mosques", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Urgent blood requests near you", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nearby mosques", level: 1 })).toBeVisible();
+  await expect(page.locator(".mc-auth-home-map")).toHaveAttribute("data-selected-mosque-id", "1");
+  await expect(page.locator(".mc-nearby-slide.is-active")).toContainText("Nearest Mosque");
+  await expect(page.getByRole("link", { name: "Plan a journey", exact: true })).toHaveAttribute("href", "/journey");
 });
 
 test("authenticated user can register for and cancel an event", async ({ page }) => {

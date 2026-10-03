@@ -34,6 +34,7 @@ import { fetchEventCollection } from "../utils/eventApi";
 import { formatEventDate, formatEventTimeRange, getEventMosqueName, isEventPast } from "../utils/eventFilters";
 import EstimatedBadge from "../components/EstimatedBadge";
 import EidBanner from "../components/EidBanner";
+import CatchableJamaatCard, { JourneyEntryCard } from "../components/journey/CatchableJamaatCard";
 
 const MIN_CARD_WIDTH = 240;
 const CARD_GAP = 16;
@@ -94,14 +95,30 @@ export default function Home() {
     <>
       <EidBanner />
       {user ? (
-        <div className="mc-auth-experience">
+        <div className="mc-auth-experience mc-auth-nearby-experience">
           <AuthMyMosques />
+          <AuthenticatedNearbySection
+            origin={origin}
+            discovery={discovery}
+            selectedMosqueId={selectedMosqueId}
+            onMosqueSelect={setSelectedMosqueId}
+          />
+          <JourneyCards origin={origin} />
+          <NearbySection
+            origin={origin}
+            nearby={nearby}
+            nearest={nearest}
+            showMap={false}
+            selectedMosqueId={selectedMosqueId}
+            onMosqueSelect={setSelectedMosqueId}
+          />
           <AuthFeed />
           <AuthBloodRequests />
         </div>
       ) : (
         <>
           <Hero origin={origin} nearby={nearby} nearest={nearest} onRequestLocation={() => requestGeolocation({ force: origin.status === "failure" })} onManualLocationClick={() => setIsLocationModalOpen(true)} />
+          <JourneyCards origin={origin} />
           <NearbySection
             origin={origin}
             nearby={nearby}
@@ -120,15 +137,34 @@ export default function Home() {
   );
 }
 
+// "Next jamat you can catch" ar journey planner-e jawar card pashapashi.
+function JourneyCards({ origin }) {
+  return (
+    <section className="mc-journey-cards" aria-label="Catch a jamaat">
+      <div className="container">
+        <div className="row g-3">
+          <div className="col-lg-7">
+            <CatchableJamaatCard origin={origin} />
+          </div>
+          <div className="col-lg-5">
+            <JourneyEntryCard />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMosqueSelect }) {
   const { mosques, status: apiStatus, error: apiError, retry: retryApi } = discovery;
 
   useEffect(() => {
-    requestGeolocation();
-  }, []);
+    if (origin.status === "idle") requestGeolocation();
+  }, [origin.status]);
 
+  const hasLocation = ["success", "manual"].includes(origin.status);
   const isFindingLocation = ["idle", "requesting", "locating"].includes(origin.status);
-  const isLoadingMosques = origin.status === "success" && ["idle", "loading"].includes(apiStatus);
+  const isLoadingMosques = hasLocation && ["idle", "loading"].includes(apiStatus);
 
   return (
     <section
@@ -140,10 +176,10 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
         <div className="mc-auth-home-map__map-wrap">
           <MapView
             className="mc-map mc-auth-home-map__map"
-            center={origin.status === "success" ? { lat: origin.lat, lng: origin.lng } : DEFAULT_CENTER}
+            center={hasLocation ? { lat: origin.lat, lng: origin.lng } : DEFAULT_CENTER}
             zoom={14}
             mosques={mosques}
-            userPos={origin.status === "success" ? { lat: origin.lat, lng: origin.lng } : null}
+            userPos={hasLocation ? { lat: origin.lat, lng: origin.lng } : null}
             selectedMosqueId={selectedMosqueId}
             onMosqueSelect={onMosqueSelect}
           />
@@ -178,7 +214,7 @@ function AuthenticatedNearbySection({ origin, discovery, selectedMosqueId, onMos
               </MapFeedback>
             )}
 
-            {apiStatus === "error" && origin.status === "success" && (
+            {apiStatus === "error" && hasLocation && (
               <MapFeedback
                 icon={<TriangleAlert size={21} aria-hidden="true" />}
                 title="Could not load nearby mosques"
@@ -1063,10 +1099,10 @@ function LocationPickerModal({ onClose }) {
           <div className="modal-body">
             <form onSubmit={handleSubmit} id="manual-location-form">
               <label htmlFor="area-select" className="form-label">Select your area</label>
-              <select 
-                id="area-select" 
-                className="form-select" 
-                value={area} 
+              <select
+                id="area-select"
+                className="form-select"
+                value={area}
                 onChange={(e) => setArea(e.target.value)}
                 required
               >
