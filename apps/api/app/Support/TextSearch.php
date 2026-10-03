@@ -23,21 +23,18 @@ final class TextSearch
         $driver = $query->getConnection()->getDriverName();
         $useFullText = in_array($driver, ['mysql', 'mariadb'], true) && mb_strlen($term) >= self::FULLTEXT_MIN_LENGTH;
         $like = '%'.addcslashes($term, '%_\\').'%';
+        $allColumns = array_values(array_unique([...$fullTextColumns, ...$likeColumns]));
 
-        return $query->where(function (Builder $query) use ($fullTextColumns, $likeColumns, $term, $useFullText, $like): void {
+        return $query->where(function (Builder $query) use ($fullTextColumns, $allColumns, $term, $useFullText, $like): void {
             if ($useFullText) {
                 $words = collect(preg_split('/\s+/', preg_replace('/[+\-<>()~*"@]+/', ' ', $term)))
                     ->filter()
                     ->map(fn (string $word): string => "+{$word}*")
                     ->implode(' ');
                 $query->whereFullText($fullTextColumns, $words, ['mode' => 'boolean']);
-            } else {
-                foreach ($fullTextColumns as $column) {
-                    $query->orWhere($column, 'like', $like);
-                }
             }
 
-            foreach ($likeColumns as $column) {
+            foreach ($allColumns as $column) {
                 $query->orWhere($column, 'like', $like);
             }
         });

@@ -30,7 +30,7 @@ import { eventCategoryLabel } from "../utils/labels";
 import MapView from "../components/MapView";
 import VerifiedBadge from "../components/VerifiedBadge";
 import { useAuth } from "../context/AuthContext";
-import { DEFAULT_CENTER } from "../config";
+import { DEFAULT_CENTER, FALLBACK_PHOTO } from "../config";
 import { useMosqueDiscovery } from "../hooks/useMosqueDiscovery";
 import { directionsUrl } from "../utils/mosqueDiscovery";
 import { isEstimatedPrayer, nextJamaatLabel } from "../utils/prayerTime";
@@ -616,7 +616,7 @@ function NearbySection({ origin, nearby, nearest, showMap = true, selectedMosque
                         alt={mosque.name}
                         onError={(event) => {
                           event.currentTarget.onerror = null;
-                          event.currentTarget.src = "/uiRef.jpeg";
+                          event.currentTarget.src = FALLBACK_PHOTO;
                         }}
                       />
                       <div className="card-body mc-nearby-card__body d-flex flex-column">

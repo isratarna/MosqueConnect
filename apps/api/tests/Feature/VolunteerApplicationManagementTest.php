@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Mosque;
+use App\Models\Notification;
 use App\Models\User;
 use App\Models\VolunteerApplication;
 use App\Models\VolunteerOpportunity;
@@ -192,7 +193,7 @@ class VolunteerApplicationManagementTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $this->postJson("/api/volunteer-opportunities/{$opportunity->id}/register")
+        $this->postJson("/api/volunteer-opportunities/{$opportunity->id}/register", ['note' => 'I can help with setup'])
             ->assertCreated()
             ->assertJsonPath('data.volunteer_opportunity_id', $opportunity->id)
             ->assertJsonPath('data.status', VolunteerApplication::STATUS_PENDING);
@@ -210,6 +211,110 @@ class VolunteerApplicationManagementTest extends TestCase
             'volunteer_opportunity_id' => $opportunity->id,
             'user_id' => $user->id,
             'status' => VolunteerApplication::STATUS_CANCELLED,
+            'note' => 'I can help with setup',
+        ]);
+    }
+
+    public function test_admin_can_track_attendance_export_roster_and_message_volunteers(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_MOSQUE_ADMIN]);
+        $mosque = Mosque::factory()->create(['owner_id' => $admin->id, 'verification_status' => Mosque::VERIFICATION_VERIFIED]);
+        $opportunity = VolunteerOpportunity::factory()->active()->create([
+            'mosque_id' => $mosque->id,
+            'opportunity_date' => today()->addDay()->toDateString(),
+        ]);
+        $volunteer = User::factory()->create(['name' => 'Volunteer Name', 'phone' => '+8801700000099']);
+        $application = VolunteerApplication::factory()->create([
+            'volunteer_opportunity_id' => $opportunity->id,
+            'user_id' => $volunteer->id,
+            'status' => VolunteerApplication::STATUS_ACCEPTED,
+            'note' => 'Can arrange chairs',
+        ]);
+        Sanctum::actingAs($admin);
+
+        $this->getJson("/api/admin/mosques/{$mosque->id}/volunteer-opportunities/{$opportunity->id}/registrations?search=Volunteer")
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.user.name', 'Volunteer Name')
+            ->assertJsonPath('data.0.note', 'Can arrange chairs');
+
+        $this->patchJson("/api/admin/mosques/{$mosque->id}/volunteer-opportunities/{$opportunity->id}/registrations/{$application->id}", [
+            'status' => 'attended',
+            'hours' => 3.5,
+        ])->assertOk()
+            ->assertJsonPath('data.attendance_status', 'attended')
+            ->assertJsonPath('data.hours', '3.5')
+            ->assertJsonPath('data.certificate_available', true);
+
+        $csv = $this->get("/api/admin/mosques/{$mosque->id}/volunteer-opportunities/{$opportunity->id}/registrations/export");
+        $csv->assertOk();
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $csv->streamedContent());
+        $this->assertStringContainsString('Volunteer Name', $csv->streamedContent());
+
+        $this->postJson("/api/admin/mosques/{$mosque->id}/volunteer-opportunities/{$opportunity->id}/message", ['message' => 'Please arrive at 8 AM.'])
+            ->assertOk()
+            ->assertJsonPath('recipients_count', 1);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $volunteer->id,
+            'type' => Notification::TYPE_VOLUNTEER,
+            'reference_type' => 'volunteer_message',
+        ]);
+    }
+
+    public function test_volunteer_summary_and_certificate_are_limited_to_attended_records(): void
+    {
+        $user = User::factory()->create();
+        $opportunity = VolunteerOpportunity::factory()->active()->create([
+            'opportunity_date' => today()->subDay()->toDateString(),
+        ]);
+        $application = VolunteerApplication::factory()->create([
+            'volunteer_opportunity_id' => $opportunity->id,
+            'user_id' => $user->id,
+            'status' => VolunteerApplication::STATUS_ACCEPTED,
+            'attendance_status' => 'attended',
+            'hours' => 2.5,
+            'certificate_code' => 'CERTIFICATE123456789',
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/me/volunteer-summary')
+            ->assertOk()
+            ->assertJsonPath('total_opportunities_attended', 1)
+            ->assertJsonPath('total_hours', 2.5);
+        $this->get("/api/me/volunteer-registrations/{$application->id}/certificate")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+        $this->getJson('/api/verify/volunteer/'.$application->certificate_code)
+            ->assertOk()
+            ->assertJsonPath('valid', true)
+            ->assertJsonPath('volunteer', $user->name);
+
+        $other = User::factory()->create();
+        $notAttended = VolunteerApplication::factory()->create([
+            'volunteer_opportunity_id' => $opportunity->id,
+            'user_id' => $other->id,
+            'status' => VolunteerApplication::STATUS_ACCEPTED,
+            'attendance_status' => 'registered',
+        ]);
+        $this->getJson("/api/me/volunteer-registrations/{$notAttended->id}/certificate")->assertNotFound();
+    }
+
+    public function test_daily_volunteer_reminder_notifies_accepted_volunteers_for_tomorrow(): void
+    {
+        $volunteer = User::factory()->create();
+        $opportunity = VolunteerOpportunity::factory()->active()->create(['opportunity_date' => today()->addDay()->toDateString()]);
+        VolunteerApplication::factory()->create([
+            'volunteer_opportunity_id' => $opportunity->id,
+            'user_id' => $volunteer->id,
+            'status' => VolunteerApplication::STATUS_ACCEPTED,
+            'attendance_status' => 'registered',
+        ]);
+
+        $this->artisan('volunteers:send-reminders')->assertSuccessful();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $volunteer->id,
+            'reference_type' => 'volunteer_reminder',
         ]);
     }
 

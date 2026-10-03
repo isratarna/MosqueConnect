@@ -13,7 +13,12 @@ export const GOOGLE_MAPS_API_KEY = import.meta.env?.VITE_DISABLE_GOOGLE_MAPS ===
 // [Urmee · F5 Part 5] Public contact address comes from VITE_CONTACT_EMAIL; unset means no placeholder
 // email is shown.
 export const CONTACT_EMAIL = import.meta.env?.VITE_CONTACT_EMAIL || "";
-export const API_BASE_URL = (import.meta.env?.VITE_API_URL || "http://localhost:8000").replace(/\/+$/, "");
+// Production is same-origin (Laravel serves the SPA), so the base is empty and paths stay "/api/...".
+// Dev uses the Vite proxy unless VITE_API_URL is set. Any .env VITE_API_URL is ignored in production builds.
+export const API_BASE_URL = (import.meta.env?.DEV ? import.meta.env.VITE_API_URL || "" : "").replace(/\/+$/, "");
+
+// Placeholder photo from apps/web/public; BASE_URL is "/app/" in builds.
+export const FALLBACK_PHOTO = `${import.meta.env?.BASE_URL ?? "/"}uiRef.jpeg`;
 
 export function apiUrl(path) {
   const normalized = path.startsWith("/") ? path : `/${path}`;

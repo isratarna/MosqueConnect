@@ -7,6 +7,7 @@ use App\Http\Resources\MosqueResource;
 use App\Http\Resources\PrayerScheduleResource;
 use App\Models\Mosque;
 use App\Models\MosqueEditSuggestion;
+use App\Models\RamadanTiming;
 use App\Services\PrayerScheduleService;
 use App\Services\Queries\MosqueQueryService;
 use App\Support\EidSeason;
@@ -95,13 +96,60 @@ class MosqueController extends Controller
         ]);
     }
 
-    public function prayerSchedule(Mosque $mosque, PrayerScheduleService $schedules): JsonResponse
+    public function prayerSchedule(Request $request, Mosque $mosque, PrayerScheduleService $schedules): JsonResponse
     {
-        $mosque->load(['prayerTimes', 'jumuahSessions']);
-        $date = CarbonImmutable::now(config('prayer.timezone'));
+        $date = $this->resolveScheduleDate($request);
+        $mosque->load(['prayerTimes', 'jumuahSessions', 'schedulePeriods.prayerTimes']);
+        $period = $schedules->periodForDate($mosque, $date);
 
         return response()->json([
-            'data' => (new PrayerScheduleResource($mosque, $schedules->forDate($mosque, $date), $date->toDateString()))->resolve(),
+            'data' => (new PrayerScheduleResource(
+                $mosque,
+                $schedules->forDate($mosque, $date),
+                $date->toDateString(),
+                $period?->summary(),
+            ))->resolve(),
         ]);
+    }
+
+    public function ramadan(Request $request, Mosque $mosque, PrayerScheduleService $schedules): JsonResponse
+    {
+        $date = $this->resolveScheduleDate($request);
+        $period = $schedules->periodForDate($mosque, $date);
+
+        abort_unless($period?->is_ramadan, 404);
+
+        $timings = $period->load('ramadanTimings')->ramadanTimings
+            ->map(fn (RamadanTiming $timing): array => [
+                'date' => $timing->date->toDateString(),
+                'sehri_ends' => substr((string) $timing->sehri_ends, 0, 5),
+                'iftar' => substr((string) $timing->iftar, 0, 5),
+                'taraweeh_time' => $timing->taraweeh_time === null ? null : substr((string) $timing->taraweeh_time, 0, 5),
+            ])
+            ->keyBy('date');
+
+        return response()->json([
+            'data' => [
+                'period' => $period->summary(),
+                'date' => $date->toDateString(),
+                'today' => $timings->get($date->toDateString()),
+                'timings' => $timings->values(),
+            ],
+        ]);
+    }
+
+    /**
+     * The requested prayer schedule date, defaulting to today in the mosque's
+     * prayer timezone rather than the server's.
+     */
+    private function resolveScheduleDate(Request $request): CarbonImmutable
+    {
+        $validated = $request->validate(['date' => ['sometimes', 'date_format:Y-m-d']]);
+
+        if (! isset($validated['date'])) {
+            return CarbonImmutable::now(config('prayer.timezone'));
+        }
+
+        return CarbonImmutable::createFromFormat('!Y-m-d', $validated['date'], config('prayer.timezone'));
     }
 }

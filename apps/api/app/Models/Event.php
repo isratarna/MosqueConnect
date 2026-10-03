@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Database\Factories\EventFactory;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+use RRule\RRule;
 
 #[Fillable([
     'mosque_id',
@@ -24,6 +27,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'capacity',
     'registration_required',
     'status',
+    'recurrence_rule',
+    'recurrence_until',
     'moderation_status',
     'moderation_note',
 ])]
@@ -147,6 +152,82 @@ class Event extends Model
         return 'Registration is closed for this event.';
     }
 
+    public function isRecurring(): bool
+    {
+        return filled($this->recurrence_rule);
+    }
+
+    /**
+     * @return Collection<int, CarbonImmutable>
+     */
+    public function occurrencesBetween(?CarbonImmutable $start = null, ?CarbonImmutable $end = null): Collection
+    {
+        $rangeStart = ($start ?? CarbonImmutable::today())->startOfDay();
+        $rangeEnd = min($end ?? $rangeStart->addMonths(6), $rangeStart->addMonths(6))->endOfDay();
+
+        if (! $this->isRecurring()) {
+            $date = CarbonImmutable::parse($this->event_date->toDateString());
+
+            return $date->between($rangeStart, $rangeEnd) ? collect([$date]) : collect();
+        }
+
+        $rule = $this->recurrenceRule();
+        $dates = collect();
+
+        foreach ($rule as $occurrence) {
+            $date = CarbonImmutable::instance($occurrence)->startOfDay();
+
+            if ($date->gt($rangeEnd)) {
+                break;
+            }
+
+            if ($date->gte($rangeStart)) {
+                $dates->push($date);
+            }
+
+            if ($dates->count() >= 100) {
+                break;
+            }
+        }
+
+        return $dates;
+    }
+
+    public function recurrenceSummary(): ?string
+    {
+        if (! $this->isRecurring()) {
+            return null;
+        }
+
+        try {
+            return $this->recurrenceRule()->humanReadable(['include_start' => false]);
+        } catch (\InvalidArgumentException) {
+            return null;
+        }
+    }
+
+    private function recurrenceRule(): RRule
+    {
+        $parts = [];
+        foreach (explode(';', (string) $this->recurrence_rule) as $segment) {
+            [$key, $value] = explode('=', $segment, 2);
+            $parts[strtoupper($key)] = strtoupper($value);
+        }
+
+        if ($this->recurrence_until) {
+            $storedUntil = $this->recurrence_until->format('Ymd');
+            $ruleUntil = $parts['UNTIL'] ?? $storedUntil;
+            $parts['UNTIL'] = min($ruleUntil, $storedUntil);
+        }
+
+        if (isset($parts['UNTIL'])) {
+            $parts['UNTIL'] = CarbonImmutable::createFromFormat('!Ymd', $parts['UNTIL'])->endOfDay()->format('Y-m-d H:i:s');
+        }
+        $parts['DTSTART'] = CarbonImmutable::parse($this->event_date->toDateString().' '.$this->start_time)->format('Y-m-d H:i:s');
+
+        return new RRule($parts);
+    }
+
     public function contentReports(): HasMany
     {
         return $this->hasMany(ContentReport::class, 'reportable_id')
@@ -212,6 +293,7 @@ class Event extends Model
     {
         return [
             'event_date' => 'date:Y-m-d',
+            'recurrence_until' => 'date:Y-m-d',
             'capacity' => 'integer',
             'registration_required' => 'boolean',
         ];

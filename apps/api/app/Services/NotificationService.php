@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\EidJamaat;
 use App\Models\Event;
+use App\Models\EventRegistration;
 use App\Models\Mosque;
 use App\Models\Notification;
+use App\Models\PrayerSchedulePeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -33,14 +35,63 @@ class NotificationService
         ]);
     }
 
+    public function notifyEventRegistrants(Event $event, string $referenceType, string $title, string $message, ?int $referenceId = null): int
+    {
+        $event->loadMissing('mosque');
+        $created = 0;
+        $referenceId ??= $event->id;
+
+        $event->registrations()
+            ->whereIn('status', [EventRegistration::STATUS_REGISTERED, EventRegistration::STATUS_ATTENDED, EventRegistration::STATUS_WAITLISTED])
+            ->with('user')
+            ->chunkById(500, function ($registrations) use ($event, $referenceType, $referenceId, $title, $message, &$created): void {
+                foreach ($registrations as $registration) {
+                    $alreadySent = Notification::query()
+                        ->where('user_id', $registration->user_id)
+                        ->where('reference_type', $referenceType)
+                        ->where('reference_id', $referenceId)
+                        ->exists();
+
+                    if ($alreadySent) {
+                        continue;
+                    }
+
+                    $created += (int) $this->notifyUser($registration->user_id, $event->mosque, [
+                        'type' => Notification::TYPE_EVENT,
+                        'title' => $title,
+                        'message' => $message,
+                        'reference_type' => $referenceType,
+                        'reference_id' => $referenceId,
+                    ]);
+                }
+            });
+
+        return $created;
+    }
+
+    public function notifyVolunteer(int $userId, Mosque $mosque, int $referenceId, string $title, string $message, string $referenceType = Notification::REFERENCE_VOLUNTEER_APPLICATION): bool
+    {
+        return $this->notifyUser($userId, $mosque, [
+            'type' => Notification::TYPE_VOLUNTEER,
+            'title' => Str::limit($title, 255, ''),
+            'message' => Str::limit($message, 10000, ''),
+            'reference_type' => $referenceType,
+            'reference_id' => $referenceId,
+        ]);
+    }
+
     /**
      * Notify followers when an announcement is published.
      *
      * The announcement module is not implemented yet, so its persisted ID and
      * title form the narrow integration contract for that future feature.
      */
-    public function notifyAnnouncementPublished(Mosque $mosque, int $announcementId, string $title): int
+    public function notifyAnnouncementPublished(Mosque $mosque, int $announcementId, string $title, ?string $category = null): int
     {
+        if ($category === 'janazah') {
+            $title = "Janazah: {$title}";
+        }
+
         return $this->notifyMosqueFollowers($mosque, [
             'type' => Notification::TYPE_ANNOUNCEMENT,
             'title' => Str::limit("New Announcement: {$title}", 255, ''),
@@ -73,6 +124,20 @@ class NotificationService
             'message' => Str::limit($message, 10000, ''),
             'reference_type' => Notification::REFERENCE_PRAYER_SCHEDULE,
             'reference_id' => $scheduleChangeId,
+        ]);
+    }
+
+    public function notifySchedulePeriodStarting(PrayerSchedulePeriod $period): int
+    {
+        $period->loadMissing('mosque');
+        $title = $period->is_ramadan ? 'New Ramadan timetable from tomorrow' : 'New prayer timetable from tomorrow';
+
+        return $this->notifyMosqueFollowers($period->mosque, [
+            'type' => Notification::TYPE_PRAYER_SCHEDULE,
+            'title' => $title,
+            'message' => "{$period->mosque->name} starts its {$period->name} prayer timetable tomorrow.",
+            'reference_type' => Notification::REFERENCE_PRAYER_SCHEDULE,
+            'reference_id' => $period->id,
         ]);
     }
 

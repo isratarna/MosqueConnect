@@ -8,7 +8,7 @@ class LogSmsOtpSender implements SmsOtpSender
 {
     public function send(string $phone, string $otp): void
     {
-        if (! app()->environment(['local', 'testing'])) {
+        if (! app()->environment(['local', 'testing']) && ! config('otp.sms.allow_log_in_production')) {
             throw new RuntimeException('SMS provider is not configured.');
         }
 

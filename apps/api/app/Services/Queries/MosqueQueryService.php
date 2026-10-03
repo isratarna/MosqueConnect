@@ -34,11 +34,7 @@ class MosqueQueryService
     /** @return EloquentCollection<int, Mosque>|Collection<int, Mosque> */
     public function nearby(float $lat, float $lng, float $radiusKm): Collection
     {
-        $query = Mosque::query()
-            ->with(['facilities', 'prayerTimes'])
-            ->withCount('followers')
-            ->withMax('prayerTimes', 'updated_at')
-            ->withMax('jumuahSessions', 'updated_at');
+        $query = $this->listingQuery();
 
         if (DB::connection()->getDriverName() === 'sqlite') {
             return $query->get()
@@ -68,11 +64,7 @@ class MosqueQueryService
     /** @param array<string, mixed> $filters */
     public function search(array $filters): LengthAwarePaginator
     {
-        $query = Mosque::query()
-            ->with(['facilities', 'prayerTimes'])
-            ->withCount('followers')
-            ->withMax('prayerTimes', 'updated_at')
-            ->withMax('jumuahSessions', 'updated_at');
+        $query = $this->listingQuery();
         $this->applyFilters($query, $filters);
 
         $hasCoordinates = isset($filters['lat'], $filters['lng']);
@@ -117,6 +109,20 @@ class MosqueQueryService
         }
 
         return $paginator;
+    }
+
+    /**
+     * Base query for the public mosque listings. Schedule periods are eager
+     * loaded because every listed mosque reports the period that covers today,
+     * which would otherwise be a query per mosque.
+     */
+    private function listingQuery(): Builder
+    {
+        return Mosque::query()
+            ->with(['facilities', 'prayerTimes', 'schedulePeriods.prayerTimes'])
+            ->withCount('followers')
+            ->withMax('prayerTimes', 'updated_at')
+            ->withMax('jumuahSessions', 'updated_at');
     }
 
     /** @param array<string, mixed> $filters */

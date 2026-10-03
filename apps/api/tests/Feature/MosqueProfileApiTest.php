@@ -71,8 +71,8 @@ class MosqueProfileApiTest extends TestCase
         );
         $this->assertNotNull($response->json('data.schedule_updated_at'));
         $this->assertSame(
-            Carbon::parse($expectedFreshness)->format('Y-m-d H:i:s'),
-            Carbon::parse($response->json('data.schedule_updated_at'))->format('Y-m-d H:i:s'),
+            Carbon::parse($expectedFreshness, config('app.timezone'))->utc()->format('Y-m-d H:i:s'),
+            Carbon::parse($response->json('data.schedule_updated_at'))->utc()->format('Y-m-d H:i:s'),
         );
     }
 

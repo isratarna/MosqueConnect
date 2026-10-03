@@ -23,6 +23,7 @@ class MosqueResource extends JsonResource
         $schedule = $this->relationLoaded('prayerTimes')
             ? app(PrayerScheduleService::class)->forDate($this->resource)
             : null;
+        $period = $schedule === null ? null : app(PrayerScheduleService::class)->periodForDate($this->resource);
 
         $payload = [
             'id' => $this->id,
@@ -70,6 +71,7 @@ class MosqueResource extends JsonResource
 
             'prayer' => $schedule === null ? [] : $this->prayerSummary($schedule, 'jamaat_time'),
             'prayer_sources' => $schedule === null ? [] : $this->prayerSummary($schedule, 'source'),
+            'period' => $period?->summary(),
             'created_at' => $this->created_at?->toJSON(),
             'updated_at' => $this->updated_at?->toJSON(),
         ];
@@ -131,6 +133,9 @@ class MosqueResource extends JsonResource
         return $summary;
     }
 
+    /**
+     * When the mosque's prayer or Jumuah times were last touched.
+     */
     private function scheduleUpdatedAt(): ?string
     {
         $updatedAt = collect([

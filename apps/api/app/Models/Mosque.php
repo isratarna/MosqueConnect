@@ -194,9 +194,14 @@ class Mosque extends Model
      */
     public function prayerTimes(): HasMany
     {
-        return $this->hasMany(PrayerTime::class)->orderByRaw(
+        return $this->hasMany(PrayerTime::class)->whereNull('period_id')->orderByRaw(
             "CASE prayer WHEN 'fajr' THEN 1 WHEN 'dhuhr' THEN 2 WHEN 'asr' THEN 3 WHEN 'maghrib' THEN 4 WHEN 'isha' THEN 5 ELSE 6 END",
         );
+    }
+
+    public function schedulePeriods(): HasMany
+    {
+        return $this->hasMany(PrayerSchedulePeriod::class);
     }
 
     /**

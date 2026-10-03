@@ -21,19 +21,19 @@ class VolunteerOpportunityManagementTest extends TestCase
             'mosque_id' => $mosque->id,
             'status' => VolunteerOpportunity::STATUS_ACTIVE,
             'title' => 'Community kitchen support',
-            'opportunity_date' => '2026-09-10',
+            'opportunity_date' => today()->addDays(7)->toDateString(),
         ]);
 
         VolunteerOpportunity::factory()->create([
             'mosque_id' => $mosque->id,
             'status' => VolunteerOpportunity::STATUS_CLOSED,
-            'opportunity_date' => '2026-09-12',
+            'opportunity_date' => today()->addDays(9)->toDateString(),
         ]);
 
         VolunteerOpportunity::factory()->create([
             'mosque_id' => $mosque->id,
             'status' => VolunteerOpportunity::STATUS_CANCELLED,
-            'opportunity_date' => '2026-09-13',
+            'opportunity_date' => today()->addDays(11)->toDateString(),
         ]);
 
         $this->getJson('/api/volunteer-opportunities')
@@ -79,7 +79,7 @@ class VolunteerOpportunityManagementTest extends TestCase
         $response = $this->postJson("/api/admin/mosques/{$mosque->id}/volunteer-opportunities", [
             'title' => 'Food drive setup',
             'description' => 'Help sort and pack food donations.',
-            'opportunity_date' => '2026-09-15',
+            'opportunity_date' => today()->addDays(14)->toDateString(),
             'start_time' => '09:00',
             'end_time' => '12:00',
             'location' => 'Mosque hall',
@@ -111,7 +111,7 @@ class VolunteerOpportunityManagementTest extends TestCase
         $this->postJson("/api/admin/mosques/{$mosque->id}/volunteer-opportunities", [
             'title' => 'Test',
             'description' => 'Not allowed',
-            'opportunity_date' => '2026-09-15',
+            'opportunity_date' => today()->addDays(14)->toDateString(),
             'start_time' => '09:00',
             'end_time' => '10:00',
             'location' => 'Here',
