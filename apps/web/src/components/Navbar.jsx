@@ -57,11 +57,29 @@ export default function Navbar() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [activeDropdown]);
 
+  // The navbar only cares about one threshold, so the listener is coalesced into
+  // a frame and the state is set only when the answer actually flips. It used to
+  // call setState on every scroll event, which put React work on the critical
+  // path of a gesture for a class name that changes twice per page.
   useEffect(() => {
-    const updateScrollState = () => setIsScrolled(window.scrollY > 24);
-    updateScrollState();
-    window.addEventListener("scroll", updateScrollState, { passive: true });
-    return () => window.removeEventListener("scroll", updateScrollState);
+    let frame = 0;
+
+    const read = () => {
+      frame = 0;
+      const scrolled = window.scrollY > 24;
+      setIsScrolled((previous) => (previous === scrolled ? previous : scrolled));
+    };
+
+    const request = () => {
+      if (!frame) frame = requestAnimationFrame(read);
+    };
+
+    read();
+    window.addEventListener("scroll", request, { passive: true });
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", request);
+    };
   }, []);
 
   const handleLogout = () => {

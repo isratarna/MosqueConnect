@@ -5,7 +5,11 @@ Each section says **where** to run it and **what the marker should see**.
 
 Three places commands run:
 
-- **[VPS]** — in the SSH session (`ssh s20230204056@187.52.122.100`)
+- **[VPS]** — in the SSH session. Connect with `ssh cse3100`; if that alias is not
+  set up on the machine you are demoing from, use
+  `ssh -i $HOME\.ssh\cse3100_login s20230204056@187.52.122.100`. A bare
+  `ssh s20230204056@187.52.122.100` will ask for a password, because neither key
+  has a filename that ssh looks for by default.
 - **[Laptop]** — local PowerShell, in the repo folder
 - **[Browser]** — nothing to type, just click
 

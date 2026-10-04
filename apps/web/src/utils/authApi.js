@@ -33,6 +33,23 @@ export function clearAuthStorage() {
   }
 }
 
+/*
+ * The last user GET /api/auth/me returned. Session truth is still /me — this is
+ * only used to paint the signed-in interface on the first frame instead of
+ * holding the whole page blank for a round trip, and /me overwrites it as soon
+ * as it answers.
+ */
+export function getCachedUser() {
+  try {
+    const raw = localStorage.getItem(AUTH_USER_KEY);
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    return user && typeof user === "object" ? user : null;
+  } catch {
+    return null;
+  }
+}
+
 export function cacheUser(user) {
   try {
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));

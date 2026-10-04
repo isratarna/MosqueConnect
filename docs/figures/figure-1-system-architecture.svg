@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 780" width="1180" height="780" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f6b4a"/>
+    </marker>
+    <marker id="arrowGold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a6412"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="780" fill="#ffffff"/>
+
+  <text x="40" y="44" font-size="22" font-weight="600" fill="#15241d">Figure 1 — MosqueConnect system architecture</text>
+  <text x="40" y="66" font-size="13" fill="#5a6a63">Layered client-server design: a React single-page application consumes a Laravel REST API backed by MySQL.</text>
+
+  <rect x="40" y="92" width="790" height="196" rx="10" fill="#f4f8f6" stroke="#c9d6cf"/>
+  <text x="60" y="118" font-size="15" font-weight="600" fill="#1f6b4a">Client — web browser</text>
+  <text x="60" y="137" font-size="12" fill="#5a6a63">React 18 single-page application, built with Vite and routed with React Router 7</text>
+
+  <rect x="60" y="150" width="175" height="118" rx="8" fill="#ffffff" stroke="#c9d6cf"/>
+  <text x="74" y="173" font-size="13" font-weight="600" fill="#15241d">Pages</text>
+  <text x="74" y="194" font-size="11.5" fill="#44544d">28 route screens,</text>
+  <text x="74" y="211" font-size="11.5" fill="#44544d">mostly lazy-loaded</text>
+  <text x="74" y="236" font-size="11.5" fill="#44544d">ProtectedRoute guards</text>
+  <text x="74" y="253" font-size="11.5" fill="#44544d">role and status</text>
+
+  <rect x="248" y="150" width="175" height="118" rx="8" fill="#ffffff" stroke="#c9d6cf"/>
+  <text x="262" y="173" font-size="13" font-weight="600" fill="#15241d">Components</text>
+  <text x="262" y="194" font-size="11.5" fill="#44544d">Shared layout, nav,</text>
+  <text x="262" y="211" font-size="11.5" fill="#44544d">skeletons, maps,</text>
+  <text x="262" y="228" font-size="11.5" fill="#44544d">feature folders</text>
+  <text x="262" y="253" font-size="11.5" fill="#44544d">Bootstrap 5 and mc-* CSS</text>
+
+  <rect x="436" y="150" width="190" height="118" rx="8" fill="#ffffff" stroke="#c9d6cf"/>
+  <text x="450" y="173" font-size="13" font-weight="600" fill="#15241d">Global state (Context)</text>
+  <text x="450" y="194" font-size="11.5" fill="#44544d">Auth</text>
+  <text x="450" y="211" font-size="11.5" fill="#44544d">→ Notifications</text>
+  <text x="450" y="228" font-size="11.5" fill="#44544d">→ Follow</text>
+  <text x="450" y="245" font-size="11.5" fill="#44544d">→ Google Maps</text>
+  <text x="450" y="262" font-size="11" fill="#6b7a73">unread count polled every 60 s</text>
+
+  <rect x="639" y="150" width="171" height="118" rx="8" fill="#ffffff" stroke="#c9d6cf"/>
+  <text x="653" y="173" font-size="13" font-weight="600" fill="#15241d">Data access</text>
+  <text x="653" y="194" font-size="11.5" fill="#44544d">utils/api.js adds</text>
+  <text x="653" y="211" font-size="11.5" fill="#44544d">headers and token,</text>
+  <text x="653" y="228" font-size="11.5" fill="#44544d">normalises errors</text>
+  <text x="653" y="253" font-size="11.5" fill="#44544d">eventApi, campaignApi…</text>
+
+  <line x1="435" y1="288" x2="435" y2="340" stroke="#1f6b4a" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="449" y="309" font-size="12.5" font-weight="600" fill="#1f6b4a">HTTPS · JSON</text>
+  <text x="449" y="327" font-size="12" fill="#44544d">Sanctum bearer token · Accept: application/json</text>
+
+  <rect x="40" y="344" width="790" height="246" rx="10" fill="#f4f8f6" stroke="#c9d6cf"/>
+  <text x="60" y="370" font-size="15" font-weight="600" fill="#1f6b4a">Laravel 13 REST API (PHP 8.3+, PHP 8.4 in production)</text>
+
+  <rect x="60" y="384" width="750" height="44" rx="8" fill="#ffffff" stroke="#c9d6cf"/>
+  <text x="74" y="403" font-size="13" font-weight="600" fill="#15241d">routes/api.php — about 240 endpoints under /api</text>
+  <text x="74" y="420" font-size="11.5" fill="#44544d">Middleware: auth:sanctum · active · role:mosque_admin,super_admin · role:super_admin · throttle (OTP, search, journey, suggestions, blood)</text>
+
+  <rect x="60" y="440" width="236" height="64" rx="8" fill="#ffffff" stroke="#c9d6cf"/>
+  <text x="74" y="462" font-size="13" font-weight="600" fill="#15241d">Controllers</text>
+  <text x="74" y="482" font-size="11.5" fill="#44544d">Validate every write,</text>
+  <text x="74" y="497" font-size="11.5" fill="#44544d">return JSON, paginate lists</text>
+
+  <rect x="317" y="440" width="236" height="64" rx="8" fill="#ffffff" stroke="#c9d6cf"/>
+  <text x="331" y="462" font-size="13" font-weight="600" fill="#15241d">Policies and Services</text>
+  <text x="331" y="482" font-size="11.5" fill="#44544d">Authorisation rules, OTP,</text>
+  <text x="331" y="497" font-size="11.5" fill="#44544d">notifications, prayer times</text>
+
+  <rect x="574" y="440" width="236" height="64" rx="8" fill="#ffffff" stroke="#c9d6cf"/>
+  <text x="588" y="462" font-size="13" font-weight="600" fill="#15241d">Eloquent models</text>
+  <text x="588" y="482" font-size="11.5" fill="#44544d">Relationships, scopes,</text>
+  <text x="588" y="497" font-size="11.5" fill="#44544d">Haversine nearby query</text>
+
+  <rect x="60" y="512" width="750" height="68" rx="8" fill="#fbf7ec" stroke="#e0cfa4"/>
+  <text x="74" y="531" font-size="12.5" font-weight="600" fill="#8a6412">Business rules enforced here</text>
+  <text x="74" y="550" font-size="11.5" fill="#5a5241">Phone-OTP sign-in · mosque claim and verification · team roles (owner, manager, editor, prayer-times)</text>
+  <text x="74" y="567" font-size="11.5" fill="#5a5241">Event capacity and unique registration · campaign pledge confirmation · moderation and audit logging</text>
+
+  <line x1="435" y1="590" x2="435" y2="638" stroke="#1f6b4a" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="449" y="618" font-size="12.5" font-weight="600" fill="#1f6b4a">SQL through Eloquent</text>
+
+  <rect x="40" y="642" width="790" height="96" rx="10" fill="#eef4f1" stroke="#c9d6cf"/>
+  <text x="60" y="668" font-size="15" font-weight="600" fill="#1f6b4a">MySQL 8</text>
+  <text x="60" y="690" font-size="12" fill="#44544d">51 migrations create 45 tables: users, mosques, schedules, followers, notifications, events, campaigns and the community tables (see Figure 3).</text>
+  <text x="60" y="712" font-size="12" fill="#44544d">Development runs MySQL 8.4 in a container; automated backend tests run against an in-memory SQLite database.</text>
+
+  <rect x="860" y="92" width="280" height="498" rx="10" fill="#fbfbfa" stroke="#d9d9d4" stroke-dasharray="5 4"/>
+  <text x="880" y="118" font-size="15" font-weight="600" fill="#8a6412">External services</text>
+  <text x="880" y="137" font-size="12" fill="#5a6a63">All optional; the app degrades gracefully.</text>
+
+  <rect x="880" y="152" width="240" height="88" rx="8" fill="#ffffff" stroke="#d9d9d4"/>
+  <text x="894" y="174" font-size="13" font-weight="600" fill="#15241d">Google Maps JS API</text>
+  <text x="894" y="194" font-size="11.5" fill="#44544d">Map views and location</text>
+  <text x="894" y="210" font-size="11.5" fill="#44544d">pickers. Without a key a</text>
+  <text x="894" y="226" font-size="11.5" fill="#44544d">placeholder is shown.</text>
+
+  <rect x="880" y="256" width="240" height="88" rx="8" fill="#ffffff" stroke="#d9d9d4"/>
+  <text x="894" y="278" font-size="13" font-weight="600" fill="#15241d">Geoapify routing</text>
+  <text x="894" y="298" font-size="11.5" fill="#44544d">Routes and travel times</text>
+  <text x="894" y="314" font-size="11.5" fill="#44544d">for the prayer-aware</text>
+  <text x="894" y="330" font-size="11.5" fill="#44544d">journey planner.</text>
+
+  <rect x="880" y="360" width="240" height="106" rx="8" fill="#ffffff" stroke="#d9d9d4"/>
+  <text x="894" y="382" font-size="13" font-weight="600" fill="#15241d">SMS / OTP sender</text>
+  <text x="894" y="402" font-size="11.5" fill="#44544d">Pluggable driver: real SMS,</text>
+  <text x="894" y="418" font-size="11.5" fill="#44544d">log, or demo (fixed code).</text>
+  <text x="894" y="440" font-size="11.5" fill="#8a6412">The public demo server uses</text>
+  <text x="894" y="456" font-size="11.5" fill="#8a6412">the demo driver.</text>
+
+  <rect x="880" y="482" width="240" height="88" rx="8" fill="#ffffff" stroke="#d9d9d4"/>
+  <text x="894" y="504" font-size="13" font-weight="600" fill="#15241d">Browser geolocation</text>
+  <text x="894" y="524" font-size="11.5" fill="#44544d">Used for distance sorting,</text>
+  <text x="894" y="540" font-size="11.5" fill="#44544d">with manual location and</text>
+  <text x="894" y="556" font-size="11.5" fill="#44544d">a Dhaka default fallback.</text>
+
+  <path d="M 810 196 L 876 196" stroke="#8a6412" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrowGold)" fill="none"/>
+  <path d="M 810 300 L 876 300" stroke="#8a6412" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrowGold)" fill="none"/>
+  <path d="M 810 412 L 876 412" stroke="#8a6412" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrowGold)" fill="none"/>
+  <path d="M 810 526 L 876 526" stroke="#8a6412" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrowGold)" fill="none"/>
+
+  <text x="40" y="766" font-size="11.5" fill="#6b7a73">Client-side route guards improve navigation only. Laravel remains the authoritative authorisation layer: every request is re-checked by middleware and policies.</text>
+</svg>

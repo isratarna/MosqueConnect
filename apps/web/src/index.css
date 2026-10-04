@@ -691,13 +691,28 @@ html {
 
 body {
   background-color: var(--mc-ivory);
-  background-image: url("/BackgroundImageforAllplaces.jpeg");
-  background-attachment: fixed;
-  background-position: center;
-  background-size: cover;
   color: var(--mc-ink);
   font-family: "Manrope", "Hind Siliguri", sans-serif;
   font-size: 0.9rem;
+}
+
+/*
+  The page texture used to be `background-attachment: fixed` on <body>, which
+  makes the browser repaint the whole viewport on every scroll frame — the
+  single largest cause of scroll stutter here. On its own fixed layer the photo
+  is rasterised once and then just stays where it is while content scrolls over
+  it, so scrolling costs nothing extra.
+*/
+body::before {
+  background-image: url("/BackgroundImageforAllplaces.jpeg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
 }
 
 h1,
@@ -1432,8 +1447,7 @@ main {
 .mc-auth-home-map__label,
 .mc-auth-home-map__browse {
   align-items: center;
-  backdrop-filter: blur(12px);
-  background: rgba(255, 252, 247, 0.92);
+  background: rgba(255, 252, 247, 0.97);
   border: 1px solid rgba(124, 102, 83, 0.18);
   border-radius: 10px;
   box-shadow: 0 5px 16px rgba(53, 39, 29, 0.11);
@@ -3467,8 +3481,8 @@ main {
   the rest of the interface retains its practical, readable card treatment.
 */
 :root {
-  --mc-glass: rgba(255, 254, 252, 0.84);
-  --mc-glass-strong: rgba(255, 254, 252, 0.91);
+  --mc-glass: rgba(255, 254, 252, 0.93);
+  --mc-glass-strong: rgba(255, 254, 252, 0.97);
   --mc-glass-line: rgba(137, 111, 86, 0.22);
   --mc-shadow-soft: 0 10px 28px rgba(53, 39, 29, 0.08);
   --mc-shadow-lift: 0 16px 32px rgba(53, 39, 29, 0.12);
@@ -3480,9 +3494,7 @@ main {
 }
 
 .mc-navbar {
-  background: rgba(251, 248, 242, 0.9);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(251, 248, 242, 0.97);
   transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
@@ -3519,13 +3531,6 @@ main {
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-
-  .mc-community-filter,
-  .mc-impact .container,
-  .mc-location-card,
-  .mc-hero__search-input,
-  .mc-hero__nearby,
-  .mc-auth-card,
   .mc-modal {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -3927,7 +3932,6 @@ main {
 
 @media (max-width: 575.98px) {
   body { font-size: 0.86rem; }
-  body { background-attachment: scroll; }
   .mc-hero { background-position: 58% 26%; min-height: 580px; }
   .mc-hero__inner { min-height: 580px; }
   .mc-hero h1 { font-size: 2.75rem; }
@@ -4027,10 +4031,6 @@ main {
 @media (max-width: 575.98px) {
   body {
     font-size: 0.86rem;
-  }
-
-  body {
-    background-attachment: scroll;
   }
 
   .mc-hero {
@@ -5129,10 +5129,17 @@ main {
   isolation: isolate;
 }
 
+/*
+  The photo's vertical position used to track --mc-parallax-y, so every scroll
+  frame repainted a cover-sized image through this layer's mask — expensive, and
+  the mask meant it could never be promoted to the compositor. The hero content
+  and the ambient glow still parallax (both move with the composited `translate`
+  property), so the effect survives; only the photo itself now holds still.
+*/
 .mc-hero::after {
   background:
     linear-gradient(90deg, rgba(251, 248, 242, 0.99) 0%, rgba(251, 248, 242, 0.88) 38%, rgba(251, 248, 242, 0.06) 72%),
-    url("/uiRef.jpeg") center calc(30% + var(--mc-parallax-y, 0px)) / cover;
+    url("/uiRef.jpeg") center 30% / cover;
   content: "";
   height: auto;
   inset: 0;
@@ -5194,13 +5201,6 @@ main {
   padding: 0.7rem 1rem;
 }
 
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .mc-browse-results-toolbar {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-}
-
 .mc-browse-results-count {
   font-weight: 600;
 }
@@ -5259,13 +5259,6 @@ main {
   transition: opacity var(--mc-dur-base) var(--mc-ease-out), transform var(--mc-dur-base) var(--mc-ease);
   width: 46px;
   z-index: 1030;
-}
-
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .mc-to-top {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
 }
 
 :root[data-mc-scrolled="true"] .mc-to-top {
@@ -6423,8 +6416,8 @@ body:lang(bn) {
   --mc-rust: #d0622f;
   --mc-rust-dark: #e58a5c;
   --mc-gold: #e0944f;
-  --mc-glass: rgba(33, 29, 24, 0.86);
-  --mc-glass-strong: rgba(33, 29, 24, 0.94);
+  --mc-glass: rgba(33, 29, 24, 0.94);
+  --mc-glass-strong: rgba(33, 29, 24, 0.98);
   --mc-glass-line: rgba(255, 238, 215, 0.13);
   --mc-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.35);
   --mc-shadow-lift: 0 16px 32px rgba(0, 0, 0, 0.45);
@@ -6441,7 +6434,7 @@ body:lang(bn) {
 
 /* The page texture is a light photograph; multiplying it into a dark base turns
    it into a faint texture instead of a bright wash. */
-:root[data-bs-theme="dark"] body {
+:root[data-bs-theme="dark"] body::before {
   background-blend-mode: multiply;
   background-color: var(--mc-ivory);
 }
@@ -6529,7 +6522,7 @@ body:lang(bn) {
   background:
     linear-gradient(90deg, rgba(22, 19, 15, 0.99) 0%, rgba(22, 19, 15, 0.9) 38%, rgba(22, 19, 15, 0.25) 72%),
     linear-gradient(rgba(22, 19, 15, 0.45), rgba(22, 19, 15, 0.45)),
-    url("/uiRef.jpeg") center calc(30% + var(--mc-parallax-y, 0px)) / cover;
+    url("/uiRef.jpeg") center 30% / cover;
 }
 
 /* Bootstrap utilities with fixed light values */
