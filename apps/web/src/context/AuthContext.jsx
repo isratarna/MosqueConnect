@@ -103,7 +103,7 @@ export function AuthProvider({ children }) {
   }
 
   // Verify OTP and authenticate user: POST /api/auth/verify-otp
-  async function verifyOtp(phoneNumber, otp) {
+  async function verifyOtp(phoneNumber, otp, { acceptTerms = false } = {}) {
     try {
       const res = await networkFetch(apiUrl("/api/auth/verify-otp"), {
         method: "POST",
@@ -111,7 +111,11 @@ export function AuthProvider({ children }) {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ phone: phoneNumber, otp }),
+        body: JSON.stringify({
+          phone: phoneNumber,
+          otp,
+          ...(acceptTerms ? { accept_terms: true } : {}),
+        }),
       });
 
       const data = await res.json().catch(() => ({}));

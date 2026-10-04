@@ -25,7 +25,7 @@ import {
   Share2,
   Star,
   Sun,
-  TriangleAlert, MessageSquareText, PackageOpen, UsersRound } from "lucide-react";
+  TriangleAlert, MessageSquareText, PackageOpen, UsersRound, Pin } from "lucide-react";
 import { urgencyClass } from "../data/mosques";
 import { getAnnouncementDetailsPath } from "../data/announcements";
 import FacilityBadge from "../components/FacilityBadge";
@@ -101,15 +101,23 @@ function AnnouncementItem({ announcement }) {
   const publishedOn = announcement.date || (announcement.published_at || "").slice(0, 10);
   const detailsPath = getAnnouncementDetailsPath(announcement.id);
   const pinned = Boolean(announcement.pinned || announcement.is_pinned);
+  // [Urmee · F9] Janazah notices get calm, distinct styling (no alarm colours) instead of the urgency colours.
+  // [Urmee · VIVA] F9: janazah category hole calm styling (alarm color na), ar niche image ar pin icon ao ei item e dekhai.
+  const janazah = announcement.category === "janazah";
 
   return (
-    <div className={`border-start border-4 border-${urgencyClass(announcement.urgency)} ps-3 mb-3`}>
+    <div className={janazah ? "mc-announcement--janazah ps-3 py-2 mb-3" : `border-start border-4 border-${urgencyClass(announcement.urgency)} ps-3 mb-3`}>
+      {/* [Urmee · F9] Image from the editor, with the title as alt text. */}
+      {announcement.image_url && <img src={announcement.image_url} alt={t("announcement.imageAlt", { title: announcement.title })} className="mc-announcement-image mb-2" loading="lazy" />}
       <div className="d-flex justify-content-between gap-2">
         <strong>
           <Link to={detailsPath} className="text-body text-decoration-none">{announcement.title}</Link>
-          {pinned && <span className="badge text-bg-secondary ms-2">{t("mosque.pinned")}</span>}
+          {/* [Urmee · F9] Pin icon next to the Pinned badge. */}
+          {pinned && <span className="badge text-bg-secondary ms-2"><Pin size={11} aria-hidden="true" /> {t("mosque.pinned")}</span>}
         </strong>
-        <span className={`badge bg-${urgencyClass(announcement.urgency)} text-uppercase align-self-start`}>{announcement.urgency}</span>
+        {janazah
+          ? <span className="badge text-bg-light border align-self-start">{t("announcement.categories.janazah")}</span>
+          : <span className={`badge bg-${urgencyClass(announcement.urgency)} text-uppercase align-self-start`}>{announcement.urgency}</span>}
       </div>
       <p className="mb-1 small text-muted"><Linkified text={expanded ? announcement.body : text} /></p>
       {clamped && (
@@ -139,7 +147,7 @@ function ContactLinks({ mosque }) {
     mosque.phone && { href: `tel:${mosque.phone.replace(/\s/g, "")}`, icon: Phone, label: mosque.phone, event: "call" },
     whatsapp && { href: whatsapp, icon: MessageCircle, label: "WhatsApp", external: true },
     mosque.email && { href: `mailto:${mosque.email}`, icon: Mail, label: mosque.email },
-    website && { href: website, icon: Globe, label: "Website", external: true },
+    website && { href: website, icon: Globe, label: t("mosque.websiteLabel"), external: true },
     facebook && { href: facebook, icon: ExternalLink, label: "Facebook", external: true },
   ].filter(Boolean);
   if (!links.length) return <p className="small text-muted mb-0">{t("mosque.noContact")}</p>;
@@ -256,7 +264,7 @@ export default function MosqueProfile() {
   const eidJamaats = Array.isArray(mosque.eid_jamaats) ? mosque.eid_jamaats : [];
   const hasDailyPrayer = Object.values(prayer).some(Boolean) || prayerSchedule.length > 0;
   const directions = directionsUrl(mosque);
-  const confirmedLabel = communityConfirmedLabel(mosque.times_confirmed_by_community_at);
+  const confirmedLabel = communityConfirmedLabel(mosque.times_confirmed_by_community_at, new Date(), t, locale);
   const freshness = updatedAgoLabel(mosque.schedule_updated_at, new Date(), t, locale);
   const place = [mosque.area, mosque.district].filter(Boolean).join(", ");
   // The claim box only helps where a claim can succeed: no admin yet, and the viewer is a visitor or a normal user.
@@ -370,6 +378,7 @@ export default function MosqueProfile() {
 
       <div className="row g-4">
         <div className="col-lg-8">
+          {/* [Urmee · VIVA] Ramadan card shudhu tokhoni jokhon mosque.period.is_ramadan true (API mosque response e period pathay). */}
           {/* [Urmee · F4] Ramadan card first while the mosque is in a Ramadan period; nothing Ramadan-specific otherwise. */}
           {mosque.period?.is_ramadan && <RamadanCard mosqueId={mosque.id} />}
 
@@ -394,6 +403,7 @@ export default function MosqueProfile() {
                 <h5 className="fw-bold mb-0"><Clock3 size={18} className="text-mc me-2" aria-hidden="true" />{t("mosque.prayerTimes")}</h5>
                 <SuggestLink onClick={() => setSuggestField("prayer_time")} label={t("mosque.suggestTime")} />
               </div>
+              {/* [Urmee · VIVA] Prayer timeline er upore period er naam: "Winter timetable · until 28 Feb". */}
               {mosque.period && (
                 <p className="small text-muted mb-2" data-testid="period-label">{t("mosque.periodLabel", { name: mosque.period.name, date: formatApiDate(mosque.period.ends_on, locale) })}</p>
               )}

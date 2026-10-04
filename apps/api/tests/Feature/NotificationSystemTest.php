@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Follower;
 use App\Models\Mosque;
 use App\Models\Notification;
+use App\Models\NotificationPreference;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -260,6 +261,120 @@ class NotificationSystemTest extends TestCase
         $this->getJson('/api/notifications?per_page=1000&page=0')
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['per_page', 'page']);
+    }
+
+    public function test_preference_defaults_are_on_except_push_and_can_be_updated(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/me/notification-preferences')
+            ->assertOk()
+            ->assertJsonPath('data.announcement', true)
+            ->assertJsonPath('data.event', true)
+            ->assertJsonPath('data.blood', true)
+            ->assertJsonPath('data.push_enabled', false)
+            ->assertJsonPath('data.email_digest', true);
+
+        $this->putJson('/api/me/notification-preferences', [
+            'announcement' => false,
+            'push_enabled' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.announcement', false)
+            ->assertJsonPath('data.event', true)
+            ->assertJsonPath('data.push_enabled', true);
+    }
+
+    public function test_mute_and_type_preferences_suppress_follower_notifications(): void
+    {
+        $mosque = Mosque::factory()->create();
+        $muted = User::factory()->create();
+        $typeDisabled = User::factory()->create();
+        $normal = User::factory()->create();
+        foreach ([$muted, $typeDisabled, $normal] as $user) {
+            Follower::factory()->create(['user_id' => $user->id, 'mosque_id' => $mosque->id]);
+        }
+        Follower::query()->where('user_id', $muted->id)->update(['notifications_muted' => true]);
+        $typeDisabled->notificationPreferences()->create(['announcement' => false]);
+
+        $created = $this->service()->notifyMosqueFollowers($mosque, $this->notificationData());
+
+        $this->assertSame(1, $created);
+        $this->assertDatabaseHas('notifications', ['user_id' => $normal->id, 'reference_id' => 42]);
+        $this->assertDatabaseMissing('notifications', ['user_id' => $muted->id, 'reference_id' => 42]);
+        $this->assertDatabaseMissing('notifications', ['user_id' => $typeDisabled->id, 'reference_id' => 42]);
+    }
+
+    public function test_system_notifications_ignore_mutes_and_type_preferences(): void
+    {
+        $mosque = Mosque::factory()->create();
+        $user = User::factory()->create();
+        Follower::factory()->create(['user_id' => $user->id, 'mosque_id' => $mosque->id, 'notifications_muted' => true]);
+        $user->notificationPreferences()->create(['announcement' => false]);
+
+        $created = $this->service()->notifyMosqueFollowers($mosque, [
+            'type' => Notification::TYPE_SYSTEM,
+            'title' => 'Account update',
+            'message' => 'A system update.',
+            'reference_type' => 'system-test',
+            'reference_id' => 50,
+        ]);
+
+        $this->assertSame(1, $created);
+        $this->assertDatabaseHas('notifications', ['user_id' => $user->id, 'reference_id' => 50]);
+    }
+
+    public function test_notification_list_filters_by_type_and_unread(): void
+    {
+        $user = User::factory()->create();
+        Notification::factory()->create(['user_id' => $user->id, 'type' => Notification::TYPE_EVENT, 'is_read' => false]);
+        Notification::factory()->create(['user_id' => $user->id, 'type' => Notification::TYPE_ANNOUNCEMENT, 'is_read' => false]);
+        Notification::factory()->read()->create(['user_id' => $user->id, 'type' => Notification::TYPE_EVENT]);
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/notifications?type=event&unread=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.type', Notification::TYPE_EVENT)
+            ->assertJsonPath('data.0.is_read', false);
+    }
+
+    public function test_user_can_delete_only_their_notifications_and_clear_read_history(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $read = Notification::factory()->read()->create(['user_id' => $user->id]);
+        $unread = Notification::factory()->create(['user_id' => $user->id, 'is_read' => false]);
+        $otherNotification = Notification::factory()->read()->create(['user_id' => $other->id]);
+        Sanctum::actingAs($user);
+
+        $this->deleteJson("/api/notifications/{$otherNotification->id}")->assertNotFound();
+        $this->deleteJson("/api/notifications/{$read->id}")->assertOk();
+        $this->deleteJson('/api/notifications?read=1')->assertOk()->assertJsonPath('deleted_count', 0);
+        $this->assertDatabaseHas('notifications', ['id' => $unread->id]);
+        $this->assertDatabaseHas('notifications', ['id' => $otherNotification->id]);
+
+        Notification::factory()->read()->create(['user_id' => $user->id]);
+        $this->deleteJson('/api/notifications?read=1')->assertOk()->assertJsonPath('deleted_count', 1);
+    }
+
+    public function test_following_user_can_mute_and_unmute_a_mosque(): void
+    {
+        $user = User::factory()->create();
+        $mosque = Mosque::factory()->create();
+        Follower::factory()->create(['user_id' => $user->id, 'mosque_id' => $mosque->id]);
+        Sanctum::actingAs($user);
+
+        $this->patchJson("/api/mosques/{$mosque->id}/follow", ['notifications_muted' => true])
+            ->assertOk()
+            ->assertJsonPath('notifications_muted', true);
+        $this->getJson('/api/me/followed-mosques')
+            ->assertOk()
+            ->assertJsonPath('data.0.notifications_muted', true);
+
+        $this->patchJson("/api/mosques/{$mosque->id}/follow", ['notifications_muted' => false])
+            ->assertOk()
+            ->assertJsonPath('notifications_muted', false);
     }
 
     private function service(): NotificationService

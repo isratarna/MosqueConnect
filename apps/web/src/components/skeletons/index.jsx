@@ -1,4 +1,5 @@
 import { useDelayedFlag } from "../../hooks/useDelayedFlag";
+import { useLocale } from "../../hooks/useLocale";
 
 /** Grey shimmering block. Decorative: always aria-hidden. */
 export function Skeleton({ width = "100%", height = "1rem", radius = "6px", className = "", style }) {
@@ -23,12 +24,13 @@ export function SkeletonText({ lines = 3 }) {
  */
 // [Urmee · F1 Part 2] Accessibility wrapper: role="status" + aria-busy and a hidden label are
 // announced once; the grey shapes are aria-hidden. Waits 150 ms before showing them.
-export function SkeletonRegion({ label = "Loading…", loading = true, delay = 150, className = "", children }) {
+export function SkeletonRegion({ label, loading = true, delay = 150, className = "", children }) {
+  const { t } = useLocale(); // [Urmee · i18n shared] the default screen-reader label is translated
   const visible = useDelayedFlag(loading, delay);
   if (!loading) return null;
   return (
     <div role="status" aria-busy="true" className={className}>
-      <span className="visually-hidden">{label}</span>
+      <span className="visually-hidden">{label ?? t("common.loading")}</span>
       {visible && <div aria-hidden="true">{children}</div>}
     </div>
   );
@@ -123,9 +125,10 @@ export function StatCardSkeleton() {
 }
 
 /** Generic full-page placeholder for route fallbacks and detail pages. */
-export function PageSkeleton({ label = "Loading page…" }) {
+export function PageSkeleton({ label }) {
+  const { t } = useLocale();
   return (
-    <SkeletonRegion label={label} className="container py-5">
+    <SkeletonRegion label={label ?? t("common.loadingPage")} className="container py-5">
       <div className="d-grid gap-3"><Skeleton width="40%" height="2rem" /><SkeletonText lines={3} /><Skeleton height="240px" radius="12px" /></div>
     </SkeletonRegion>
   );

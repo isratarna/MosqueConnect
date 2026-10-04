@@ -4,22 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AnnouncementIndexRequest;
 use App\Http\Resources\AnnouncementResource;
+use App\Jobs\NotifyMosqueFollowers;
 use App\Models\Announcement;
 use App\Models\Mosque;
-use App\Services\NotificationService;
+use App\Models\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AnnouncementController extends Controller
 {
-    public function __construct(private readonly NotificationService $notifications) {}
-
     public function feed(AnnouncementIndexRequest $request): AnonymousResourceCollection
     {
         $announcements = Announcement::query()
@@ -216,9 +216,21 @@ class AnnouncementController extends Controller
      */
     private function notifyIfPublished(Mosque $mosque, Announcement $announcement): void
     {
-        if ($announcement->status === Announcement::STATUS_PUBLISHED) {
-            $this->notifications->notifyAnnouncementPublished($mosque, $announcement->id, $announcement->title, $announcement->category);
+        if ($announcement->status !== Announcement::STATUS_PUBLISHED) {
+            return;
         }
+
+        $title = $announcement->category === Announcement::CATEGORY_JANAZAH
+            ? 'Janazah: '.$announcement->title
+            : $announcement->title;
+
+        dispatch(new NotifyMosqueFollowers(
+            $mosque->id,
+            Notification::TYPE_ANNOUNCEMENT,
+            Str::limit("New Announcement: {$title}", 255, ''),
+            Str::limit("{$mosque->name} published a new announcement: {$title}.", 10000, ''),
+            ['type' => Notification::REFERENCE_ANNOUNCEMENT, 'id' => $announcement->id],
+        ))->afterCommit();
     }
 
     private function storeImage(Request $request, Mosque $mosque, Announcement $announcement): void

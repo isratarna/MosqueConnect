@@ -5,11 +5,14 @@ import { directionsUrl } from "../../utils/mosqueDiscovery";
 import { googleCalendarUrl } from "../../utils/eidCalendar";
 import { downloadEidJamaatIcs, shareEidJamaat } from "../../utils/eidApi";
 import { formatClockTime } from "../../utils/prayerTime";
+import { useLocale } from "../../hooks/useLocale";
+import { formatNumber } from "../../utils/intl";
 
-export function formatEidDate(date) {
+// [Urmee · i18n dashboard] Pass the active locale ("bn-BD") to get Bangla weekday, month and digits.
+export function formatEidDate(date, locale) {
   const parsed = new Date(`${date}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return date || "";
-  return parsed.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  return parsed.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
 }
 
 /**
@@ -17,6 +20,7 @@ export function formatEidDate(date) {
  * mosque name and a profile link, for lists that mix several mosques.
  */
 export default function EidJamaatCard({ jamaat, showMosque = false, active = false, onSelect }) {
+  const { t, locale } = useLocale();
   const [shareStatus, setShareStatus] = useState("");
   const directions = directionsUrl(jamaat);
   const googleUrl = googleCalendarUrl(jamaat);
@@ -24,9 +28,9 @@ export default function EidJamaatCard({ jamaat, showMosque = false, active = fal
   async function share() {
     try {
       const result = await shareEidJamaat(jamaat);
-      setShareStatus(result === "copied" ? "Copied to clipboard" : "");
+      setShareStatus(result === "copied" ? t("eid.copied") : "");
     } catch {
-      setShareStatus("Could not share");
+      setShareStatus(t("eid.shareFailed"));
     }
   }
 
@@ -38,8 +42,8 @@ export default function EidJamaatCard({ jamaat, showMosque = false, active = fal
     >
       <div className="mc-eid-jamaat__time">
         <Clock3 size={16} aria-hidden="true" />
-        <strong>{formatClockTime(jamaat.jamaat_time)}</strong>
-        <span>{formatEidDate(jamaat.date)}</span>
+        <strong>{formatClockTime(jamaat.jamaat_time, locale)}</strong>
+        <span>{formatEidDate(jamaat.date, locale)}</span>
       </div>
 
       <div className="mc-eid-jamaat__body">
@@ -52,35 +56,35 @@ export default function EidJamaatCard({ jamaat, showMosque = false, active = fal
         )}
         <div className="small text-muted">
           <MapPin size={14} className="me-1" aria-hidden="true" />
-          {jamaat.location_name || (jamaat.at_mosque ? "At the mosque" : "Separate location")}
-          {!jamaat.at_mosque && <span className="badge mc-badge ms-2">Away from the mosque</span>}
-          {jamaat.distance_km !== undefined && <span className="ms-2">· {Number(jamaat.distance_km).toFixed(1)} km away</span>}
+          {jamaat.location_name || (jamaat.at_mosque ? t("eid.atMosque") : t("eid.separateLocation"))}
+          {!jamaat.at_mosque && <span className="badge mc-badge ms-2">{t("eid.awayFromMosque")}</span>}
+          {jamaat.distance_km !== undefined && <span className="ms-2">· {t("eid.kmAway", { km: formatNumber(Number(jamaat.distance_km).toFixed(1), locale) })}</span>}
         </div>
         <div className="d-flex flex-wrap gap-2 mt-2 small">
           {jamaat.women_arrangement && (
-            <span className="badge text-bg-light border"><UsersRound size={13} className="me-1" aria-hidden="true" />Women's arrangement</span>
+            <span className="badge text-bg-light border"><UsersRound size={13} className="me-1" aria-hidden="true" />{t("eid.womenArrangement")}</span>
           )}
           {jamaat.khutbah_language && (
-            <span className="badge text-bg-light border"><Languages size={13} className="me-1" aria-hidden="true" />Khutbah: {jamaat.khutbah_language}</span>
+            <span className="badge text-bg-light border"><Languages size={13} className="me-1" aria-hidden="true" />{t("eid.khutbahLanguage", { language: jamaat.khutbah_language })}</span>
           )}
         </div>
         {jamaat.notes && <p className="small text-muted mb-0 mt-2">{jamaat.notes}</p>}
 
         <div className="d-flex flex-wrap gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
           {googleUrl && (
-            <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-mc btn-sm" title="Add to Google Calendar" aria-label="Add to Google Calendar (opens in a new tab)">
-              <CalendarPlus size={15} aria-hidden="true" /> Google Calendar
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-mc btn-sm" title={t("eid.addToGoogle")} aria-label={t("eid.addToGoogleAria")}>
+              <CalendarPlus size={15} aria-hidden="true" /> {t("eid.googleCalendar")}
             </a>
           )}
-          <button type="button" className="btn btn-outline-mc btn-sm" onClick={() => downloadEidJamaatIcs(jamaat)} title="Download for Apple Calendar, Outlook and others">
-            <CalendarPlus size={15} aria-hidden="true" /> Calendar file
+          <button type="button" className="btn btn-outline-mc btn-sm" onClick={() => downloadEidJamaatIcs(jamaat)} title={t("eid.calendarFileTitle")}>
+            <CalendarPlus size={15} aria-hidden="true" /> {t("eid.calendarFile")}
           </button>
           <button type="button" className="btn btn-outline-mc btn-sm" onClick={share}>
-            <Share2 size={15} aria-hidden="true" /> Share
+            <Share2 size={15} aria-hidden="true" /> {t("eid.share")}
           </button>
           {directions && (
-            <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-outline-mc btn-sm" aria-label="Get directions">
-              <Navigation size={15} aria-hidden="true" /> Directions
+            <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-outline-mc btn-sm" aria-label={t("eid.getDirections")}>
+              <Navigation size={15} aria-hidden="true" /> {t("eid.directions")}
             </a>
           )}
           {shareStatus && <span className="small text-muted align-self-center" role="status">{shareStatus}</span>}

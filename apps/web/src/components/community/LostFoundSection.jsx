@@ -5,10 +5,12 @@ import { useAuth } from "../../context/AuthContext";
 import Pagination from "../Pagination";
 import LostFoundCard from "./LostFoundCard";
 import LostFoundForm from "./LostFoundForm";
-import { fetchLostFound, LOST_FOUND_CATEGORIES } from "../../utils/communityHubApi";
+import { fetchLostFound, hubLabelT, LOST_FOUND_CATEGORIES } from "../../utils/communityHubApi";
+import { useLocale } from "../../hooks/useLocale";
 
 /** The Community page's "Lost & Found" tab. */
 export default function LostFoundSection() {
+  const { t } = useLocale(); // [Urmee · i18n community]
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -37,41 +39,41 @@ export default function LostFoundSection() {
     <section className="mc-community-section mc-motion-section" aria-labelledby="lost-found-heading">
       <div className="mc-community-section__heading">
         <div>
-          <p className="mc-kicker">Lost something at the mosque?</p>
-          <h2 id="lost-found-heading">Lost &amp; Found</h2>
+          <p className="mc-kicker">{t("lostFound.kicker")}</p>
+          <h2 id="lost-found-heading">{t("lostFound.heading")}</h2>
         </div>
         {user ? (
-          <button type="button" className="btn btn-mc" onClick={() => setFormOpen(true)}><Plus size={16} aria-hidden="true" /> Report a lost / found item</button>
+          <button type="button" className="btn btn-mc" onClick={() => setFormOpen(true)}><Plus size={16} aria-hidden="true" /> {t("lostFound.report")}</button>
         ) : (
-          <Link className="btn btn-outline-mc" to="/login" state={{ from: `${location.pathname}${location.search}` }}>Sign in to report an item</Link>
+          <Link className="btn btn-outline-mc" to="/login" state={{ from: `${location.pathname}${location.search}` }}>{t("lostFound.signInToReport")}</Link>
         )}
       </div>
 
-      <div className="row g-2 mb-3" aria-label="Filter lost and found items">
+      <div className="row g-2 mb-3" aria-label={t("lostFound.filterLabel")}>
         <div className="col-sm-4">
-          <select className="form-select" value={filters.type} onChange={setFilter("type")} aria-label="Lost or found">
-            <option value="">Lost and found</option>
-            <option value="lost">Lost items</option>
-            <option value="found">Found items</option>
+          <select className="form-select" value={filters.type} onChange={setFilter("type")} aria-label={t("lostFound.lostOrFound")}>
+            <option value="">{t("lostFound.both")}</option>
+            <option value="lost">{t("lostFound.lostItems")}</option>
+            <option value="found">{t("lostFound.foundItems")}</option>
           </select>
         </div>
         <div className="col-sm-4">
-          <select className="form-select" value={filters.category} onChange={setFilter("category")} aria-label="Category">
-            <option value="">All categories</option>
-            {LOST_FOUND_CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          <select className="form-select" value={filters.category} onChange={setFilter("category")} aria-label={t("lostFound.category")}>
+            <option value="">{t("lostFound.allCategories")}</option>
+            {LOST_FOUND_CATEGORIES.map(([value]) => <option key={value} value={value}>{hubLabelT(t, "lostFoundCategory", value)}</option>)}
           </select>
         </div>
         <div className="col-sm-4">
-          <select className="form-select" value={filters.status} onChange={setFilter("status")} aria-label="Status">
-            <option value="open">Still open</option>
-            <option value="returned">Returned</option>
-            <option value="all">All</option>
+          <select className="form-select" value={filters.status} onChange={setFilter("status")} aria-label={t("lostFound.statusLabel")}>
+            <option value="open">{t("lostFound.stillOpen")}</option>
+            <option value="returned">{t("lostFound.returnedFilter")}</option>
+            <option value="all">{t("lostFound.allStatuses")}</option>
           </select>
         </div>
       </div>
 
-      {loading ? <p role="status">Loading lost &amp; found items…</p>
-        : error ? <div className="alert alert-danger" role="alert">{error} <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setAttempt((n) => n + 1)}>Retry</button></div>
+      {loading ? <p role="status">{t("lostFound.loading")}</p>
+        : error ? <div className="alert alert-danger" role="alert">{error} <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setAttempt((n) => n + 1)}>{t("common.retry")}</button></div>
           : result.data.length ? (
             <>
               <div className="row g-3">
@@ -82,8 +84,8 @@ export default function LostFoundSection() {
           ) : (
             <div className="mc-community-empty mc-card text-center">
               <Search size={30} aria-hidden="true" />
-              <h3>No items here</h3>
-              <p>Nothing matches these filters. If you lost or found something, report it so others can help.</p>
+              <h3>{t("lostFound.emptyTitle")}</h3>
+              <p>{t("lostFound.emptyBody")}</p>
             </div>
           )}
 

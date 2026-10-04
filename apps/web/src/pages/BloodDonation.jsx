@@ -145,27 +145,27 @@ export default function BloodDonation() {
 
       {actionError && <div className="alert alert-danger" role="alert">{actionError}</div>}
 
-      <section className="mc-blood-filters mb-4" aria-label="Filter blood requests">
-        <div className="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Blood group">
+      <section className="mc-blood-filters mb-4" aria-label={t("bloodFilters.label")}>
+        <div className="d-flex flex-wrap gap-2 mb-3" role="group" aria-label={t("bloodFilters.group")}>
           {BLOOD_GROUPS.map((group) => (
             <button key={group} type="button" className={`btn btn-sm ${filters.group === group ? "btn-danger" : "btn-outline-danger"}`} aria-pressed={filters.group === group} onClick={() => setFilter("group", filters.group === group ? "" : group)}>{group}</button>
           ))}
         </div>
         <div className="row g-2 align-items-end">
           <div className="col-sm-5">
-            <label className="form-label small mb-1" htmlFor="blood-area">Hospital or area</label>
-            <input id="blood-area" type="search" className="form-control form-control-sm" placeholder="e.g. Dhanmondi" value={filters.area} onChange={(event) => setFilter("area", event.target.value)} />
+            <label className="form-label small mb-1" htmlFor="blood-area">{t("bloodFilters.area")}</label>
+            <input id="blood-area" type="search" className="form-control form-control-sm" placeholder={t("bloodFilters.areaPlaceholder")} value={filters.area} onChange={(event) => setFilter("area", event.target.value)} />
           </div>
           <div className="col-sm-4">
-            <label className="form-label small mb-1" htmlFor="blood-by">Needed by</label>
+            <label className="form-label small mb-1" htmlFor="blood-by">{t("bloodFilters.neededBy")}</label>
             <input id="blood-by" type="date" className="form-control form-control-sm" value={filters.by} onChange={(event) => setFilter("by", event.target.value)} />
           </div>
           <div className="col-sm-3 d-flex align-items-center justify-content-between gap-2">
             <div className="form-check form-switch mb-0">
               <input id="blood-urgent" className="form-check-input" type="checkbox" checked={filters.urgent} onChange={(event) => setFilter("urgent", event.target.checked)} />
-              <label className="form-check-label small" htmlFor="blood-urgent">Urgent only</label>
+              <label className="form-check-label small" htmlFor="blood-urgent">{t("bloodFilters.urgentOnly")}</label>
             </div>
-            {(filters.group || filters.urgent || filters.area || filters.by) && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => setSearchParams({}, { replace: true })}>Clear</button>}
+            {(filters.group || filters.urgent || filters.area || filters.by) && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => setSearchParams({}, { replace: true })}>{t("bloodFilters.clear")}</button>}
           </div>
         </div>
       </section>
@@ -235,7 +235,7 @@ export default function BloodDonation() {
       )}
 
       {loading ? (
-        <SkeletonRegion label="Loading blood requests…"><ListRowsSkeleton rows={3} /></SkeletonRegion>
+        <SkeletonRegion label={t("bloodFilters.loading")}><ListRowsSkeleton rows={3} /></SkeletonRegion>
       ) : error ? (
         <div className="alert alert-warning text-center py-5 shadow-sm">
           <AlertCircle size={32} className="text-warning mb-3 mx-auto" />
@@ -321,13 +321,13 @@ export default function BloodDonation() {
           })}
           {shown.length > visible && (
             <div className="text-center">
-              <button type="button" className="btn btn-outline-mc" onClick={() => setVisible((count) => count + PAGE_SIZE)}>Load more requests</button>
+              <button type="button" className="btn btn-outline-mc" onClick={() => setVisible((count) => count + PAGE_SIZE)}>{t("bloodFilters.loadMore")}</button>
             </div>
           )}
         </div>
       )}
       {respondTo && <RespondDialog request={respondTo} onDone={() => setRequests((items) => items.map((item) => item.id === respondTo.id ? { ...item, hasResponded: true } : item))} onClose={() => setRespondTo(null)} />}
-      {closing && <ConfirmDialog title="Mark this request as fulfilled?" message={`${closing.group} at ${closing.hospital}`} confirmLabel="Mark fulfilled" tone="success" onConfirm={() => handleClose(closing.id)} onClose={() => setClosing(null)} />}
+      {closing && <ConfirmDialog title={t("bloodDetail.fulfilTitle")} message={t("profileTabs.bloodAt", { group: closing.group, place: closing.hospital })} confirmLabel={t("bloodDetail.fulfilConfirm")} tone="success" onConfirm={() => handleClose(closing.id)} onClose={() => setClosing(null)} />}
     </div>
   );
 }

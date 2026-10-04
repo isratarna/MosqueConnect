@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
 import { ListRowsSkeleton, SkeletonRegion } from "../skeletons";
+import { useLocale } from "../../hooks/useLocale";
 
-const STATUS = { pending: ["Waiting for review", "bg-warning text-dark"], approved: ["Approved", "bg-success"], rejected: ["Not approved", "bg-secondary"] };
+// [Urmee · i18n profile] Only the badge colour is here; the label is mySuggested.status.<status> in the locale files.
+const STATUS_CLASS = { pending: "bg-warning text-dark", approved: "bg-success", rejected: "bg-secondary" };
 
 /**
  * [Urmee · F3 Part 3] The user's "Suggest a mosque" submissions with their status
  * (GET /api/me/mosque-suggestions), shown under Profile → Mosque Applications.
  */
 export default function MySuggestedMosques() {
+  const { t } = useLocale();
   const [state, setState] = useState({ status: "loading", items: [], error: "" });
 
   useEffect(() => {
@@ -23,21 +26,21 @@ export default function MySuggestedMosques() {
   return (
     <section className="mt-4" aria-labelledby="my-mosque-suggestions">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-        <h3 id="my-mosque-suggestions" className="h6 fw-bold mb-0">Mosques I suggested</h3>
-        <Link to="/mosques/suggest" className="btn btn-sm btn-outline-mc">Suggest a mosque</Link>
+        <h3 id="my-mosque-suggestions" className="h6 fw-bold mb-0">{t("mySuggested.title")}</h3>
+        <Link to="/mosques/suggest" className="btn btn-sm btn-outline-mc">{t("mySuggested.suggest")}</Link>
       </div>
-      <SkeletonRegion label="Loading your suggestions…" loading={state.status === "loading"}><ListRowsSkeleton rows={1} /></SkeletonRegion>
+      <SkeletonRegion label={t("mySuggested.loading")} loading={state.status === "loading"}><ListRowsSkeleton rows={1} /></SkeletonRegion>
       {state.status === "error" && <div className="alert alert-danger py-2 small" role="alert">{state.error}</div>}
-      {state.status === "done" && state.items.length === 0 && <p className="text-muted small mb-0">You haven&apos;t suggested a mosque yet.</p>}
+      {state.status === "done" && state.items.length === 0 && <p className="text-muted small mb-0">{t("mySuggested.empty")}</p>}
       {state.items.map((item) => (
         <div className="border rounded p-3 mb-2" key={item.id}>
           <div className="d-flex flex-wrap align-items-center gap-2">
             <strong className="me-auto">{item.name}</strong>
-            <span className={`badge ${STATUS[item.status]?.[1] || "bg-secondary"}`}>{STATUS[item.status]?.[0] || item.status}</span>
+            <span className={`badge ${STATUS_CLASS[item.status] || "bg-secondary"}`}>{t(`mySuggested.status.${item.status}`, { defaultValue: item.status })}</span>
           </div>
           <p className="small text-muted mb-0">{[item.area, item.district].filter(Boolean).join(", ") || item.address}</p>
-          {item.review_note && <p className="small mb-0 mt-1">Reviewer: {item.review_note}</p>}
-          {item.status === "approved" && item.mosque_id && <Link to={`/mosque-admin/claim?mosque=${item.mosque_id}`} className="small">Claim this mosque</Link>}
+          {item.review_note && <p className="small mb-0 mt-1">{t("mySuggested.reviewer", { note: item.review_note })}</p>}
+          {item.status === "approved" && item.mosque_id && <Link to={`/mosque-admin/claim?mosque=${item.mosque_id}`} className="small">{t("mySuggested.claim")}</Link>}
         </div>
       ))}
     </section>

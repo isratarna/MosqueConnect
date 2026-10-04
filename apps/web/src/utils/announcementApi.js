@@ -34,6 +34,12 @@ export function normalizeAnnouncement(record) {
     id: record.id,
     category: "announcement",
     title: record.title,
+    // [Urmee · F9] The editor's category (janazah, eid, …), pin flag and image. `category` above stays
+    // "announcement" because the community feed uses it as the item type.
+    // [Urmee · VIVA] Public page er jonno nitun field: kind (janazah/eid...), isPinned, imageUrl -- details page e pin/image/janazah styling er jonno.
+    kind: record.category || "general",
+    isPinned: record.is_pinned === true,
+    imageUrl: record.image_url || "",
     description: record.body || record.description || "",
     urgency: getAnnouncementUrgency(record.urgency),
     publishedLabel: typeof publishedAt === "string" && publishedAt.includes("T")

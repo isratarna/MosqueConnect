@@ -1,31 +1,38 @@
-import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle, Clock, Edit, Eye, EyeOff, Megaphone, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle, Clock, Edit, Eye, EyeOff, Megaphone, Pin, PinOff, Plus, Trash2 } from "lucide-react";
 import { AnnouncementStatusChip } from "./dashboard/AnnouncementsCard";
+import AnnouncementEditor from "./AnnouncementEditor";
 import {
-  createAnnouncement,
   deleteAnnouncement,
   fetchAdminAnnouncements,
   setAnnouncementPublished,
   updateAnnouncement,
 } from "../../utils/dashboardApi";
+import { ANNOUNCEMENT_CATEGORIES, announcementState } from "../../utils/announcementForm";
+import { useLocale } from "../../hooks/useLocale";
 import { BlockStack, SkeletonRegion } from "../skeletons";
 import ConfirmDialog from "../ConfirmDialog";
 
-const emptyForm = { title: "", body: "", urgency: "low", status: "published" };
+const STATE_FILTERS = ["all", "draft", "scheduled", "published", "expired"];
 
-/** Dashboard section: create, edit, publish and delete the mosque's announcements. */
-export default function AnnouncementManager({ mosqueId }) {
+/**
+ * [Urmee · F9] Dashboard section: the mosque's announcements list. Create / edit now go through the shared
+ * AnnouncementEditor (schedule, expiry, pin, image, category, janazah template, preview). The list shows
+ * status chips (Draft / Scheduled for … / Published / Expired), filters by status and category, and lets the
+ * admin pin / unpin straight from a row.
+ */
+export default function AnnouncementManager({ mosqueId, mosqueName = "" }) {
+  const { t } = useLocale();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [submitting, setSubmitting] = useState(false);
+  const [editor, setEditor] = useState(null); // null = closed, { item } = open (item null for a new post)
   const [actionBusy, setActionBusy] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [stateFilter, setStateFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -43,30 +50,38 @@ export default function AnnouncementManager({ mosqueId }) {
     setTimeout(() => setSuccess(""), 3000);
   };
 
-  const openCreate = () => { setEditingId(null); setForm(emptyForm); setShowForm(true); };
-  const openEdit = (item) => {
-    setEditingId(item.id);
-    setForm({ title: item.title, body: item.body, urgency: item.urgency || "low", status: item.status || "published" });
-    setShowForm(true);
+  // [Urmee · VIVA] Status ar category filter apply kore list ta ber kore (client e).
+  const visible = useMemo(() => announcements.filter((item) => (
+    (stateFilter === "all" || announcementState(item) === stateFilter)
+    && (categoryFilter === "all" || item.category === categoryFilter)
+  )), [announcements, stateFilter, categoryFilter]);
+
+  // [Urmee · VIVA] Editor save hole list e notun/update kora item boshay, editor bondho kore, success message dey.
+  const onSaved = (saved) => {
+    const isEdit = Boolean(editor?.item);
+    setAnnouncements((items) => (isEdit ? items.map((item) => (item.id === saved.id ? saved : item)) : [saved, ...items]));
+    setEditor(null);
+    showSuccess(isEdit ? t("announcementEditor.updated") : saved.status === "scheduled" ? t("announcementEditor.scheduledOk") : saved.status === "published" ? t("announcementEditor.publishedOk") : t("announcementEditor.draftOk"));
   };
 
-  const submit = async (event) => {
-    event.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
+  // [Urmee · F9] Pin / unpin from the list. The API refuses a 4th pin with a field error, which is shown in the banner.
+  // [Urmee · VIVA] List theke direct pin/unpin. 4th pin hole API error dey, seta upore dekhai.
+  const togglePin = async (item) => {
+    if (actionBusy) return;
+    setActionBusy(true);
     setError("");
     try {
-      const saved = editingId ? await updateAnnouncement(mosqueId, editingId, form) : await createAnnouncement(mosqueId, form);
-      setAnnouncements((items) => (editingId ? items.map((item) => (item.id === editingId ? saved : item)) : [saved, ...items]));
-      showSuccess(editingId ? "Announcement updated." : form.status === "published" ? "Announcement published. Followers have been notified." : "Draft saved.");
-      setShowForm(false);
+      const updated = await updateAnnouncement(mosqueId, item.id, { is_pinned: !item.is_pinned });
+      setAnnouncements((items) => items.map((entry) => (entry.id === item.id ? updated : entry)));
+      showSuccess(updated.is_pinned ? t("announcementEditor.pinned") : t("announcementEditor.unpinned"));
     } catch (err) {
       setError(err.message);
     } finally {
-      setSubmitting(false);
+      setActionBusy(false);
     }
   };
 
+  // [Urmee · VIVA] Publish/Unpublish button: publish ba unpublish endpoint call kore.
   const toggleStatus = async (item) => {
     if (actionBusy) return;
     setActionBusy(true);
@@ -74,7 +89,7 @@ export default function AnnouncementManager({ mosqueId }) {
     try {
       const updated = await setAnnouncementPublished(mosqueId, item.id, item.status !== "published");
       setAnnouncements((items) => items.map((entry) => (entry.id === item.id ? updated : entry)));
-      showSuccess(updated.status === "published" ? "Announcement published." : "Announcement moved to drafts.");
+      showSuccess(updated.status === "published" ? t("announcementEditor.publishedOk") : t("announcementEditor.movedToDrafts"));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -90,7 +105,7 @@ export default function AnnouncementManager({ mosqueId }) {
       await deleteAnnouncement(mosqueId, deletingId);
       setAnnouncements((items) => items.filter((item) => item.id !== deletingId));
       setDeletingId(null);
-      showSuccess("Announcement deleted.");
+      showSuccess(t("announcementEditor.deleted"));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -102,97 +117,96 @@ export default function AnnouncementManager({ mosqueId }) {
     <div>
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-          <h2 className="h4 mb-1">Announcements</h2>
-          <p className="text-muted small mb-0">Publish news, requests for goods and urgent notices. Followers are notified when you publish.</p>
+          <h2 className="h4 mb-1">{t("announcementEditor.heading")}</h2>
+          <p className="text-muted small mb-0">{t("announcementEditor.intro")}</p>
         </div>
-        <button type="button" className="btn btn-mc btn-sm" onClick={showForm && !editingId ? () => setShowForm(false) : openCreate}>
-          {showForm && !editingId ? "Cancel" : <><Plus size={16} aria-hidden="true" /> New announcement</>}
-        </button>
+        {!editor && <button type="button" className="btn btn-mc btn-sm" onClick={() => setEditor({ item: null })}><Plus size={16} aria-hidden="true" /> {t("announcementEditor.new")}</button>}
       </div>
 
-      {error && <div className="alert alert-danger" role="alert">{error} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={() => setRevision((n) => n + 1)}>Retry</button></div>}
+      {error && <div className="alert alert-danger" role="alert">{error} <button type="button" className="btn btn-sm btn-outline-danger ms-2" onClick={() => setRevision((n) => n + 1)}>{t("common.retry")}</button></div>}
       {success && <div className="alert alert-success py-2 d-flex align-items-center gap-2" role="status"><CheckCircle size={18} aria-hidden="true" />{success}</div>}
 
-      {showForm && (
-        <form className="card border-0 bg-light mb-4" onSubmit={submit}>
-          <div className="card-body">
-            <h3 className="h6 fw-bold mb-3">{editingId ? "Edit announcement" : "New announcement"}</h3>
-            <div className="mb-3">
-              <label className="form-label small fw-semibold" htmlFor="announcement-title">Title</label>
-              <input id="announcement-title" className="form-control" maxLength={255} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-            </div>
-            <div className="mb-3">
-              <label className="form-label small fw-semibold" htmlFor="announcement-body">Message</label>
-              <textarea id="announcement-body" className="form-control" rows={4} maxLength={10000} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} required />
-            </div>
-            <div className="row g-3 mb-3">
-              <div className="col-sm-6">
-                <label className="form-label small fw-semibold" htmlFor="announcement-urgency">Priority</label>
-                <select id="announcement-urgency" className="form-select" value={form.urgency} onChange={(e) => setForm({ ...form, urgency: e.target.value })}>
-                  <option value="low">Low (general info)</option>
-                  <option value="medium">Medium (warning / alert)</option>
-                  <option value="high">High (urgent)</option>
-                </select>
-              </div>
-              <div className="col-sm-6">
-                <label className="form-label small fw-semibold" htmlFor="announcement-status">Status</label>
-                <select id="announcement-status" className="form-select" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                  <option value="published">Published (visible to all)</option>
-                  <option value="draft">Draft (hidden)</option>
-                </select>
-              </div>
-            </div>
-            <div className="d-flex justify-content-end gap-2">
-              <button type="button" className="btn btn-light border" onClick={() => setShowForm(false)} disabled={submitting}>Cancel</button>
-              <button type="submit" className="btn btn-mc" disabled={submitting}>{submitting ? "Saving…" : editingId ? "Save changes" : "Create announcement"}</button>
-            </div>
-          </div>
-        </form>
+      {editor && (
+        <AnnouncementEditor
+          key={editor.item?.id ?? "new"}
+          mosqueId={mosqueId}
+          mosqueName={mosqueName}
+          announcement={editor.item}
+          onSaved={onSaved}
+          onCancel={() => setEditor(null)}
+        />
       )}
 
       {deletingId && (
         <ConfirmDialog
-          title="Delete announcement?"
-          message="This cannot be undone."
-          confirmLabel="Yes, delete"
+          title={t("announcementEditor.deleteTitle")}
+          message={t("announcementEditor.deleteMessage")}
+          confirmLabel={t("announcementEditor.deleteConfirm")}
           tone="danger"
           onConfirm={executeDelete}
           onClose={() => setDeletingId(null)}
         />
       )}
 
+      {!loading && announcements.length > 0 && (
+        <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <div className="btn-group btn-group-sm" role="group" aria-label={t("announcementEditor.filterStatus")}>
+            {STATE_FILTERS.map((key) => (
+              <button key={key} type="button" className={`btn ${stateFilter === key ? "btn-mc" : "btn-outline-mc"}`} aria-pressed={stateFilter === key} onClick={() => setStateFilter(key)}>
+                {key === "all" ? t("announcementEditor.all") : t(`announcementEditor.state.${key}`)}
+              </button>
+            ))}
+          </div>
+          <select className="form-select form-select-sm w-auto" aria-label={t("announcementEditor.filterCategory")} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+            <option value="all">{t("announcementEditor.allCategories")}</option>
+            {ANNOUNCEMENT_CATEGORIES.map((key) => <option key={key} value={key}>{t(`announcement.categories.${key}`)}</option>)}
+          </select>
+        </div>
+      )}
+
       {loading ? (
-        <SkeletonRegion label="Loading announcements…"><BlockStack heights={[88, 88, 88]} /></SkeletonRegion>
+        <SkeletonRegion label={t("announcementEditor.loading")}><BlockStack heights={[88, 88, 88]} /></SkeletonRegion>
       ) : announcements.length === 0 ? (
         <div className="text-center py-5 text-muted border rounded">
           <Megaphone size={40} className="mb-2 opacity-25" aria-hidden="true" />
-          <p className="mb-2">You haven't posted any announcements yet.</p>
-          <button type="button" className="btn btn-outline-mc btn-sm" onClick={openCreate}>Create your first</button>
+          <p className="mb-2">{t("announcementEditor.empty")}</p>
+          <button type="button" className="btn btn-outline-mc btn-sm" onClick={() => setEditor({ item: null })}>{t("announcementEditor.createFirst")}</button>
         </div>
+      ) : visible.length === 0 ? (
+        <p className="text-muted">{t("announcementEditor.noMatches")}</p>
       ) : (
         <div className="d-grid gap-3">
-          {announcements.map((item) => (
-            <article className={`card border-0 shadow-sm border-start border-4 ${item.status === "published" ? "border-success" : "border-warning"}`} key={item.id}>
-              <div className="card-body d-flex flex-column flex-md-row gap-3">
-                <div className="flex-grow-1 min-w-0">
-                  <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
-                    <h3 className="h6 fw-bold mb-0">{item.title}</h3>
-                    <AnnouncementStatusChip status={item.status} />
-                    {item.urgency === "high" && <span className="badge bg-danger">Urgent</span>}
+          {visible.map((item) => {
+            const state = announcementState(item);
+            return (
+              <article className={`card border-0 shadow-sm border-start border-4 ${state === "published" ? "border-success" : state === "scheduled" ? "border-info" : state === "expired" ? "border-secondary" : "border-warning"}`} key={item.id}>
+                <div className="card-body d-flex flex-column flex-md-row gap-3">
+                  {item.image_url && <img src={item.image_url} alt={t("announcement.imageAlt", { title: item.title })} className="mc-announcement-thumb flex-shrink-0" />}
+                  <div className="flex-grow-1 min-w-0">
+                    <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
+                      <h3 className="h6 fw-bold mb-0">{item.title}</h3>
+                      <AnnouncementStatusChip status={state} publishAt={item.publish_at} />
+                      {item.is_pinned && <span className="badge text-bg-secondary"><Pin size={11} aria-hidden="true" /> {t("announcement.pinned")}</span>}
+                      <span className="badge text-bg-light border">{t(`announcement.categories.${item.category || "general"}`)}</span>
+                      {item.urgency === "high" && <span className="badge bg-danger">{t("announcementEditor.urgent")}</span>}
+                    </div>
+                    <p className="text-secondary small mb-2">{item.body}</p>
+                    <div className="small text-muted d-flex align-items-center gap-1"><Clock size={14} aria-hidden="true" /> {item.date ? t("announcementEditor.publishedOn", { date: item.date }) : t("announcementEditor.notPublished")}</div>
                   </div>
-                  <p className="text-secondary small mb-2">{item.body}</p>
-                  <div className="small text-muted d-flex align-items-center gap-1"><Clock size={14} aria-hidden="true" /> {item.date ? `Published ${item.date}` : "Not published"}</div>
+                  <div className="d-flex flex-md-column gap-2 flex-shrink-0">
+                    <button type="button" className={`btn btn-sm ${item.is_pinned ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => togglePin(item)} disabled={actionBusy} aria-pressed={item.is_pinned}>
+                      {item.is_pinned ? <><PinOff size={14} aria-hidden="true" /> {t("announcementEditor.unpin")}</> : <><Pin size={14} aria-hidden="true" /> {t("announcementEditor.pin")}</>}
+                    </button>
+                    <button type="button" className={`btn btn-sm ${item.status === "published" ? "btn-outline-warning" : "btn-outline-success"}`} onClick={() => toggleStatus(item)} disabled={actionBusy}>
+                      {item.status === "published" ? <><EyeOff size={14} aria-hidden="true" /> {t("announcementEditor.unpublish")}</> : <><Eye size={14} aria-hidden="true" /> {t("announcementEditor.publish")}</>}
+                    </button>
+                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => { setEditor({ item }); window.scrollTo({ top: 0, behavior: "smooth" }); }}><Edit size={14} aria-hidden="true" /> {t("announcementEditor.edit")}</button>
+                    <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setDeletingId(item.id)}><Trash2 size={14} aria-hidden="true" /> {t("announcementEditor.delete")}</button>
+                  </div>
                 </div>
-                <div className="d-flex flex-md-column gap-2 flex-shrink-0">
-                  <button type="button" className={`btn btn-sm ${item.status === "published" ? "btn-outline-warning" : "btn-outline-success"}`} onClick={() => toggleStatus(item)} disabled={actionBusy}>
-                    {item.status === "published" ? <><EyeOff size={14} aria-hidden="true" /> Unpublish</> : <><Eye size={14} aria-hidden="true" /> Publish</>}
-                  </button>
-                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => openEdit(item)}><Edit size={14} aria-hidden="true" /> Edit</button>
-                  <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setDeletingId(item.id)}><Trash2 size={14} aria-hidden="true" /> Delete</button>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

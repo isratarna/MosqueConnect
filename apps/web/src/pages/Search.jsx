@@ -5,10 +5,13 @@ import { ArrowRight, LoaderCircle, SearchX } from "lucide-react";
 import GlobalSearch from "../components/GlobalSearch";
 import { searchGlobal } from "../utils/searchApi";
 import { isSearchable, MIN_QUERY_LENGTH, SEARCH_GROUPS } from "../utils/searchGroups";
+import { useLocale } from "../hooks/useLocale";
+import { formatNumber } from "../utils/intl";
 
 // [Urmee · F5 Part 2] /search?q= results page: one tab + count per type, "See all" links to the
 // filtered list pages.
 export default function Search() {
+  const { t, locale } = useLocale(); // [Urmee · i18n shared] group names are looked up by key, text comes from the locale files
   const [searchParams] = useSearchParams();
   const query = (searchParams.get("q") || "").trim();
   const [state, setState] = useState({ status: "idle", data: null, error: "" });
@@ -31,17 +34,18 @@ export default function Search() {
         setActiveKey((firstWithHits ?? SEARCH_GROUPS[0]).key);
       })
       .catch((error) => {
-        if (error.name !== "AbortError") setState({ status: "error", data: null, error: error.message || "Search failed." });
+        if (error.name !== "AbortError") setState({ status: "error", data: null, error: error.message || t("search.failed") });
       });
     return () => controller.abort();
   }, [query]);
 
   useEffect(() => {
-    document.title = query ? `Search: ${query} · MosqueConnect` : "Search · MosqueConnect";
-  }, [query]);
+    document.title = query ? t("search.pageTitleQuery", { query }) : t("search.pageTitle");
+  }, [query, t]);
 
   const groups = SEARCH_GROUPS.map((group) => ({
     ...group,
+    label: t(`search.groups.${group.key}`),
     total: state.data?.[group.key]?.total ?? 0,
     items: state.data?.[group.key]?.items ?? [],
   }));
@@ -52,23 +56,23 @@ export default function Search() {
     <section className="mc-search-page mc-atmospheric-section">
       <div className="container py-5">
         <header className="mc-search-page__intro">
-          <p className="mc-kicker">Search</p>
-          <h1>{query ? <>Results for “{query}”</> : "Search MosqueConnect"}</h1>
+          <p className="mc-kicker">{t("search.kicker")}</p>
+          <h1>{query ? t("search.resultsFor", { query }) : t("search.heading")}</h1>
           <GlobalSearch key={query} variant="page" initialValue={query} />
         </header>
 
         {state.status === "idle" && (
           <div className="mc-search-page__empty">
             <SearchX size={36} aria-hidden="true" />
-            <h2>{query ? "Keep typing" : "What are you looking for?"}</h2>
-            <p>Enter at least {MIN_QUERY_LENGTH} characters to search mosques, events, campaigns, announcements and volunteering.</p>
+            <h2>{query ? t("search.keepTyping") : t("search.whatLooking")}</h2>
+            <p>{t("search.minChars", { count: MIN_QUERY_LENGTH })}</p>
           </div>
         )}
 
         {state.status === "loading" && (
           <div className="mc-search-page__empty" role="status">
             <LoaderCircle size={30} className="mc-search__spinner" aria-hidden="true" />
-            <p>Searching…</p>
+            <p>{t("search.searching")}</p>
           </div>
         )}
 
@@ -79,19 +83,19 @@ export default function Search() {
         {state.status === "done" && grandTotal === 0 && (
           <div className="mc-search-page__empty">
             <SearchX size={36} aria-hidden="true" />
-            <h2>No results for “{query}”</h2>
-            <p>Check the spelling, try fewer words, or browse instead.</p>
+            <h2>{t("search.noResults", { query })}</h2>
+            <p>{t("search.noResultsHelp")}</p>
             <div className="d-flex flex-wrap justify-content-center gap-2">
-              <Link className="btn btn-outline-mc btn-sm" to="/browse">Browse mosques</Link>
-              <Link className="btn btn-outline-mc btn-sm" to="/community">Community updates</Link>
-              <Link className="btn btn-outline-mc btn-sm" to="/campaigns">Campaigns</Link>
+              <Link className="btn btn-outline-mc btn-sm" to="/browse">{t("search.browseMosques")}</Link>
+              <Link className="btn btn-outline-mc btn-sm" to="/community">{t("search.communityUpdates")}</Link>
+              <Link className="btn btn-outline-mc btn-sm" to="/campaigns">{t("search.campaigns")}</Link>
             </div>
           </div>
         )}
 
         {state.status === "done" && grandTotal > 0 && (
           <>
-            <div className="mc-search-tabs" role="tablist" aria-label="Result types">
+            <div className="mc-search-tabs" role="tablist" aria-label={t("search.resultTypes")}>
               {groups.map((group) => (
                 <button
                   key={group.key}
@@ -104,14 +108,14 @@ export default function Search() {
                   onClick={() => setActiveKey(group.key)}
                 >
                   {group.label}
-                  <span className="mc-search-tabs__count">{group.total}</span>
+                  <span className="mc-search-tabs__count">{formatNumber(group.total, locale)}</span>
                 </button>
               ))}
             </div>
 
             <div id="search-tabpanel" role="tabpanel" aria-labelledby={`search-tab-${active.key}`} className="mc-search-results">
               {active.items.length === 0 ? (
-                <p className="text-muted mb-0">No {active.label.toLowerCase()} match “{query}”.</p>
+                <p className="text-muted mb-0">{t("search.noneInGroup", { group: active.label.toLowerCase(), query })}</p>
               ) : (
                 <>
                   <ul className="mc-search-results__list">
@@ -125,7 +129,7 @@ export default function Search() {
                     ))}
                   </ul>
                   <Link to={active.seeAll(query)} className="mc-search-results__all">
-                    See all {active.total} {active.label.toLowerCase()} <ArrowRight size={15} aria-hidden="true" />
+                    {t("search.seeAll", { count: active.total, group: active.label.toLowerCase() })} <ArrowRight size={15} aria-hidden="true" />
                   </Link>
                 </>
               )}

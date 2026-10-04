@@ -300,7 +300,7 @@ export default function Community() {
               <div className="col-sm-6 col-lg-auto d-flex align-items-center">
                 <div className="form-check form-switch mc-community-filter__urgent">
                   <input id="following-only" className="form-check-input" type="checkbox" checked={followingOnly} onChange={(event) => setFollowingOnly(event.target.checked)} />
-                  <label className="form-check-label" htmlFor="following-only">From mosques I follow</label>
+                  <label className="form-check-label" htmlFor="following-only">{t("communityFollow.only")}</label>
                 </div>
               </div>
             )}
@@ -385,7 +385,7 @@ export default function Community() {
             </>
           ) : (
             followingOnly && followedIds?.size === 0
-              ? <div className="mc-community-empty mc-card text-center"><h3>Follow mosques to see their updates here</h3><p>You are not following any mosque yet.</p><Link to="/browse" className="btn btn-mc">Browse mosques</Link></div>
+              ? <div className="mc-community-empty mc-card text-center"><h3>{t("communityFollow.title")}</h3><p>{t("communityFollow.body")}</p><Link to="/browse" className="btn btn-mc">{t("communityFollow.browse")}</Link></div>
               : <EmptyState onClear={clearFilters} />
           )}
         </section>}

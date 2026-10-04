@@ -38,22 +38,33 @@ class PhoneOtpController extends Controller
     public function verifyOtp(Request $request, PhoneOtpService $otps, MosqueTeamService $team): JsonResponse
     {
         $otpLength = (int) config('otp.length', 6);
+        $isNewUser = ! User::query()->where('phone', $request->input('phone'))->exists();
 
         $validated = $request->validate([
             'phone' => ['required', 'string', 'regex:/^\+[1-9]\d{7,14}$/'],
             'otp' => ['required', 'string', 'digits:'.$otpLength],
+            'name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            // [Urmee · login fix] `accepted` is an implicit rule: it fails when the field is missing, even when
+            // the field is not required. Existing users never send accept_terms, so only a new user is checked.
+            'accept_terms' => $isNewUser ? ['required', 'accepted'] : ['sometimes', 'nullable', 'boolean'],
         ]);
 
-        $user = DB::transaction(function () use ($otps, $validated): User {
+        $user = DB::transaction(function () use ($otps, $validated, $isNewUser): User {
             $otps->consume($validated['phone'], $validated['otp']);
 
-            return User::firstOrCreate(
+            $user = User::firstOrCreate(
                 ['phone' => $validated['phone']],
                 [
-                    'name' => $validated['phone'],
+                    'name' => $validated['name'] ?? $validated['phone'],
                     'role' => User::ROLE_NORMAL_USER,
                 ],
             );
+
+            if ($user->wasRecentlyCreated && $isNewUser) {
+                $user->forceFill(['terms_accepted_at' => now()])->save();
+            }
+
+            return $user;
         });
 
         if ($user->isSuspended()) {

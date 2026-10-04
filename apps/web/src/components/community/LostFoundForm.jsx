@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "../Modal";
-import { createLostFound, LOST_FOUND_CATEGORIES, searchMosques } from "../../utils/communityHubApi";
+import { createLostFound, hubLabelT, LOST_FOUND_CATEGORIES, searchMosques } from "../../utils/communityHubApi";
+import { useLocale } from "../../hooks/useLocale";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -9,6 +10,7 @@ const today = () => new Date().toISOString().slice(0, 10);
  * fixed; otherwise people can search for one or leave it empty.
  */
 export default function LostFoundForm({ mosque: fixedMosque = null, onClose, onCreated }) {
+  const { t } = useLocale(); // [Urmee · i18n community]
   const [type, setType] = useState("lost");
   const [mosque, setMosque] = useState(fixedMosque);
   const [mosqueQuery, setMosqueQuery] = useState("");
@@ -46,44 +48,44 @@ export default function LostFoundForm({ mosque: fixedMosque = null, onClose, onC
   }
 
   return (
-    <Modal title="Report a lost or found item" onClose={onClose} busy={busy}>
+    <Modal title={t("lostFound.formTitle")} onClose={onClose} busy={busy}>
       <form onSubmit={submit} id="lost-found-form">
-        <div className="btn-group w-100 mb-3" role="group" aria-label="Did you lose or find it?">
-          {[["lost", "I lost something"], ["found", "I found something"]].map(([value, label]) => (
+        <div className="btn-group w-100 mb-3" role="group" aria-label={t("lostFound.didYou")}>
+          {[["lost", t("lostFound.iLost")], ["found", t("lostFound.iFound")]].map(([value, label]) => (
             <button type="button" key={value} className={`btn ${type === value ? "btn-mc" : "btn-outline-mc"}`} aria-pressed={type === value} onClick={() => setType(value)}>{label}</button>
           ))}
         </div>
         <div className="mb-3">
-          <label className="form-label" htmlFor="lf-title">What is it?</label>
-          <input id="lf-title" name="title" className="form-control" required maxLength={255} placeholder="e.g. Black leather wallet" />
+          <label className="form-label" htmlFor="lf-title">{t("lostFound.what")}</label>
+          <input id="lf-title" name="title" className="form-control" required maxLength={255} placeholder={t("lostFound.whatPlaceholder")} />
         </div>
         <div className="row g-2 mb-3">
           <div className="col-sm-6">
-            <label className="form-label" htmlFor="lf-category">Category</label>
+            <label className="form-label" htmlFor="lf-category">{t("lostFound.category")}</label>
             <select id="lf-category" name="category" className="form-select" required defaultValue="">
-              <option value="" disabled>Choose…</option>
-              {LOST_FOUND_CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              <option value="" disabled>{t("lostFound.choose")}</option>
+              {LOST_FOUND_CATEGORIES.map(([value]) => <option key={value} value={value}>{hubLabelT(t, "lostFoundCategory", value)}</option>)}
             </select>
           </div>
           <div className="col-sm-6">
-            <label className="form-label" htmlFor="lf-date">{type === "lost" ? "Date lost" : "Date found"}</label>
+            <label className="form-label" htmlFor="lf-date">{type === "lost" ? t("lostFound.dateLost") : t("lostFound.dateFound")}</label>
             <input id="lf-date" name="occurred_on" type="date" className="form-control" required max={today()} defaultValue={today()} />
           </div>
         </div>
         <div className="mb-3">
-          <label className="form-label" htmlFor="lf-description">Description</label>
-          <textarea id="lf-description" name="description" className="form-control" rows={3} required maxLength={5000} placeholder="Colour, brand, anything that helps the owner recognise it" />
+          <label className="form-label" htmlFor="lf-description">{t("lostFound.description")}</label>
+          <textarea id="lf-description" name="description" className="form-control" rows={3} required maxLength={5000} placeholder={t("lostFound.descriptionPlaceholder")} />
         </div>
         <div className="mb-3">
-          <label className="form-label" htmlFor="lf-mosque">Mosque (optional)</label>
+          <label className="form-label" htmlFor="lf-mosque">{t("lostFound.mosqueOptional")}</label>
           {mosque ? (
             <div className="d-flex align-items-center gap-2">
               <span className="form-control-plaintext fw-semibold">{mosque.name || mosque.title}</span>
-              {!fixedMosque && <button type="button" className="btn btn-sm btn-link" onClick={() => { setMosque(null); setMosqueQuery(""); }}>Change</button>}
+              {!fixedMosque && <button type="button" className="btn btn-sm btn-link" onClick={() => { setMosque(null); setMosqueQuery(""); }}>{t("lostFound.change")}</button>}
             </div>
           ) : (
             <>
-              <input id="lf-mosque" className="form-control" value={mosqueQuery} onChange={(e) => setMosqueQuery(e.target.value)} placeholder="Search by mosque name or area" autoComplete="off" />
+              <input id="lf-mosque" className="form-control" value={mosqueQuery} onChange={(e) => setMosqueQuery(e.target.value)} placeholder={t("lostFound.mosqueSearch")} autoComplete="off" />
               {mosqueResults.length > 0 && (
                 <div className="list-group mt-1">
                   {mosqueResults.map((result) => (
@@ -97,24 +99,24 @@ export default function LostFoundForm({ mosque: fixedMosque = null, onClose, onC
           )}
         </div>
         <div className="mb-3">
-          <label className="form-label" htmlFor="lf-location">Where exactly? (optional)</label>
-          <input id="lf-location" name="location_note" className="form-control" maxLength={255} placeholder="e.g. Shoe rack by the main gate" />
+          <label className="form-label" htmlFor="lf-location">{t("lostFound.where")}</label>
+          <input id="lf-location" name="location_note" className="form-control" maxLength={255} placeholder={t("lostFound.wherePlaceholder")} />
         </div>
         <div className="row g-2 mb-3">
           <div className="col-sm-6">
-            <label className="form-label" htmlFor="lf-phone">Contact phone (optional)</label>
+            <label className="form-label" htmlFor="lf-phone">{t("lostFound.phone")}</label>
             <input id="lf-phone" name="contact_phone" className="form-control" maxLength={30} inputMode="tel" />
-            <p className="form-text mb-0">Shown on the item so people can reach you.</p>
+            <p className="form-text mb-0">{t("lostFound.phoneHelp")}</p>
           </div>
           <div className="col-sm-6">
-            <label className="form-label" htmlFor="lf-photo">Photo (optional)</label>
+            <label className="form-label" htmlFor="lf-photo">{t("lostFound.photo")}</label>
             <input id="lf-photo" name="photo" type="file" className="form-control" accept="image/jpeg,image/png,image/webp" />
           </div>
         </div>
         {error && <div className="alert alert-danger py-2 small" role="alert">{error}</div>}
         <div className="d-flex justify-content-end gap-2">
-          <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>Cancel</button>
-          <button type="submit" className="btn btn-mc" disabled={busy}>{busy ? "Posting…" : "Post item"}</button>
+          <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>{t("common.cancel")}</button>
+          <button type="submit" className="btn btn-mc" disabled={busy}>{busy ? t("lostFound.posting") : t("lostFound.post")}</button>
         </div>
       </form>
     </Modal>

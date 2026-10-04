@@ -15,6 +15,7 @@ class Follower extends Model
     protected $fillable = [
         'user_id',
         'mosque_id',
+        'notifications_muted',
     ];
 
     /**
@@ -31,5 +32,12 @@ class Follower extends Model
     public function mosque(): BelongsTo
     {
         return $this->belongsTo(Mosque::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'notifications_muted' => 'boolean',
+        ];
     }
 }

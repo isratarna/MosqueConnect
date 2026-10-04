@@ -175,6 +175,11 @@ class Mosque extends Model
         return $this->hasMany(Campaign::class);
     }
 
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(MosquePaymentMethod::class);
+    }
+
     /**
      * Get notifications generated for followers of this mosque.
      */
@@ -282,6 +287,8 @@ class Mosque extends Model
     {
         return $this->announcements()
             ->published()
+            // [Urmee · F9] Pinned first, so the profile's "latest 5" never drops a pinned notice.
+            ->orderByDesc('is_pinned')
             ->orderByDesc('published_at')
             ->orderByDesc('id');
     }

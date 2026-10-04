@@ -90,7 +90,7 @@ export default function VolunteerOpportunities() {
 
       {actionError && <div className="alert alert-danger" role="alert">{actionError}</div>}
       {loading ? (
-        <SkeletonRegion label="Loading opportunities…"><ListRowsSkeleton rows={3} /></SkeletonRegion>
+        <SkeletonRegion label={t("volunteerPage.loading")}><ListRowsSkeleton rows={3} /></SkeletonRegion>
       ) : error ? (
         <div className="alert alert-warning text-center py-5 shadow-sm">
           <AlertCircle size={32} className="text-warning mb-3 mx-auto" />

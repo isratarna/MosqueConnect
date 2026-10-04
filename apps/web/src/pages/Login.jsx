@@ -12,13 +12,15 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { returnPath } from "../utils/api";
 import { useLocale } from "../hooks/useLocale";
+import { Trans } from "react-i18next";
 import { bangladeshLocalNumber, bangladeshPhone, isBangladeshMobile } from "../utils/phone";
 
 /** Inline SVG, because Windows does not draw flag emoji (it shows the letters BD). */
 // [Urmee · F1 Part 1] Inline SVG because Windows doesn't draw flag emoji (it shows the letters BD).
 function BangladeshFlag() {
+  const { t } = useLocale();
   return (
-    <svg className="me-2" width="22" height="13" viewBox="0 0 10 6" role="img" aria-label="Bangladesh flag">
+    <svg className="me-2" width="22" height="13" viewBox="0 0 10 6" role="img" aria-label={t("auth.flagAlt")}>
       <rect width="10" height="6" fill="#006a4e" />
       <circle cx="4.5" cy="3" r="2" fill="#f42a41" />
     </svg>
@@ -34,6 +36,7 @@ export default function Login({ registering = false }) {
   const [step, setStep] = useState("phone"); // "phone" | "otp"
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -73,11 +76,15 @@ export default function Login({ registering = false }) {
       setError(t("auth.invalidOtp"));
       return;
     }
+    if (registering && !termsAccepted) {
+      setError(t("auth.acceptTerms"));
+      return;
+    }
 
     const fullPhone = bangladeshPhone(phone);
 
     setLoading(true);
-    const res = await verifyOtp(fullPhone, trimmedOtp);
+    const res = await verifyOtp(fullPhone, trimmedOtp, { acceptTerms: registering && termsAccepted });
     setLoading(false);
 
     if (!res.ok) {
@@ -102,9 +109,9 @@ export default function Login({ registering = false }) {
   const handleResendOtp = async () => {
     if (loading) return;
     setError("");
-    
+
     const fullPhone = bangladeshPhone(phone);
-    
+
     setLoading(true);
     const res = await sendOtp(fullPhone);
     setLoading(false);
@@ -189,7 +196,7 @@ export default function Login({ registering = false }) {
 
                   {registering && (
                     <p className="small text-muted mb-3">
-                      By continuing you agree to the <Link to="/terms" target="_blank" className="text-mc">Terms of Use</Link> and <Link to="/privacy" target="_blank" className="text-mc">Privacy Policy</Link>.
+                      <Trans i18nKey="auth.agreeContinue" components={{ terms: <Link to="/terms" target="_blank" className="text-mc" />, privacy: <Link to="/privacy" target="_blank" className="text-mc" /> }} />
                     </p>
                   )}
                   <button
@@ -243,10 +250,26 @@ export default function Login({ registering = false }) {
                     </div>
                   </div>
 
+                  {registering && (
+                    <div className="form-check mb-3">
+                      <input
+                        id="login-accept-terms"
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(event) => setTermsAccepted(event.target.checked)}
+                        disabled={loading}
+                      />
+                      <label className="form-check-label small" htmlFor="login-accept-terms">
+                        <Trans i18nKey="auth.agreeCheckbox" components={{ terms: <Link to="/terms" target="_blank" className="text-mc" />, privacy: <Link to="/privacy" target="_blank" className="text-mc" /> }} />
+                      </label>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
                     className="btn btn-mc w-100 btn-lg mb-3 d-flex align-items-center justify-content-center gap-2"
-                    disabled={loading || !otp.trim()}
+                    disabled={loading || !otp.trim() || (registering && !termsAccepted)}
                   >
                     {loading ? (
                       <>

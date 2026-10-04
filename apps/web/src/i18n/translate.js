@@ -8,6 +8,7 @@ import i18n from "i18next";
  * The global i18next instance is initialised by `src/i18n/index.js`. Where that
  * has not run (plain Node unit tests), the key itself is returned.
  */
+// [Urmee · VIVA] React component er baire (API error message) text translate korte translate("key"). Component e t() use kori.
 export function translate(key, options) {
   return i18n.isInitialized ? i18n.t(key, options) : key;
 }

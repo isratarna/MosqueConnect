@@ -3,10 +3,12 @@ import { Link, useLocation } from "react-router-dom";
 import { CheckCircle2, ShieldCheck } from "lucide-react";
 import Modal from "../Modal";
 import { useAuth } from "../../context/AuthContext";
-import { COMPLAINT_CATEGORIES, sendComplaint } from "../../utils/communityHubApi";
+import { COMPLAINT_CATEGORIES, hubLabelT, sendComplaint } from "../../utils/communityHubApi";
+import { useLocale } from "../../hooks/useLocale";
 
 /** "Send feedback to this mosque": private feedback only the mosque's admins and the super admin read. */
 export default function ComplaintForm({ mosque, onClose }) {
+  const { t } = useLocale(); // [Urmee · i18n community] text from the locale files
   const { user } = useAuth();
   const location = useLocation();
   const [anonymous, setAnonymous] = useState(false);
@@ -32,50 +34,48 @@ export default function ComplaintForm({ mosque, onClose }) {
   }
 
   return (
-    <Modal title={`Send feedback to ${mosque.name}`} onClose={onClose} busy={busy}>
+    <Modal title={t("complaintForm.title", { mosque: mosque.name })} onClose={onClose} busy={busy}>
       {!user ? (
         <div className="text-center py-2">
-          <p>Please sign in to send feedback, so the mosque can reply to you.</p>
-          <Link className="btn btn-mc" to="/login" state={{ from: location.pathname }}>Sign in</Link>
+          <p>{t("complaintForm.signIn")}</p>
+          <Link className="btn btn-mc" to="/login" state={{ from: location.pathname }}>{t("complaintForm.signInButton")}</Link>
         </div>
       ) : sent ? (
         <div className="text-center py-2" role="status">
           <CheckCircle2 size={40} className="text-success mb-2" aria-hidden="true" />
-          <p className="fw-semibold mb-1">Thank you, your feedback was sent.</p>
-          <p className="small text-muted">You'll be notified when the mosque replies. You can follow it under <Link to="/profile?tab=feedback">Profile → My feedback</Link>.</p>
-          <button type="button" className="btn btn-outline-mc" onClick={onClose}>Close</button>
+          <p className="fw-semibold mb-1">{t("complaintForm.thanks")}</p>
+          <p className="small text-muted">{t("complaintForm.followUp")} <Link to="/profile?tab=feedback">{t("complaintForm.followLink")}</Link>.</p>
+          <button type="button" className="btn btn-outline-mc" onClick={onClose}>{t("complaintForm.close")}</button>
         </div>
       ) : (
         <form onSubmit={submit}>
-          <p className="small text-muted"><ShieldCheck size={15} className="text-mc me-1" aria-hidden="true" />Feedback is private. Only this mosque's admins and the MosqueConnect super admin can read it, never the public.</p>
+          <p className="small text-muted"><ShieldCheck size={15} className="text-mc me-1" aria-hidden="true" />{t("complaintForm.privacy")}</p>
           <div className="mb-3">
-            <label className="form-label" htmlFor="complaint-category">Topic</label>
+            <label className="form-label" htmlFor="complaint-category">{t("complaintForm.topic")}</label>
             <select id="complaint-category" name="category" className="form-select" required defaultValue="">
-              <option value="" disabled>Choose…</option>
-              {COMPLAINT_CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              <option value="" disabled>{t("complaintForm.choose")}</option>
+              {COMPLAINT_CATEGORIES.map(([value]) => <option key={value} value={value}>{hubLabelT(t, "complaintCategory", value)}</option>)}
             </select>
           </div>
           <div className="mb-3">
-            <label className="form-label" htmlFor="complaint-subject">Subject</label>
+            <label className="form-label" htmlFor="complaint-subject">{t("complaintForm.subject")}</label>
             <input id="complaint-subject" name="subject" className="form-control" required maxLength={255} />
           </div>
           <div className="mb-3">
-            <label className="form-label" htmlFor="complaint-body">Your feedback</label>
+            <label className="form-label" htmlFor="complaint-body">{t("complaintForm.body")}</label>
             <textarea id="complaint-body" name="body" className="form-control" rows={4} required minLength={10} maxLength={5000} />
           </div>
           <div className="form-check mb-1">
             <input id="complaint-anonymous" type="checkbox" className="form-check-input" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
-            <label className="form-check-label" htmlFor="complaint-anonymous">Send anonymously</label>
+            <label className="form-check-label" htmlFor="complaint-anonymous">{t("complaintForm.anonymous")}</label>
           </div>
           <p className="form-text mb-3" id="complaint-anonymous-help">
-            {anonymous
-              ? "The mosque admin won't see your name. The MosqueConnect super admin can still see who sent it, to stop abuse. You'll still get the mosque's reply."
-              : "The mosque admin will see your name."}
+            {anonymous ? t("complaintForm.anonymousOn") : t("complaintForm.anonymousOff")}
           </p>
           {error && <div className="alert alert-danger py-2 small" role="alert">{error}</div>}
           <div className="d-flex justify-content-end gap-2">
-            <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>Cancel</button>
-            <button type="submit" className="btn btn-mc" disabled={busy}>{busy ? "Sending…" : "Send feedback"}</button>
+            <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>{t("common.cancel")}</button>
+            <button type="submit" className="btn btn-mc" disabled={busy}>{busy ? t("complaintForm.sending") : t("complaintForm.send")}</button>
           </div>
         </form>
       )}

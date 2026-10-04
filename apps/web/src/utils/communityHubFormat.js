@@ -41,6 +41,10 @@ export const GOODS_STATUS = {
   declined: ["Declined", "bg-secondary"],
 };
 
+// [Urmee · i18n community] Translated label for a code the API sends ("in_progress", "wallet", ...). `group` is the hub.<group>
+// namespace in the locale files; an unknown code shows the fallback (or the code itself), never a missing-key warning.
+export const hubLabelT = (t, group, key, fallback) => (key ? t(`hub.${group}.${key}`, { defaultValue: fallback ?? String(key) }) : "");
+
 export function labelOf(pairs, key) {
   return pairs.find(([value]) => value === key)?.[1] || key || "";
 }

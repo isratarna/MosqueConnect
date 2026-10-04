@@ -103,6 +103,7 @@ export default function Home() {
   return (
     <>
       <EidBanner />
+      {/* [Urmee · VIVA] Home er upore Ramadan banner: nearest mosque Ramadan period e thakle "Iftar in 1h 12m". */}
       {/* [Urmee · F4] "Iftar in 1h 12m at your nearest mosque", only while that mosque is in a Ramadan period. */}
       <RamadanBanner mosque={nearest} />
       {user ? (
@@ -152,8 +153,9 @@ export default function Home() {
 
 // "Next jamat you can catch" ar journey planner-e jawar card pashapashi.
 function JourneyCards({ origin }) {
+  const { t } = useLocale(); // [Urmee · i18n leftovers]
   return (
-    <section className="mc-journey-cards" aria-label="Catch a jamaat">
+    <section className="mc-journey-cards" aria-label={t("home.journeyAria")}>
       <div className="container">
         <div className="row g-3">
           <div className="col-lg-7">

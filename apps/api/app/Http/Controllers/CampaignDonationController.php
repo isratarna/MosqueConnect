@@ -6,7 +6,10 @@ use App\Http\Requests\StoreCampaignDonationRequest;
 use App\Http\Resources\CampaignDonationResource;
 use App\Models\Campaign;
 use App\Models\CampaignDonation;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class CampaignDonationController extends Controller
 {
@@ -29,5 +32,25 @@ class CampaignDonationController extends Controller
             ->additional(['message' => 'Your manual donation was submitted for mosque confirmation.'])
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function receipt(Request $request, CampaignDonation $donation): Response
+    {
+        $donation = $request->user()->campaignDonations()
+            ->whereKey($donation->id)
+            ->where('status', CampaignDonation::STATUS_CONFIRMED)
+            ->with(['campaign.mosque', 'user', 'confirmer'])
+            ->firstOrFail();
+
+        $receiptNumber = 'MC-'.$donation->created_at->format('Y').'-'.str_pad((string) $donation->id, 8, '0', STR_PAD_LEFT);
+        $donorName = $donation->is_anonymous
+            ? 'Anonymous'
+            : ($donation->donor_name ?: $donation->user?->name ?: 'Donor');
+
+        return Pdf::loadView('receipts.campaign-donation', [
+            'receiptNumber' => $receiptNumber,
+            'donation' => $donation,
+            'donorName' => $donorName,
+        ])->setPaper('a4')->download("{$receiptNumber}.pdf");
     }
 }

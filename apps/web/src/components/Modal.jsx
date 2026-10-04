@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useLocale } from "../hooks/useLocale";
 
 /**
  * A Bootstrap-styled dialog rendered into <body>. The page shell has a CSS
@@ -9,6 +10,7 @@ import { X } from "lucide-react";
  * and back to the opener on close.
  */
 export default function Modal({ title, onClose, children, footer, size = "", busy = false }) {
+  const { t } = useLocale(); // [Urmee · i18n shared]
   const titleId = useId();
   const dialogRef = useRef(null);
 
@@ -58,7 +60,7 @@ export default function Modal({ title, onClose, children, footer, size = "", bus
           <div className="modal-content border-0 shadow-lg">
             <div className="modal-header">
               <h2 className="modal-title h5 fw-bold" id={titleId}>{title}</h2>
-              <button type="button" className="btn btn-sm btn-light btn-close-modal" aria-label="Close" onClick={onClose} disabled={busy}>
+              <button type="button" className="btn btn-sm btn-light btn-close-modal" aria-label={t("common.close")} onClick={onClose} disabled={busy}>
                 <X size={18} aria-hidden="true" />
               </button>
             </div>

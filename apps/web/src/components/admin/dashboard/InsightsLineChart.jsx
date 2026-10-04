@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { formatShortDate, niceMax, plotPoints, pointsToPath } from "../../../utils/dashboardFormat";
+import { useLocale } from "../../../hooks/useLocale";
 
 const HEIGHT = 240;
 const MARGIN = { top: 12, right: 78, bottom: 26, left: 34 };
@@ -11,6 +12,7 @@ const MARGIN = { top: 12, right: 78, bottom: 26, left: 34 };
  * @param {{ series: {key: string, label: string, color: string}[], data: object[] }} props
  */
 export default function InsightsLineChart({ series, data }) {
+  const { t, locale } = useLocale();
   const wrapRef = useRef(null);
   const [width, setWidth] = useState(600);
   const [active, setActive] = useState(null);
@@ -56,7 +58,7 @@ export default function InsightsLineChart({ series, data }) {
 
   return (
     <>
-      <ul className="mc-chart-legend" aria-label="Legend">
+      <ul className="mc-chart-legend" aria-label={t("dashboard.insights.legend")}>
         {series.map((item) => (
           <li key={item.key}><span className="mc-chart-legend__key" style={{ background: item.color }} aria-hidden="true" />{item.label}</li>
         ))}
@@ -67,7 +69,7 @@ export default function InsightsLineChart({ series, data }) {
         height={HEIGHT}
         role="img"
         tabIndex={0}
-        aria-label={`Daily ${series.map((item) => item.label.toLowerCase()).join(", ")} from ${formatShortDate(data[0]?.date)} to ${formatShortDate(data.at(-1)?.date)}. Use the arrow keys to read each day.`}
+        aria-label={t("dashboard.insights.chartAria", { series: series.map((item) => item.label.toLowerCase()).join(", "), from: formatShortDate(data[0]?.date, locale), to: formatShortDate(data.at(-1)?.date, locale) })}
         onPointerMove={(event) => setActive(indexAt(event.clientX))}
         onPointerLeave={() => setActive(null)}
         onKeyDown={onKeyDown}
@@ -82,7 +84,7 @@ export default function InsightsLineChart({ series, data }) {
           ))}
           {xTicks.map((index) => (
             <text key={index} x={lines[0].points[index].x} y={plotHeight + 18} textAnchor={index === 0 ? "start" : index === data.length - 1 ? "end" : "middle"} className="mc-chart-tick">
-              {formatShortDate(data[index].date)}
+              {formatShortDate(data[index].date, locale)}
             </text>
           ))}
           {lines.map((line) => <path key={line.key} d={pointsToPath(line.points)} className="mc-chart-line" style={{ stroke: line.color }} />)}
@@ -103,7 +105,7 @@ export default function InsightsLineChart({ series, data }) {
           role="status"
           style={{ left: Math.min(width - 150, Math.max(0, MARGIN.left + crossX + 10)), top: MARGIN.top }}
         >
-          <div className="fw-semibold mb-1">{formatShortDate(day.date)}</div>
+          <div className="fw-semibold mb-1">{formatShortDate(day.date, locale)}</div>
           {series.map((item) => (
             <div key={item.key} className="d-flex align-items-center gap-2">
               <span className="mc-chart-tooltip__key" style={{ background: item.color }} aria-hidden="true" />
