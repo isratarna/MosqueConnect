@@ -8,6 +8,9 @@ use App\Models\Mosque;
 use App\Models\Notification;
 use App\Models\SystemSetting;
 use App\Models\User;
+use Database\Seeders\EidJamaatSeeder;
+use Database\Seeders\MosqueSeeder;
+use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -258,6 +261,27 @@ class EidJamaatTest extends TestCase
             ->assertJsonPath('data.eid_season', null);
         $this->assertDatabaseMissing('system_settings', ['key' => 'eid_season']);
         $this->getJson('/api/eid-season')->assertOk()->assertJsonPath('data', null);
+    }
+
+    public function test_the_demo_seeder_leaves_an_active_season_with_published_jamaats(): void
+    {
+        $this->seed([UserSeeder::class, MosqueSeeder::class, EidJamaatSeeder::class]);
+
+        $this->getJson('/api/eid-season')->assertOk()->assertJsonPath('data.active', true);
+
+        // The Dhaka centre the web app falls back to without a location.
+        $query = ['lat' => 23.7806, 'lng' => 90.4074, 'radius' => 10];
+        $jamaats = $this->getJson('/api/eid-jamaats/nearby?'.http_build_query($query))
+            ->assertOk()
+            ->json('data');
+
+        $this->assertGreaterThan(5, count($jamaats));
+        // At least one is held away from its mosque, on an Eidgah field.
+        $this->assertNotEmpty(array_filter($jamaats, fn (array $jamaat): bool => ! $jamaat['at_mosque']));
+
+        $this->getJson('/api/eid-jamaats/nearby?'.http_build_query([...$query, 'women' => 1]))
+            ->assertOk()
+            ->assertJsonPath('data.0.women_arrangement', true);
     }
 
     /**
