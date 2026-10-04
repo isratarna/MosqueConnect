@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             VolunteerOpportunitySeeder::class,
             DemoNotificationSeeder::class,
             MosqueDailyStatSeeder::class,
+            EidJamaatSeeder::class,
             DemoAuthenticationSeeder::class,
             DemoDataIntegritySeeder::class,
         ]);
