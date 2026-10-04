@@ -15,15 +15,21 @@ import {
   cacheUser,
   clearAuthStorage,
   getAuthHeaders,
+  getCachedUser,
   getStoredToken,
 } from "../utils/authApi";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  // A returning visitor's user is already on the device, so the interface can be
+  // painted on the first frame and GET /api/auth/me can confirm it in the
+  // background. Blocking on that request instead left every page blank for a
+  // whole round trip — on a distant server, most of the time a page took to
+  // appear. /me still has the last word a moment later.
+  const [user, setUser] = useState(() => (getStoredToken() ? getCachedUser() : null));
   const [token, setToken] = useState(() => getStoredToken());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !(getStoredToken() && getCachedUser()));
   const sessionVersion = useRef(0);
 
   const clearSession = useCallback(() => {
@@ -35,7 +41,10 @@ export function AuthProvider({ children }) {
 
   const restoreSession = useCallback(async () => {
     const version = ++sessionVersion.current;
-    setLoading(true);
+    // Only show the loading state when there is nothing to show yet. With a
+    // cached user on screen this is a silent revalidation, exactly like the
+    // refresh path below.
+    if (!(getStoredToken() && getCachedUser())) setLoading(true);
     try {
       const storedToken = getStoredToken();
       if (!storedToken) { clearSession(); return; }
@@ -52,7 +61,10 @@ export function AuthProvider({ children }) {
         if (res.status === 401 || res.status === 403) clearSession();
       }
     } catch {
-      if (version === sessionVersion.current) setUser(null);
+      // A failed connection says nothing about whether the session is valid, so
+      // a cached user stays signed in and the next request retries. Only an
+      // explicit 401/403 above ends the session.
+      if (version === sessionVersion.current && !getCachedUser()) setUser(null);
     } finally {
       if (version === sessionVersion.current || !getStoredToken()) setLoading(false);
     }
